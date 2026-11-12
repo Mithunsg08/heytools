@@ -4,7 +4,7 @@
   "description": "21 private tools in one app. Everything runs in your browser and your files never leave your device.",
   "id": "./",
   "start_url": "./?source=pwa",
-  "scope": "./",
+  "scope": "../",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#EEF1F6",
