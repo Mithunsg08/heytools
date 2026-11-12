@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HeyTools | All your private tools in one app</title>
+<meta name="description" content="HeyTools is one app with 21 private tools: media players, editors, calculators, converters and games. Everything runs in your browser and your files never leave your device.">
+<meta name="theme-color" content="#14213D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HeyTools">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F6;
+  --panel:#FFFFFF;
+  --ink:#14213D;
+  --muted:#4F5B75;
+  --line:#CBD3E2;
+  --blue:#2B4EFF;
+  --signal:#FFC93C;
+  --ok:#0E8A5F;
+  --radius:14px;
+  --side:300px;
+  --top:56px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Figtree',system-ui,sans-serif;font-size:16px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.08;margin:0;letter-spacing:-0.02em}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;z-index:100}
+.skip:focus{left:8px}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:var(--side) 1fr;height:100dvh}
+.side{
+  background:var(--panel);border-right:2px solid var(--ink);
+  display:flex;flex-direction:column;min-height:0;
+  padding-top:var(--safe-t);padding-left:var(--safe-l);
+}
+.side-top{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px}
+.logo{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.5rem;text-decoration:none;letter-spacing:-0.03em}
+.logo span{background:var(--signal);padding:0 .22em;border-radius:6px;margin-left:1px}
+.icon-btn{
+  display:inline-grid;place-items:center;width:40px;height:40px;
+  background:var(--panel);border:2px solid var(--ink);border-radius:10px;
+  text-decoration:none;font-size:1.05rem;line-height:1;transition:transform .15s;
+}
+.icon-btn:hover{transform:translateY(-2px)}
+.icon-btn[disabled]{opacity:.4;pointer-events:none}
+.only-mobile{display:none}
+
+.search{padding:8px 18px 12px}
+.search input{
+  width:100%;padding:10px 14px;border:2px solid var(--ink);border-radius:10px;
+  background:var(--bg);font:inherit;font-size:.95rem;color:var(--ink);
+}
+.search input::placeholder{color:var(--muted)}
+
+nav#nav{flex:1;overflow-y:auto;padding:0 12px 16px;overscroll-behavior:contain}
+.group-title{
+  font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:16px 8px 6px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:8px 10px;border:2px solid transparent;border-radius:10px;
+  background:transparent;text-align:left;text-decoration:none;font-weight:500;
+}
+.nav-item:hover{background:var(--bg)}
+.nav-item[aria-current="page"]{background:var(--ink);color:#fff}
+.nav-item .ext{margin-left:auto;font-size:.8rem;opacity:.7}
+.tile{
+  flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:9px;
+  border:2px solid var(--ink);background:var(--bg);font-size:1.05rem;line-height:1;
+}
+.tile[data-cat="media"]{background:#DCE4FF}
+.tile[data-cat="image"]{background:#FFEDB3}
+.tile[data-cat="utility"]{background:#E4E9F2}
+.tile[data-cat="games"]{background:#CDEFE0}
+.tile[data-cat="business"]{background:#FFD9D2}
+.nav-item[aria-current="page"] .tile{border-color:var(--signal)}
+.empty{padding:20px 10px;color:var(--muted);font-size:.95rem}
+
+.side-foot{
+  border-top:2px solid var(--ink);padding:14px 18px calc(14px + var(--safe-b));
+  display:flex;flex-direction:column;gap:10px;font-size:.82rem;color:var(--muted);
+}
+.btn{
+  display:inline-block;padding:10px 16px;border-radius:10px;font-weight:600;font-size:.95rem;
+  text-decoration:none;border:2px solid var(--ink);background:var(--ink);color:#fff;text-align:center;
+  transition:transform .15s;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn.signal{background:var(--signal);color:var(--ink)}
+[hidden]{display:none !important}
+
+.scrim{display:none}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{
+  flex:none;height:calc(var(--top) + var(--safe-t));padding:var(--safe-t) calc(14px + var(--safe-r)) 0 14px;
+  display:flex;align-items:center;gap:10px;background:var(--panel);border-bottom:2px solid var(--ink);
+}
+.top h1{font-size:1.15rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.top .actions{display:flex;gap:8px}
+.stage{flex:1;min-height:0;position:relative}
+
+/* home launcher */
+.home{height:100%;overflow-y:auto;padding:36px 28px calc(48px + var(--safe-b));padding-right:calc(28px + var(--safe-r))}
+.home-inner{max-width:1080px;margin:0 auto}
+.hero h2{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:800}
+.hero p{color:var(--muted);font-size:1.1rem;max-width:36rem;margin:14px 0 0}
+.badge{
+  display:inline-block;margin-top:18px;padding:4px 12px;border-radius:999px;
+  background:var(--signal);font-weight:600;font-size:.82rem;
+}
+.sec-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.35rem;margin:36px 0 14px}
+.recent{display:flex;flex-wrap:wrap;gap:10px}
+.chip{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;border:2px solid var(--ink);
+  border-radius:999px;background:var(--panel);text-decoration:none;font-weight:600;font-size:.92rem;
+}
+.chip:hover{background:var(--ink);color:#fff}
+.chip .tile{width:28px;height:28px;border-radius:50%;font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.card{
+  display:flex;flex-direction:column;gap:6px;padding:20px;background:var(--panel);
+  border:2px solid var(--ink);border-radius:var(--radius);text-decoration:none;
+  transition:transform .15s, box-shadow .15s;
+}
+.card:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--signal)}
+.card .tile{width:48px;height:48px;border-radius:12px;font-size:1.5rem;margin-bottom:6px}
+.card h3{font-size:1.25rem;font-weight:800}
+.card p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.45}
+.card .tag{
+  margin-top:auto;padding-top:10px;font-size:.75rem;font-weight:600;color:var(--muted);
+  letter-spacing:.04em;text-transform:uppercase;
+}
+
+/* tool frame */
+.frame-wrap{position:absolute;inset:0;background:#fff}
+iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
+.loading{
+  position:absolute;inset:0;display:grid;place-items:center;background:var(--bg);
+  color:var(--muted);font-weight:600;transition:opacity .2s;
+}
+.loading.done{opacity:0;pointer-events:none}
+.spin{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}.card,.btn,.icon-btn{transition:none}}
+
+/* ---------- mobile ---------- */
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .only-mobile{display:inline-grid}
+  .side{
+    position:fixed;z-index:50;top:0;bottom:0;left:0;width:min(86vw,320px);
+    transform:translateX(-102%);transition:transform .22s ease;box-shadow:8px 0 0 rgba(20,33,61,.15);
+  }
+  .app.open .side{transform:none}
+  .app.open .scrim{display:block;position:fixed;inset:0;z-index:40;background:rgba(20,33,61,.45)}
+  .home{padding:24px 16px calc(40px + var(--safe-b))}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+}
+@media (max-width:820px) and (prefers-reduced-motion:reduce){.side{transition:none}}
+@media (display-mode:standalone){.btn-install{display:none !important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Tool menu">
+    <div class="side-top">
+      <a class="logo" href="#/" aria-label="HeyTools home">Hey<span>Tools</span></a>
+      <button class="icon-btn only-mobile" id="closeSide" type="button" aria-label="Close menu">&#10005;</button>
+    </div>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search tools  (press / )" aria-label="Search tools" autocomplete="off">
+    </div>
+    <nav id="nav" aria-label="Tools"></nav>
+    <div class="side-foot">
+      <button class="btn signal btn-install" id="install" type="button" hidden>Install HeyTools app</button>
+      <div id="iosHint" hidden>To install on iPhone or iPad: tap Share, then Add to Home Screen.</div>
+      <div id="netState">Private by design. Tools run in your browser.</div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn only-mobile" id="openSide" type="button" aria-label="Open menu" aria-controls="side">&#9776;</button>
+      <h1 id="title">HeyTools</h1>
+      <div class="actions" id="actions" hidden>
+        <button class="icon-btn" id="reload" type="button" title="Reload tool" aria-label="Reload tool">&#8635;</button>
+        <button class="icon-btn" id="full" type="button" title="Full screen" aria-label="Full screen">&#x26F6;</button>
+        <a class="icon-btn" id="newTab" href="#" target="_blank" rel="noopener" title="Open in new tab" aria-label="Open in new tab">&#8599;</a>
+      </div>
+    </header>
+
+    <main class="stage" id="main" tabindex="-1">
+      <div class="home" id="home">
+        <div class="home-inner">
+          <div class="hero">
+            <h2>Every tool. One app.</h2>
+            <p>Media players, editors, calculators, converters and games. Open one from the menu or tap a card below.</p>
+            <span class="badge">Your files never leave your device</span>
+          </div>
+          <div id="recentWrap" hidden>
+            <h2 class="sec-title">Recently used</h2>
+            <div class="recent" id="recent"></div>
+          </div>
+          <div id="grids"></div>
+        </div>
+      </div>
+
+      <div class="frame-wrap" id="frameWrap" hidden>
+        <iframe id="frame" title="Tool"
+          allow="camera; microphone; geolocation; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay; picture-in-picture; accelerometer; gyroscope; magnetometer; screen-wake-lock; encrypted-media"
+          allowfullscreen></iframe>
+        <div class="loading" id="loading" role="status"><div><div class="spin"></div>Loading tool&hellip;</div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CATS = [
+    { id: 'media',    label: 'Media & Video' },
+    { id: 'image',    label: 'Image & PDF' },
+    { id: 'utility',  label: 'Utilities & Security' },
+    { id: 'games',    label: 'Games & Fun' },
+    { id: 'business', label: 'Business & Audit' }
+  ];
+
+  /* id = folder name next to /app/. To add a tool: add a line here and in heytools-sw.js. */
+  var TOOLS = [
+    { id: 'video-player', name: 'Video Player', cat: 'media', icon: '▶️', desc: 'Play local files, live TV from around the world and streaming platforms. Works offline.' },
+    { id: 'music-player', name: 'Music Player', cat: 'media', icon: '🎵', desc: '3D music player with spinning vinyl, live visualizer, Spotify and streaming support.' },
+    { id: 'recorder', name: 'Recorder', cat: 'media', icon: '🎙️', desc: 'Record voice, video or your screen with pause, markers and local storage.' },
+    { id: 'emulsion', name: 'Emulsion', cat: 'media', icon: '🎞️', desc: 'Image and video editor with layers, a multi-track timeline and instant export.' },
+    { id: 'video-loop', name: 'Video Loop', cat: 'media', icon: '🔁', desc: 'Turn short clips into seamless loops that run for hours.' },
+    { id: 'media-downloads', name: 'Media Downloads', cat: 'media', icon: '⬇️', desc: 'Manage and download media files straight from your browser session.' },
+
+    { id: 'image-compress', name: 'Image Compressor', cat: 'image', icon: '🗜️', desc: 'Compress PNG, JPEG and WebP images without losing noticeable quality.' },
+    { id: 'image-to-pdf-converter', name: 'Image to PDF', cat: 'image', icon: '📄', desc: 'Combine images into one clean PDF, plus other file conversions.' },
+    { id: 'background-removal', name: 'Background Removal', cat: 'image', icon: '✂️', desc: 'Remove photo backgrounds instantly with no server upload.' },
+
+    { id: 'notes-to-do-list', name: 'Notes & To Do', cat: 'utility', icon: '📝', desc: 'Colorful pinned notes and daily tasks with reminders, saved on your device.' },
+    { id: 'calculator', name: 'Calculator Suite', cat: 'utility', icon: '🧮', desc: 'Tip splitter, fuel cost, EMI, GST, VAT, BMI, age calculators and more.' },
+    { id: 'scientific-calculator', name: 'Scientific Calculator', cat: 'utility', icon: '📐', desc: 'Trigonometry, logs, complex numbers and equations computed locally.' },
+    { id: 'word-counter', name: 'Word Counter', cat: 'utility', icon: '🔠', desc: 'Words, characters, sentences, reading time and keyword density as you type.' },
+    { id: 'world-clock', name: 'World Clock & Stopwatch', cat: 'utility', icon: '🌐', desc: 'Times across 400+ zones, a meeting planner slider and a lap stopwatch.' },
+    { id: 'barcode-generate', name: 'Barcode & QR', cat: 'utility', icon: '🏷️', desc: 'Make barcodes and QR codes. Download as PNG or SVG.' },
+    { id: 'password-generator', name: 'Password Generator', cat: 'utility', icon: '🔐', desc: 'Strong random passwords with the length and symbols you choose.' },
+    { id: 'internet-speed', name: 'Internet Speed', cat: 'utility', icon: '⚡', desc: 'Download, upload, ping, jitter, packet loss and bufferbloat.' },
+    { id: 'earth-zipcode', name: "Earth's Zipcode", cat: 'utility', icon: '🌍', desc: 'Interactive 3D postal and PIN code finder for 240+ countries.' },
+
+    { id: 'cyber-rush', name: 'Cyber Rush', cat: 'games', icon: '🎮', desc: '3D cyberpunk endless runner. Dodge meteors, jets and drone swarms.' },
+    { id: 'dice-roller', name: 'Dice Roller', cat: 'games', icon: '🎲', desc: 'Fair, realistic 3D dice with five game modes.' },
+    { id: 'compass', name: 'Galleonwick Compass', cat: 'games', icon: '🧭', desc: "A pirate's compass for finding headings and setting courses to coordinates." },
+
+    { id: 'opsreveal', name: 'OpsReveal', cat: 'business', icon: '🔍', external: 'https://opsreveal.preventloss.org/', desc: 'Retail loss prevention audits that run in the browser. Opens its own site.' }
+  ];
+
+  var byId = {};
+  TOOLS.forEach(function (t) { byId[t.id] = t; });
+  var catLabel = {};
+  CATS.forEach(function (c) { catLabel[c.id] = c.label; });
+
+  var $ = function (id) { return document.getElementById(id); };
+  var app = $('app'), nav = $('nav'), grids = $('grids'), q = $('q');
+  var home = $('home'), frameWrap = $('frameWrap'), frame = $('frame'), loading = $('loading');
+  var title = $('title'), actions = $('actions'), newTab = $('newTab');
+  var current = null;
+
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === 'text') n.textContent = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+  function tile(t) { return el('span', { 'class': 'tile', 'data-cat': t.cat, 'aria-hidden': 'true', text: t.icon }); }
+  function hrefFor(t) { return t.external || ('#/' + t.id); }
+  function linkAttrs(t, cls) {
+    var a = { 'class': cls, href: hrefFor(t) };
+    if (t.external) { a.target = '_blank'; a.rel = 'noopener'; }
+    return a;
+  }
+
+  /* ---------- storage (optional; may be blocked) ---------- */
+  var KEY = 'heytools.recent';
+  function getRecent() {
+    try { var r = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(r) ? r.filter(function (i) { return byId[i] && !byId[i].external; }) : []; }
+    catch (e) { return []; }
+  }
+  function pushRecent(id) {
+    try {
+      var r = getRecent().filter(function (i) { return i !== id; });
+      r.unshift(id);
+      localStorage.setItem(KEY, JSON.stringify(r.slice(0, 5)));
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- rendering ---------- */
+  function matches(t, term) {
+    if (!term) return true;
+    var hay = (t.name + ' ' + t.desc + ' ' + catLabel[t.cat]).toLowerCase();
+    return term.toLowerCase().split(/\s+/).every(function (w) { return hay.indexOf(w) !== -1; });
+  }
+
+  function renderLists() {
+    var term = q.value.trim();
+    nav.textContent = '';
+    grids.textContent = '';
+    var shown = 0;
+
+    CATS.forEach(function (c) {
+      var list = TOOLS.filter(function (t) { return t.cat === c.id && matches(t, term); });
+      if (!list.length) return;
+      shown += list.length;
+
+      nav.appendChild(el('div', { 'class': 'group-title', text: c.label }));
+      list.forEach(function (t) {
+        var a = el('a', linkAttrs(t, 'nav-item'), [tile(t), el('span', { text: t.name })]);
+        if (t.external) a.appendChild(el('span', { 'class': 'ext', 'aria-label': 'opens in a new tab', text: '↗' }));
+        a.setAttribute('data-id', t.id);
+        if (t.id === current) a.setAttribute('aria-current', 'page');
+        nav.appendChild(a);
+      });
+
+      grids.appendChild(el('h2', { 'class': 'sec-title', text: c.label }));
+      var g = el('div', { 'class': 'grid' });
+      list.forEach(function (t) {
+        g.appendChild(el('a', linkAttrs(t, 'card'), [
+          tile(t),
+          el('h3', { text: t.name }),
+          el('p', { text: t.desc }),
+          el('span', { 'class': 'tag', text: t.external ? 'Opens new tab' : c.label })
+        ]));
+      });
+      grids.appendChild(g);
+    });
+
+    if (!shown) {
+      var msg = 'No tools match "' + term + '".';
+      nav.appendChild(el('div', { 'class': 'empty', text: msg }));
+      grids.appendChild(el('p', { 'class': 'empty', text: msg }));
+    }
+  }
+
+  function renderRecent() {
+    var wrap = $('recentWrap'), box = $('recent');
+    var r = getRecent();
+    box.textContent = '';
+    r.forEach(function (id) {
+      var t = byId[id];
+      box.appendChild(el('a', { 'class': 'chip', href: '#/' + id }, [tile(t), el('span', { text: t.name })]));
+    });
+    wrap.hidden = !r.length || !!q.value.trim();
+  }
+
+  function markCurrent() {
+    var items = nav.querySelectorAll('.nav-item');
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].getAttribute('data-id') === current) items[i].setAttribute('aria-current', 'page');
+      else items[i].removeAttribute('aria-current');
+    }
+  }
+
+  /* ---------- routing ---------- */
+  function showHome() {
+    current = null;
+    frame.removeAttribute('src');
+    frame.src = 'about:blank';
+    frameWrap.hidden = true;
+    home.hidden = false;
+    actions.hidden = true;
+    title.textContent = 'HeyTools';
+    document.title = 'HeyTools | All your private tools in one app';
+    renderRecent();
+    markCurrent();
+  }
+
+  function openTool(t) {
+    current = t.id;
+    var path = '../' + t.id + '/';
+    loading.classList.remove('done');
+    frame.title = t.name;
+    frame.src = path;
+    newTab.href = path;
+    home.hidden = true;
+    frameWrap.hidden = false;
+    actions.hidden = false;
+    title.textContent = t.name;
+    document.title = t.name + ' | HeyTools';
+    pushRecent(t.id);
+    markCurrent();
+  }
+
+  function route() {
+    var id = decodeURIComponent((location.hash || '').replace(/^#\/?/, '')).replace(/\/$/, '');
+    var t = byId[id];
+    if (t && !t.external) openTool(t); else showHome();
+    closeSide();
+  }
+
+  /* Some tools have logo/footer links like href="/" or "/background-removal" (written for standalone hosting).
+     Inside the app those would load the wrong page, so same-origin link clicks are routed within the app. */
+  var BASE = new URL('../', location.href).pathname;      // e.g. "/heytools/"
+  function interceptLinks(doc) {
+    doc.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a || (a.target && a.target !== '_self')) return;
+      var u;
+      try { u = new URL(a.getAttribute('href'), a.ownerDocument.baseURI); } catch (err) { return; }
+      if (u.origin !== location.origin) return;
+      var rel = u.pathname.indexOf(BASE) === 0 ? u.pathname.slice(BASE.length) : u.pathname.replace(/^\//, '');
+      var seg = rel.split('/')[0];
+      if (seg === 'app' || a.getAttribute('href').charAt(0) === '#' || seg === current) return;
+      if (seg === '' || seg === 'index.html') { e.preventDefault(); location.hash = '#/'; }
+      else if (byId[seg] && !byId[seg].external) { e.preventDefault(); location.hash = '#/' + seg; }
+    }, true);
+  }
+
+  frame.addEventListener('load', function () {
+    if (frame.getAttribute('src') === 'about:blank') return;
+    loading.classList.add('done');
+    try { interceptLinks(frame.contentDocument); } catch (err) { /* cross-origin: leave links alone */ }
+  });
+
+  /* ---------- toolbar ---------- */
+  $('reload').addEventListener('click', function () {
+    if (!current) return;
+    loading.classList.remove('done');
+    try { frame.contentWindow.location.reload(); } catch (e) { frame.src = frame.src; }
+  });
+  $('full').addEventListener('click', function () {
+    var f = frame.requestFullscreen || frame.webkitRequestFullscreen;
+    if (f) { try { f.call(frame); } catch (e) { /* ignore */ } }
+    else { window.open(newTab.href, '_blank', 'noopener'); }
+  });
+
+  /* ---------- mobile drawer ---------- */
+  function openSide() { app.classList.add('open'); }
+  function closeSide() { app.classList.remove('open'); }
+  $('openSide').addEventListener('click', openSide);
+  $('closeSide').addEventListener('click', closeSide);
+  $('scrim').addEventListener('click', closeSide);
+
+  /* ---------- search + shortcuts ---------- */
+  q.addEventListener('input', function () { renderLists(); renderRecent(); });
+  q.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      var first = nav.querySelector('.nav-item');
+      if (first) first.click();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); openSide(); q.focus(); }
+    if (e.key === 'Escape') closeSide();
+  });
+
+  /* ---------- install ---------- */
+  var deferred = null;
+  var installBtn = $('install');
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    installBtn.hidden = false;
+  });
+  installBtn.addEventListener('click', function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function () { deferred = null; installBtn.hidden = true; });
+  });
+  window.addEventListener('appinstalled', function () { installBtn.hidden = true; });
+
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (isIOS && !standalone) $('iosHint').hidden = false;
+
+  /* ---------- online / offline note ---------- */
+  function net() {
+    $('netState').textContent = navigator.onLine
+      ? 'Private by design. Tools run in your browser.'
+      : 'You are offline. Tools that need the internet, such as speed test and streaming, will not work.';
+  }
+  window.addEventListener('online', net);
+  window.addEventListener('offline', net);
+  net();
+
+  /* ---------- service worker (root scope so tools are cached too) ---------- */
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('../heytools-sw.js', { scope: '../' }).catch(function () {});
+    });
+  }
+
+  window.addEventListener('hashchange', route);
+  renderLists();
+  route();
+})();
+</script>
+</body>
+</html>
