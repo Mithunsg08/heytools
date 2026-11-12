@@ -5,14 +5,15 @@
    - Common CDN libraries and fonts: stale-while-revalidate.
    - Everything else (speed tests, streams, APIs, range requests) goes straight to the network.
    Bump VERSION whenever you add or rename a tool. */
-const VERSION = 'heytools-app-v2';
+const VERSION = 'heytools-app-v3';
 
 const TOOLS = [
   'background-removal', 'barcode-generate', 'calculator', 'compass', 'cyber-rush',
   'dice-roller', 'earth-zipcode', 'emulsion', 'image-compress', 'image-to-pdf-converter',
   'internet-speed', 'media-downloads', 'music-player', 'notes-to-do-list',
   'password-generator', 'recorder', 'scientific-calculator', 'video-loop',
-  'video-player', 'word-counter', 'world-clock'
+  'video-player', 'word-counter', 'world-clock',
+  'unit-converter', 'qr-scanner', 'spirit-level', 'json-formatter', 'color-picker'
 ];
 
 const SHELL = [
@@ -20,6 +21,7 @@ const SHELL = [
   './app/index.html',
   './app/manifest.webmanifest',
   './install-prompt.js',
+  './index.html',
   './app/icons/icon-192.png',
   './app/icons/icon-512.png',
   './app/icons/apple-touch-icon.png'

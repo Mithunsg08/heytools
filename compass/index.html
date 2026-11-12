@@ -8,12 +8,11 @@
 <meta name="keywords" content="online compass, pirate compass, digital compass, phone compass, bearing calculator, heading, treasure map compass, navigation tool, free compass">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <meta name="theme-color" content="#2a170b">
-<!-- Replace YOUR-USERNAME/YOUR-REPO with your GitHub Pages address -->
-<link rel="canonical" href="https://YOUR-USERNAME.github.io/YOUR-REPO/">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/compass/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Galleonwick Compass – Pirate Compass with Bearing & Distance">
 <meta property="og:description" content="Live heading, course setting and distance to any coordinates. A free pirate-style compass that runs privately in your browser.">
-<meta property="og:url" content="https://YOUR-USERNAME.github.io/YOUR-REPO/">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/compass/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Galleonwick Compass">
 <meta name="twitter:description" content="Free pirate-style online compass with bearing and distance. Private, in-browser.">
@@ -68,6 +67,12 @@ input[type=range]{width:100%;accent-color:var(--red)}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hidden{display:none}
+.facing{text-align:center;font-family:'Pirata One';font-size:1.5rem;margin:12px 0 0;color:var(--red)}
+.src{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0 0;font-size:.88rem}
+.dot{width:10px;height:10px;border-radius:50%;background:#8a7a5a;display:inline-block}
+.dot.live{background:#2e8b57;box-shadow:0 0 0 3px rgba(46,139,87,.25)}
+.dot.hand{background:var(--brass2)}
+.legend{font-size:.82rem;text-align:center;margin:8px 0 0;opacity:.85}
 .msg{min-height:1.6em;font-style:italic;margin:10px 0 0}
 .big{font-family:'Pirata One';font-size:1.7rem;color:var(--red);margin:8px 0}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -82,6 +87,7 @@ section.info h2{color:var(--brass);font-size:2rem;text-align:center}
 details{background:rgba(42,23,11,.75);border:2px solid var(--brass2);border-radius:10px;margin:10px 0;padding:10px 16px}
 summary{cursor:pointer;font-family:'Pirata One';font-size:1.25rem;color:var(--brass)}
 footer{text-align:center;margin-top:40px;color:var(--parch2);font-size:.9rem}
+@media (display-mode:standalone){section.info,footer,header .tag{display:none}}
 @media(prefers-reduced-motion:reduce){#rose{transition:none}html{scroll-behavior:auto}}
 </style>
 <script src="../install-prompt.js" defer></script>
@@ -120,6 +126,9 @@ footer{text-align:center;margin-top:40px;color:var(--parch2);font-size:.9rem}
       <div><span class="n" id="deg">0°</span><small>Heading</small></div>
       <div><span class="n" id="card">N</span><small>Point</small></div>
     </div>
+    <p class="facing" id="facing" aria-live="off">Facing North</p>
+    <p class="src" id="src"><span class="dot" id="dot"></span><span id="srcTxt">Sensor off</span></p>
+    <p class="legend"><b style="color:var(--red)">N</b> red = North · <b>E</b> East · <b>S</b> South · <b>W</b> West. The dial turns so the letter at the red pointer is where you face.</p>
     <p class="msg" id="msg" role="status" aria-live="polite">Press the button to wake the compass.</p>
   </section>
 
@@ -128,6 +137,9 @@ footer{text-align:center;margin-top:40px;color:var(--parch2);font-size:.9rem}
       <h2>Step 1 · Hoist the Compass</h2>
       <p>Allow your device's motion sensor so the dial follows your heading. On a computer, drag the dial or use the slider to steer.</p>
       <div class="row"><button id="start">Hoist the Compass ⚓</button><button class="ghost" id="manual">Steer by hand</button></div>
+      <label for="decl">Magnetic declination in degrees (optional, east is +)</label>
+      <input id="decl" type="number" step="0.1" min="-60" max="60" placeholder="0 = magnetic north" inputmode="decimal">
+      <p class="legend" style="text-align:left">Leave empty for magnetic north, which is what a phone senses. Enter your local declination to show true north.</p>
       <label for="slider" class="hidden" id="slbl">Manual heading</label>
       <input type="range" id="slider" min="0" max="359" value="0" class="hidden" aria-label="Manual heading">
     </div>
@@ -192,17 +204,18 @@ const rose=$('rose');
 function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||rose).appendChild(e);return e}
 for(let i=0;i<360;i+=5){
   const major=i%90===0,mid=i%45===0,ten=i%10===0;
-  const len=major?22:mid?16:ten?11:6;
-  el('line',{x1:200,y1:20,x2:200,y2:20+len,stroke:'#43260f','stroke-width':major?3:ten?1.6:1,transform:`rotate(${i} 200 200)`});
-  if(ten&&i%30===0&&!major){const t=el('text',{x:200,y:58,'text-anchor':'middle','font-size':11,fill:'#5a3513','font-family':'IM Fell English',transform:`rotate(${i} 200 200)`});t.textContent=i}
+  const len=major?24:mid?18:ten?12:6;
+  el('line',{x1:200,y1:20,x2:200,y2:20+len,stroke:'#43260f','stroke-width':major?3.2:ten?1.6:1,transform:`rotate(${i} 200 200)`});
+  if(i%30===0){const t=el('text',{x:200,y:60,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#5a3513','font-family':'Georgia,serif',transform:`rotate(${i} 200 200)`});t.textContent=i}
 }
 // star points
 function star(angle,len,w,fill){el('polygon',{points:`200,${200-len} ${200+w},200 200,${200+len*0.35} ${200-w},200`,fill,stroke:'#43260f','stroke-width':1.5,transform:`rotate(${angle} 200 200)`})}
 [45,135,225,315].forEach(a=>star(a,112,13,'#d6a43a'));
 [0,90,180,270].forEach(a=>star(a,150,17,a===0?'#a3281b':'#8a5f16'));
 el('circle',{cx:200,cy:200,r:104,fill:'none',stroke:'#8a5f16','stroke-width':1.5,'stroke-dasharray':'3 5'});
-[['N',0],['E',90],['S',180],['W',270]].forEach(([l,a])=>{const t=el('text',{x:200,y:92,'text-anchor':'middle','font-size':30,'font-family':'Pirata One',fill:l==='N'?'#a3281b':'#2a170b',transform:`rotate(${a} 200 200)`});t.textContent=l});
-[['NE',45],['SE',135],['SW',225],['NW',315]].forEach(([l,a])=>{const t=el('text',{x:200,y:80,'text-anchor':'middle','font-size':16,'font-family':'Pirata One',fill:'#5a3513',transform:`rotate(${a} 200 200)`});t.textContent=l});
+[['N',0],['E',90],['S',180],['W',270]].forEach(([l,a])=>{const t=el('text',{x:200,y:96,'text-anchor':'middle','font-size':34,'font-family':'Pirata One',fill:l==='N'?'#a3281b':'#2a170b',transform:`rotate(${a} 200 200)`});t.textContent=l});
+[['NE',45],['SE',135],['SW',225],['NW',315]].forEach(([l,a])=>{const t=el('text',{x:200,y:84,'text-anchor':'middle','font-size':18,'font-family':'Pirata One',fill:'#2a170b',transform:`rotate(${a} 200 200)`});t.textContent=l});
+['NNE','ENE','ESE','SSE','SSW','WSW','WNW','NNW'].forEach((l,i)=>{const a=22.5+i*45;const t=el('text',{x:200,y:150,'text-anchor':'middle','font-size':9,'font-family':'IM Fell English',fill:'#8a5f16',transform:`rotate(${a} 200 200)`});t.textContent=l});
 // treasure X marker (rotates with rose)
 const mark=el('g',{id:'mark',visibility:'hidden'});
 el('circle',{cx:200,cy:128,r:14,fill:'#fff3d6',stroke:'#a3281b','stroke-width':2},mark);
@@ -212,6 +225,8 @@ el('path',{d:'M192 120 L208 136 M208 120 L192 136',stroke:'#a3281b','stroke-widt
 let heading=0,smooth=null,sensorOn=false,manual=false;
 let myPos=null,target=null,courseBearing=null;
 const pts=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const full=['North','North-Northeast','Northeast','East-Northeast','East','East-Southeast','Southeast','South-Southeast','South','South-Southwest','Southwest','West-Southwest','West','West-Northwest','Northwest','North-Northwest'];
+let decl=0,lastEvt=0;
 const norm=d=>((d%360)+360)%360;
 
 function render(h){
@@ -219,6 +234,7 @@ function render(h){
   rose.style.transform=`rotate(${-heading}deg)`;
   $('deg').textContent=Math.round(heading)%360+'°';
   $('card').textContent=pts[Math.round(heading/22.5)%16];
+  $('facing').textContent='Facing '+full[Math.round(heading/22.5)%16];
   $('dial').setAttribute('aria-label','Compass heading '+Math.round(heading)+' degrees '+pts[Math.round(heading/22.5)%16]);
   updateTurn();
 }
@@ -230,17 +246,38 @@ function go(n){
 }
 
 /* ---- sensor ---- */
+/* Tilt-compensated heading from alpha/beta/gamma (W3C method), so the reading stays right when the phone is held upright or tilted. */
+function tiltHeading(al,be,ga){
+  const r=Math.PI/180,cA=Math.cos(al*r),sA=Math.sin(al*r),cB=Math.cos(be*r),sB=Math.sin(be*r),cG=Math.cos(ga*r),sG=Math.sin(ga*r);
+  const rA=-cA*sG-sA*sB*cG,rB=-sA*sG+cA*sB*cG;
+  let h=Math.atan(rA/rB)*180/Math.PI;
+  if(rB<0)h+=180;else if(rA<0)h+=360;
+  return h;
+}
+function setSrc(kind,txt){$('dot').className='dot '+kind;$('srcTxt').textContent=txt}
+let gotAbs=false;
 function onOrient(e){
   if(manual)return;
+  const ang=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
   let h=null;
-  if(typeof e.webkitCompassHeading==='number')h=e.webkitCompassHeading;
-  else if(e.alpha!=null&&(e.absolute||e.type==='deviceorientationabsolute'))h=360-e.alpha+((screen.orientation&&screen.orientation.angle)||0);
+  if(typeof e.webkitCompassHeading==='number'&&e.webkitCompassHeading>=0){h=e.webkitCompassHeading}   // iPhone: already magnetic north, already corrected for tilt
+  else if(e.alpha!=null&&e.beta!=null&&e.gamma!=null&&(e.absolute||e.type==='deviceorientationabsolute')){
+    if(e.type==='deviceorientationabsolute')gotAbs=true;
+    h=tiltHeading(e.alpha,e.beta,e.gamma)+ang;
+  }
   if(h==null)return;
-  h=norm(h);
+  h=norm(h+decl);
+  lastEvt=Date.now();
   if(smooth==null)smooth=h;
-  else{let d=((h-smooth+540)%360)-180;smooth=norm(smooth+d*0.25)}
-  if(!sensorOn){sensorOn=true;$('msg').textContent='Compass awake. Fair winds, captain!';go(2)}
+  else{let d=((h-smooth+540)%360)-180;smooth=norm(smooth+d*0.2)}
+  if(!sensorOn){sensorOn=true;setSrc('live','Live sensor · '+(decl?'true north':'magnetic north'));$('msg').textContent='Compass awake. Fair winds, captain!';go(2)}
   render(smooth);
+}
+let listening=false;
+function listen(){
+  if(listening)return;listening=true;
+  window.addEventListener('deviceorientationabsolute',onOrient,true);
+  window.addEventListener('deviceorientation',onOrient,true);
 }
 async function start(){
   try{
@@ -248,15 +285,18 @@ async function start(){
       const r=await DeviceOrientationEvent.requestPermission();
       if(r!=='granted'){$('msg').textContent='Permission denied. Use "Steer by hand" instead.';return}
     }
-    window.addEventListener('deviceorientationabsolute',onOrient,true);
-    window.addEventListener('deviceorientation',onOrient,true);
+    listen();
+    manual=false;
     $('msg').textContent='Listening for the stars… move your device.';
-    setTimeout(()=>{if(!sensorOn)$('msg').textContent='No sensor found on this device. Try "Steer by hand".'},2500);
+    setTimeout(()=>{if(!sensorOn){$('msg').textContent='No compass sensor found on this device. Try "Steer by hand".';setSrc('','No sensor found')}},3000);
   }catch(err){$('msg').textContent='Sensor unavailable. Try "Steer by hand".'}
 }
+// Android and desktop need no permission: start listening straight away so the dial is already live.
+if(!(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'))listen();
+$('decl').oninput=e=>{const v=parseFloat(e.target.value);decl=isFinite(v)?Math.max(-60,Math.min(60,v)):0;if(sensorOn)setSrc('live','Live sensor · '+(decl?'true north':'magnetic north'))};
 $('start').onclick=start;
 function enableManual(){
-  manual=true;$('slider').classList.remove('hidden');$('slbl').classList.remove('hidden');
+  manual=true;setSrc('hand','Steering by hand');$('slider').classList.remove('hidden');$('slbl').classList.remove('hidden');
   $('msg').textContent='Drag the dial, or slide the heading, to steer.';go(2);
 }
 $('manual').onclick=enableManual;

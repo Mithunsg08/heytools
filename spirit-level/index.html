@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Spirit Level & Angle Meter – Bubble Level for Your Phone</title>
+<meta name="description" content="A free bubble level and angle meter that uses your phone motion sensors. Check if a surface is flat or measure its tilt. Works offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#14213D">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/spirit-level/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Spirit Level & Angle Meter – Bubble Level for Your Phone">
+<meta property="og:description" content="A free bubble level and angle meter that uses your phone motion sensors. Check if a surface is flat or measure its tilt. Works offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314213D'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E📏%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Spirit Level","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A free bubble level and angle meter that uses your phone motion sensors. Check if a surface is flat or measure its tilt. Works offline."}</script>
+<style>
+:root{--bg:#EEF1F6;--panel:#fff;--ink:#14213D;--muted:#4F5B75;--line:#CBD3E2;--blue:#2B4EFF;--signal:#FFC93C;--ok:#0E8A5F;--bad:#C0392B}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1424;--panel:#172036;--ink:#EEF1F6;--muted:#A9B3C9;--line:#2C3957;--blue:#7C93FF}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:820px;margin:0 auto;padding:22px 16px 56px}
+h1{font-size:clamp(1.7rem,5vw,2.4rem);line-height:1.1;margin:.2em 0 .3em;letter-spacing:-.02em}
+h2{font-size:1.3rem;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 20px}
+.card{background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:18px;margin-bottom:16px}
+label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 4px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--bg)}
+textarea{min-height:200px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;resize:vertical}
+button{cursor:pointer;padding:10px 16px;border-radius:10px;border:2px solid var(--ink);background:var(--ink);color:var(--bg);font-weight:600}
+button.alt{background:var(--panel);color:var(--ink)}
+button.sig{background:var(--signal);color:#14213D}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.msg{min-height:1.4em;color:var(--muted);margin:10px 0 0}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.seo{margin-top:36px;color:var(--muted)}
+.seo h2{color:var(--ink)}
+footer{margin-top:28px;font-size:.85rem;color:var(--muted)}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+.lvl{display:grid;place-items:center;padding:8px}.disc{position:relative;width:min(80vw,320px);aspect-ratio:1;border-radius:50%;border:4px solid var(--ink);background:radial-gradient(circle,var(--panel),var(--bg))}.disc:before,.disc:after{content:"";position:absolute;background:var(--line)}.disc:before{left:50%;top:0;bottom:0;width:2px}.disc:after{top:50%;left:0;right:0;height:2px}.ring{position:absolute;inset:36%;border:3px solid var(--ink);border-radius:50%}.bub{position:absolute;width:15%;aspect-ratio:1;border-radius:50%;background:var(--signal);border:3px solid var(--ink);left:42.5%;top:42.5%;transition:transform .05s linear}.bub.ok{background:#4ADE80}.big{font-size:2.4rem;font-weight:800;text-align:center;margin:10px 0 0}.mode button[aria-pressed=true]{background:var(--signal);color:#14213D}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Spirit Level</h1>
+<p class="lead">Lay your phone flat, or on its edge, to check a surface. Works offline.</p>
+<div class="card">
+<div class="row mode" role="group" aria-label="Mode"><button id="mFlat" class="alt" type="button" aria-pressed="true">Flat surface</button><button id="mEdge" class="alt" type="button" aria-pressed="false">Upright / edge</button></div>
+<div class="lvl"><div class="disc" id="disc" aria-hidden="true"><div class="ring"></div><div class="bub" id="bub"></div></div></div>
+<div class="big" id="ang" aria-live="polite">—</div>
+<p class="msg" id="msg" role="status">Tap Start to read your phone sensors.</p>
+<div class="row"><button id="go" class="sig" type="button">Start</button><button id="zero" class="alt" type="button">Set zero here</button></div>
+</div>
+<section class="seo">
+<h2>A bubble level in your pocket</h2><p>This spirit level reads your phone tilt sensors to show how level a shelf, table or picture frame is. Use the calibrate button to set zero on a surface you know is flat. It works offline after the first load.</p>
+</section>
+<footer>Part of <a href="../" style="color:inherit">HeyTools</a>. Runs in your browser. Nothing you enter is uploaded.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);let mode='flat',b=0,g=0,offB=0,offG=0,on=false;
+$('mFlat').onclick=()=>{mode='flat';$('mFlat').setAttribute('aria-pressed',true);$('mEdge').setAttribute('aria-pressed',false)};
+$('mEdge').onclick=()=>{mode='edge';$('mEdge').setAttribute('aria-pressed',true);$('mFlat').setAttribute('aria-pressed',false)};
+function on_(e){if(e.beta==null)return;b=e.beta;g=e.gamma;if(!on){on=true;$('msg').textContent='Sensor live.'}draw()}
+function draw(){
+ const x=g-offG,y=mode==='flat'?b-offB:0;
+ const lim=45,cl=v=>Math.max(-lim,Math.min(lim,v))/lim*120;
+ $('bub').style.transform='translate('+cl(x)+'%,'+cl(y)+'%)';
+ const total=mode==='flat'?Math.hypot(x,y):Math.abs(x);
+ $('ang').textContent=total.toFixed(1)+'°';
+ $('bub').classList.toggle('ok',total<0.6);
+}
+$('go').onclick=async()=>{
+ try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted'){$('msg').textContent='Permission denied.';return}}
+  addEventListener('deviceorientation',on_,true);
+  setTimeout(()=>{if(!on)$('msg').textContent='No motion sensor found. Open this on a phone.'},2500)}catch(e){$('msg').textContent='Sensor unavailable.'}};
+$('zero').onclick=()=>{offB=b;offG=g;draw()};
+})();
+</script>
+</body>
+</html>

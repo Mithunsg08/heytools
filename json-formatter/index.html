@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free JSON Formatter, Validator & Minifier – Private, In Your Browser</title>
+<meta name="description" content="Format, validate and minify JSON online. Clear error line and column, sort keys, copy and download. Runs in your browser and works offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#14213D">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/json-formatter/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free JSON Formatter, Validator & Minifier – Private, In Your Browser">
+<meta property="og:description" content="Format, validate and minify JSON online. Clear error line and column, sort keys, copy and download. Runs in your browser and works offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314213D'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E🧾%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"JSON Formatter","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Format, validate and minify JSON online. Clear error line and column, sort keys, copy and download. Runs in your browser and works offline."}</script>
+<style>
+:root{--bg:#EEF1F6;--panel:#fff;--ink:#14213D;--muted:#4F5B75;--line:#CBD3E2;--blue:#2B4EFF;--signal:#FFC93C;--ok:#0E8A5F;--bad:#C0392B}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1424;--panel:#172036;--ink:#EEF1F6;--muted:#A9B3C9;--line:#2C3957;--blue:#7C93FF}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:820px;margin:0 auto;padding:22px 16px 56px}
+h1{font-size:clamp(1.7rem,5vw,2.4rem);line-height:1.1;margin:.2em 0 .3em;letter-spacing:-.02em}
+h2{font-size:1.3rem;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 20px}
+.card{background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:18px;margin-bottom:16px}
+label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 4px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--bg)}
+textarea{min-height:200px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;resize:vertical}
+button{cursor:pointer;padding:10px 16px;border-radius:10px;border:2px solid var(--ink);background:var(--ink);color:var(--bg);font-weight:600}
+button.alt{background:var(--panel);color:var(--ink)}
+button.sig{background:var(--signal);color:#14213D}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.msg{min-height:1.4em;color:var(--muted);margin:10px 0 0}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.seo{margin-top:36px;color:var(--muted)}
+.seo h2{color:var(--ink)}
+footer{margin-top:28px;font-size:.85rem;color:var(--muted)}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+.stat{color:var(--muted);font-size:.85rem;margin-top:6px}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>JSON Formatter</h1>
+<p class="lead">Paste JSON to format, validate or minify it. Private and offline.</p>
+<div class="card">
+<label for="in">JSON</label>
+<textarea id="in" spellcheck="false" placeholder='{"hello":"world"}' aria-describedby="msg"></textarea>
+<div class="row"><button id="fmt" class="sig" type="button">Format</button><button id="min" class="alt" type="button">Minify</button><button id="sort" class="alt" type="button">Sort keys</button><button id="cp" class="alt" type="button">Copy</button><button id="dl" class="alt" type="button">Download</button>
+<select id="ind" aria-label="Indent" style="width:auto"><option value="2">2 spaces</option><option value="4">4 spaces</option><option value="t">Tab</option></select></div>
+<p class="msg" id="msg" role="status" aria-live="polite"></p><div class="stat" id="stat"></div>
+</div>
+<section class="seo">
+<h2>JSON formatter and validator</h2><p>Paste JSON to pretty print it, shrink it to one line or find the exact line and column of a syntax error. Everything runs locally, so API keys and private data never leave your device.</p>
+</section>
+<footer>Part of <a href="../" style="color:inherit">HeyTools</a>. Runs in your browser. Nothing you enter is uploaded.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const ind=()=>{const v=$('ind').value;return v==='t'?'\t':+v};
+function parse(){const t=$('in').value;if(!t.trim()){$('msg').textContent='Paste some JSON first.';$('msg').className='msg';return null}
+ try{const v=JSON.parse(t);$('msg').textContent='✓ Valid JSON';$('msg').className='msg ok';return v}
+ catch(e){let m=e.message,pos=(m.match(/position (\d+)/)||[])[1];let extra='';
+  if(pos!=null){const before=t.slice(0,+pos).split('\n');extra=' (line '+before.length+', column '+(before[before.length-1].length+1)+')'}
+  else{const lc=m.match(/line (\d+) column (\d+)/);if(lc)extra=' (line '+lc[1]+', column '+lc[2]+')'}
+  $('msg').textContent='✗ '+m+extra;$('msg').className='msg bad';return null}}
+function stat(){const t=$('in').value;$('stat').textContent=t?t.length.toLocaleString()+' characters · '+t.split('\n').length+' lines':''}
+function sortK(v){if(Array.isArray(v))return v.map(sortK);if(v&&typeof v==='object'){const o={};Object.keys(v).sort().forEach(k=>o[k]=sortK(v[k]));return o}return v}
+$('fmt').onclick=()=>{const v=parse();if(v!==null||$('in').value.trim()==='null'){$('in').value=JSON.stringify(v,null,ind());stat()}};
+$('min').onclick=()=>{const v=parse();if(v!==null){$('in').value=JSON.stringify(v);stat()}};
+$('sort').onclick=()=>{const v=parse();if(v!==null){$('in').value=JSON.stringify(sortK(v),null,ind());stat()}};
+$('cp').onclick=()=>navigator.clipboard.writeText($('in').value).then(()=>{$('msg').textContent='Copied.';$('msg').className='msg'},()=>{});
+$('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('in').value],{type:'application/json'}));a.download='data.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('in').addEventListener('input',stat);
+})();
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HeyTools | All your private tools in one app</title>
-<meta name="description" content="HeyTools is one app with 21 private tools: media players, editors, calculators, converters and games. Everything runs in your browser and your files never leave your device.">
+<meta name="description" content="HeyTools is one app with 26 private tools: media players, editors, calculators, converters and games. Everything runs in your browser and your files never leave your device.">
 <meta name="theme-color" content="#14213D">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -112,6 +112,42 @@ nav#nav{flex:1;overflow-y:auto;padding:0 12px 16px;overscroll-behavior:contain}
 .btn.signal{background:var(--signal);color:var(--ink)}
 [hidden]{display:none !important}
 
+
+/* badges + filter */
+.net{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em;border:1.5px solid var(--ink);white-space:nowrap}
+.net-offline{background:#CDEFE0}
+.net-partial{background:#FFEDB3}
+.net-online{background:#DCE4FF}
+.perm{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.7rem;font-weight:600;border:1.5px dashed var(--muted);color:var(--muted);white-space:nowrap}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.nav-item .net{margin-left:auto;font-size:.62rem;padding:1px 7px}
+.saved{margin-top:auto;padding-top:10px;font-size:.75rem;font-weight:600;color:var(--muted)}
+.saved.ok{color:var(--ok)}
+.firstnote{margin:18px 0 0;padding:10px 14px;border:2px solid var(--ink);border-radius:12px;background:#FFF8DD;font-size:.92rem;max-width:42rem}
+.fbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:22px 0 0}
+.fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:2px solid var(--ink);border-radius:10px;background:var(--panel);font-weight:600;font-size:.92rem}
+.fbtn[aria-expanded="true"]{background:var(--ink);color:#fff}
+.fcount{background:var(--signal);color:var(--ink);border-radius:999px;padding:0 8px;font-size:.75rem;font-weight:700}
+.fpanel{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:12px;border:2px solid var(--ink);border-radius:12px;background:var(--panel)}
+.fopt{padding:7px 14px;border:2px solid var(--ink);border-radius:999px;background:var(--bg);font-weight:600;font-size:.88rem}
+.fopt[aria-pressed="true"]{background:var(--ink);color:#fff}
+.fnote{flex-basis:100%;margin:2px 0 0;font-size:.8rem;color:var(--muted)}
+.side .fbar{margin:0;padding:0 18px 10px}
+.side .fpanel{margin:0 12px 8px;padding:8px}
+
+/* permission gate */
+.gate{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:24px;background:var(--bg);overflow:auto}
+.gate-card{max-width:440px;width:100%;background:var(--panel);border:2px solid var(--ink);border-radius:var(--radius);padding:26px;box-shadow:6px 6px 0 var(--signal);text-align:center}
+.gate-card .tile{width:56px;height:56px;border-radius:14px;font-size:1.7rem;margin:0 auto 12px}
+.gate-card h2{font-size:1.5rem;font-weight:800}
+.gate-card p{color:var(--muted);margin:10px 0 18px}
+.gate-card .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.gate-card .btn{cursor:pointer}
+.gate-card .btn.ghost{background:var(--panel);color:var(--ink)}
+.gate-msg{min-height:1.4em;margin:12px 0 0;font-size:.88rem;color:var(--muted)}
+.tile[data-cat="dev"]{background:#E6DCF7}
+@media (display-mode:standalone){.hero p,.hero .badge,.sec-intro{display:none}.hero h2{font-size:1.8rem}}
+
 .scrim{display:none}
 
 /* ---------- main ---------- */
@@ -197,6 +233,7 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
     <div class="search">
       <input id="q" type="search" placeholder="Search tools  (press / )" aria-label="Search tools" autocomplete="off">
     </div>
+    <div id="sideFilter"></div>
     <nav id="nav" aria-label="Tools"></nav>
     <div class="side-foot">
       <button class="btn signal btn-install" id="install" type="button" hidden>Install HeyTools app</button>
@@ -224,7 +261,9 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
             <h2>Every tool. One app.</h2>
             <p>Media players, editors, calculators, converters and games. Open one from the menu or tap a card below.</p>
             <span class="badge">Your files never leave your device</span>
+            <p class="firstnote" id="firstNote"><strong>First time needs internet.</strong> Open the app online once so every tool saves itself to your device. After that, tools marked <em>Works offline</em> run with no connection.</p>
           </div>
+          <div id="homeFilter"></div>
           <div id="recentWrap" hidden>
             <h2 class="sec-title">Recently used</h2>
             <div class="recent" id="recent"></div>
@@ -237,6 +276,7 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
         <iframe id="frame" title="Tool"
           allow="camera; microphone; geolocation; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay; picture-in-picture; accelerometer; gyroscope; magnetometer; screen-wake-lock; encrypted-media"
           allowfullscreen></iframe>
+        <div class="gate" id="gate" hidden></div>
         <div class="loading" id="loading" role="status"><div><div class="spin"></div>Loading tool&hellip;</div></div>
       </div>
     </main>
@@ -251,39 +291,56 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
     { id: 'media',    label: 'Media & Video' },
     { id: 'image',    label: 'Image & PDF' },
     { id: 'utility',  label: 'Utilities & Security' },
+    { id: 'dev',      label: 'Developer & Design' },
     { id: 'games',    label: 'Games & Fun' },
     { id: 'business', label: 'Business & Audit' }
   ];
 
-  /* id = folder name next to /app/. To add a tool: add a line here and in heytools-sw.js. */
+  /* id = folder name next to /app/. To add a tool: add a line here and in heytools-sw.js.
+     net:  'offline' (fully offline after first load) | 'partial' (core works offline, some features need internet) | 'online'
+     perm: what the app asks for before opening it: 'video' | 'audio' | 'camera' | 'mic' (recorder) | 'motion' */
   var TOOLS = [
-    { id: 'video-player', name: 'Video Player', cat: 'media', icon: '▶️', desc: 'Play local files, live TV from around the world and streaming platforms. Works offline.' },
-    { id: 'music-player', name: 'Music Player', cat: 'media', icon: '🎵', desc: '3D music player with spinning vinyl, live visualizer, Spotify and streaming support.' },
-    { id: 'recorder', name: 'Recorder', cat: 'media', icon: '🎙️', desc: 'Record voice, video or your screen with pause, markers and local storage.' },
-    { id: 'emulsion', name: 'Emulsion', cat: 'media', icon: '🎞️', desc: 'Image and video editor with layers, a multi-track timeline and instant export.' },
-    { id: 'video-loop', name: 'Video Loop', cat: 'media', icon: '🔁', desc: 'Turn short clips into seamless loops that run for hours.' },
-    { id: 'media-downloads', name: 'Media Downloads', cat: 'media', icon: '⬇️', desc: 'Manage and download media files straight from your browser session.' },
+    { id: 'video-player', name: 'Video Player', cat: 'media', icon: '▶️', net: 'partial', perm: 'video', netNote: 'Local videos work offline. Live TV and streaming need internet.', desc: 'Play every video on your phone, live TV from around the world and streaming platforms.' },
+    { id: 'music-player', name: 'Music Player', cat: 'media', icon: '🎵', net: 'partial', perm: 'audio', netNote: 'Songs on your phone work offline. Spotify and streaming need internet.', desc: '3D music player with spinning vinyl, live visualizer, Spotify and streaming support.' },
+    { id: 'recorder', name: 'Recorder', cat: 'media', icon: '🎙️', net: 'offline', perm: 'mic', desc: 'Record voice, video or your screen with pause, markers and local storage.' },
+    { id: 'emulsion', name: 'Emulsion', cat: 'media', icon: '🎞️', net: 'offline', desc: 'Image and video editor with layers, a multi-track timeline and instant export.' },
+    { id: 'video-loop', name: 'Video Loop', cat: 'media', icon: '🔁', net: 'offline', desc: 'Turn short clips into seamless loops that run for hours.' },
+    { id: 'media-downloads', name: 'Media Downloads', cat: 'media', icon: '⬇️', net: 'online', desc: 'Manage and download media files straight from your browser session.' },
 
-    { id: 'image-compress', name: 'Image Compressor', cat: 'image', icon: '🗜️', desc: 'Compress PNG, JPEG and WebP images without losing noticeable quality.' },
-    { id: 'image-to-pdf-converter', name: 'Image to PDF', cat: 'image', icon: '📄', desc: 'Combine images into one clean PDF, plus other file conversions.' },
-    { id: 'background-removal', name: 'Background Removal', cat: 'image', icon: '✂️', desc: 'Remove photo backgrounds instantly with no server upload.' },
+    { id: 'image-compress', name: 'Image Compressor', cat: 'image', icon: '🗜️', net: 'offline', desc: 'Compress PNG, JPEG and WebP images without losing noticeable quality.' },
+    { id: 'image-to-pdf-converter', name: 'Image to PDF', cat: 'image', icon: '📄', net: 'offline', desc: 'Combine images into one clean PDF, plus other file conversions.' },
+    { id: 'background-removal', name: 'Background Removal', cat: 'image', icon: '✂️', net: 'partial', netNote: 'The AI model downloads on first use. After that it can work offline.', desc: 'Remove photo backgrounds instantly with no server upload.' },
 
-    { id: 'notes-to-do-list', name: 'Notes & To Do', cat: 'utility', icon: '📝', desc: 'Colorful pinned notes and daily tasks with reminders, saved on your device.' },
-    { id: 'calculator', name: 'Calculator Suite', cat: 'utility', icon: '🧮', desc: 'Tip splitter, fuel cost, EMI, GST, VAT, BMI, age calculators and more.' },
-    { id: 'scientific-calculator', name: 'Scientific Calculator', cat: 'utility', icon: '📐', desc: 'Trigonometry, logs, complex numbers and equations computed locally.' },
-    { id: 'word-counter', name: 'Word Counter', cat: 'utility', icon: '🔠', desc: 'Words, characters, sentences, reading time and keyword density as you type.' },
-    { id: 'world-clock', name: 'World Clock & Stopwatch', cat: 'utility', icon: '🌐', desc: 'Times across 400+ zones, a meeting planner slider and a lap stopwatch.' },
-    { id: 'barcode-generate', name: 'Barcode & QR', cat: 'utility', icon: '🏷️', desc: 'Make barcodes and QR codes. Download as PNG or SVG.' },
-    { id: 'password-generator', name: 'Password Generator', cat: 'utility', icon: '🔐', desc: 'Strong random passwords with the length and symbols you choose.' },
-    { id: 'internet-speed', name: 'Internet Speed', cat: 'utility', icon: '⚡', desc: 'Download, upload, ping, jitter, packet loss and bufferbloat.' },
-    { id: 'earth-zipcode', name: "Earth's Zipcode", cat: 'utility', icon: '🌍', desc: 'Interactive 3D postal and PIN code finder for 240+ countries.' },
+    { id: 'notes-to-do-list', name: 'Notes & To Do', cat: 'utility', icon: '📝', net: 'offline', desc: 'Colorful pinned notes and daily tasks with reminders, saved on your device.' },
+    { id: 'calculator', name: 'Calculator Suite', cat: 'utility', icon: '🧮', net: 'offline', desc: 'Tip splitter, fuel cost, EMI, GST, VAT, BMI, age calculators and more.' },
+    { id: 'scientific-calculator', name: 'Scientific Calculator', cat: 'utility', icon: '📐', net: 'offline', desc: 'Trigonometry, logs, complex numbers and equations computed locally.' },
+    { id: 'unit-converter', name: 'Unit Converter', cat: 'utility', icon: '⚖️', net: 'offline', isNew: true, desc: 'Length, weight, temperature, volume, area, speed, time and data units.' },
+    { id: 'word-counter', name: 'Word Counter', cat: 'utility', icon: '🔠', net: 'offline', desc: 'Words, characters, sentences, reading time and keyword density as you type.' },
+    { id: 'world-clock', name: 'World Clock & Stopwatch', cat: 'utility', icon: '🌐', net: 'offline', desc: 'Times across 400+ zones, a meeting planner slider and a lap stopwatch.' },
+    { id: 'barcode-generate', name: 'Barcode & QR', cat: 'utility', icon: '🏷️', net: 'offline', desc: 'Make barcodes and QR codes. Download as PNG or SVG.' },
+    { id: 'qr-scanner', name: 'QR & Barcode Scanner', cat: 'utility', icon: '📷', net: 'offline', perm: 'camera', isNew: true, desc: 'Scan QR codes and barcodes with your camera. Nothing is uploaded.' },
+    { id: 'password-generator', name: 'Password Generator', cat: 'utility', icon: '🔐', net: 'offline', desc: 'Strong random passwords with the length and symbols you choose.' },
+    { id: 'internet-speed', name: 'Internet Speed', cat: 'utility', icon: '⚡', net: 'online', desc: 'Download, upload, ping, jitter, packet loss and bufferbloat.' },
+    { id: 'earth-zipcode', name: "Earth's Zipcode", cat: 'utility', icon: '🌍', net: 'online', desc: 'Interactive 3D postal and PIN code finder for 240+ countries.' },
+    { id: 'spirit-level', name: 'Spirit Level', cat: 'utility', icon: '📏', net: 'offline', perm: 'motion', isNew: true, desc: 'A bubble level and angle meter that uses your phone sensors.' },
 
-    { id: 'cyber-rush', name: 'Cyber Rush', cat: 'games', icon: '🎮', desc: '3D cyberpunk endless runner. Dodge meteors, jets and drone swarms.' },
-    { id: 'dice-roller', name: 'Dice Roller', cat: 'games', icon: '🎲', desc: 'Fair, realistic 3D dice with five game modes.' },
-    { id: 'compass', name: 'Galleonwick Compass', cat: 'games', icon: '🧭', desc: "A pirate's compass for finding headings and setting courses to coordinates." },
+    { id: 'json-formatter', name: 'JSON Formatter', cat: 'dev', icon: '🧾', net: 'offline', isNew: true, desc: 'Format, validate, minify and explore JSON with clear error messages.' },
+    { id: 'color-picker', name: 'Color Picker', cat: 'dev', icon: '🎨', net: 'offline', isNew: true, desc: 'Pick colors, copy HEX, RGB and HSL, build palettes and check contrast.' },
 
-    { id: 'opsreveal', name: 'OpsReveal', cat: 'business', icon: '🔍', external: 'https://opsreveal.preventloss.org/', desc: 'Retail loss prevention audits that run in the browser. Opens its own site.' }
+    { id: 'cyber-rush', name: 'Cyber Rush', cat: 'games', icon: '🎮', net: 'offline', desc: '3D cyberpunk endless runner. Dodge meteors, jets and drone swarms.' },
+    { id: 'dice-roller', name: 'Dice Roller', cat: 'games', icon: '🎲', net: 'offline', desc: 'Fair, realistic 3D dice with five game modes.' },
+    { id: 'compass', name: 'Galleonwick Compass', cat: 'utility', icon: '🧭', net: 'offline', perm: 'motion', desc: 'A compass with true heading, cardinal points, bearing and distance to any coordinates.' },
+
+    { id: 'opsreveal', name: 'OpsReveal', cat: 'business', icon: '🔍', net: 'online', external: 'https://opsreveal.preventloss.org/', desc: 'Retail loss prevention audits that run in the browser. Opens its own site.' }
   ];
+
+  var NET = {
+    offline: { label: 'Works offline',   short: 'Offline' },
+    partial: { label: 'Partly offline',  short: 'Partly' },
+    online:  { label: 'Needs internet',  short: 'Online' }
+  };
+  var PERM_LABEL = { video: 'Asks for videos', audio: 'Asks for music', camera: 'Asks for camera', mic: 'Asks for mic + camera', motion: 'Asks for motion sensor' };
+  var flt = 'all';
 
   var byId = {};
   TOOLS.forEach(function (t) { byId[t.id] = t; });
@@ -329,10 +386,63 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
 
   /* ---------- rendering ---------- */
   function matches(t, term) {
+    if (flt !== 'all' && t.net !== flt) return false;
     if (!term) return true;
-    var hay = (t.name + ' ' + t.desc + ' ' + catLabel[t.cat]).toLowerCase();
+    var hay = (t.name + ' ' + t.desc + ' ' + catLabel[t.cat] + ' ' + NET[t.net].label).toLowerCase();
     return term.toLowerCase().split(/\s+/).every(function (w) { return hay.indexOf(w) !== -1; });
   }
+
+  function netBadge(t) { return el('span', { 'class': 'net net-' + t.net, text: NET[t.net].label }); }
+
+  /* which tool pages are already saved on this device (service-worker cache) */
+  var saved = {};
+  function checkSaved() {
+    if (!('caches' in window)) return Promise.resolve();
+    return caches.keys().then(function (keys) {
+      var names = keys.filter(function (k) { return k.indexOf('heytools-app-') === 0; });
+      if (!names.length) return;
+      return caches.open(names.sort().pop()).then(function (c) {
+        return Promise.all(TOOLS.filter(function (t) { return !t.external; }).map(function (t) {
+          return c.match('../' + t.id + '/', { ignoreSearch: true }).then(function (r) { saved[t.id] = !!r; });
+        }));
+      });
+    }).then(paintSaved).catch(function () {});
+  }
+  function paintSaved() {
+    var nodes = document.querySelectorAll('[data-saved]');
+    for (var i = 0; i < nodes.length; i++) {
+      var id = nodes[i].getAttribute('data-saved');
+      var t = byId[id], ok = saved[id];
+      if (t.net === 'online') { nodes[i].textContent = 'Always needs internet'; nodes[i].className = 'saved'; }
+      else if (ok) { nodes[i].textContent = '✓ Saved on this device'; nodes[i].className = 'saved ok'; }
+      else { nodes[i].textContent = 'First time needs internet'; nodes[i].className = 'saved'; }
+    }
+  }
+
+  /* ---------- filter ---------- */
+  var FILTERS = [['all', 'All tools'], ['offline', 'Works offline'], ['partial', 'Partly offline'], ['online', 'Needs internet']];
+  var fOpen = false;
+  function buildFilter(host, compact) {
+    host.textContent = '';
+    var bar = el('div', { 'class': 'fbar' });
+    var btn = el('button', { 'class': 'fbtn', type: 'button', 'aria-expanded': String(fOpen), 'aria-label': 'Filter tools by offline or online' });
+    btn.appendChild(el('span', { text: '⚙︎ Filter' }));
+    if (flt !== 'all') btn.appendChild(el('span', { 'class': 'fcount', text: NET[flt].short }));
+    btn.addEventListener('click', function () { fOpen = !fOpen; refreshFilters(); });
+    bar.appendChild(btn);
+    host.appendChild(bar);
+    if (fOpen) {
+      var panel = el('div', { 'class': 'fpanel', role: 'group', 'aria-label': 'Show tools that' });
+      FILTERS.forEach(function (f) {
+        var o = el('button', { 'class': 'fopt', type: 'button', 'aria-pressed': String(flt === f[0]), text: f[1] });
+        o.addEventListener('click', function () { flt = f[0]; renderLists(); renderRecent(); refreshFilters(); });
+        panel.appendChild(o);
+      });
+      if (!compact) panel.appendChild(el('p', { 'class': 'fnote', text: 'Offline tools run with no connection after the first load. Partly offline tools need internet for some features.' }));
+      host.appendChild(panel);
+    }
+  }
+  function refreshFilters() { buildFilter($('homeFilter'), false); buildFilter($('sideFilter'), true); }
 
   function renderLists() {
     var term = q.value.trim();
@@ -347,8 +457,7 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
 
       nav.appendChild(el('div', { 'class': 'group-title', text: c.label }));
       list.forEach(function (t) {
-        var a = el('a', linkAttrs(t, 'nav-item'), [tile(t), el('span', { text: t.name })]);
-        if (t.external) a.appendChild(el('span', { 'class': 'ext', 'aria-label': 'opens in a new tab', text: '↗' }));
+        var a = el('a', linkAttrs(t, 'nav-item'), [tile(t), el('span', { text: t.name }), netBadge(t)]);
         a.setAttribute('data-id', t.id);
         if (t.id === current) a.setAttribute('aria-current', 'page');
         nav.appendChild(a);
@@ -357,21 +466,23 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
       grids.appendChild(el('h2', { 'class': 'sec-title', text: c.label }));
       var g = el('div', { 'class': 'grid' });
       list.forEach(function (t) {
-        g.appendChild(el('a', linkAttrs(t, 'card'), [
-          tile(t),
-          el('h3', { text: t.name }),
-          el('p', { text: t.desc }),
-          el('span', { 'class': 'tag', text: t.external ? 'Opens new tab' : c.label })
-        ]));
+        var badges = el('div', { 'class': 'badges' }, [netBadge(t)]);
+        if (t.perm) badges.appendChild(el('span', { 'class': 'perm', text: PERM_LABEL[t.perm] }));
+        if (t.isNew) badges.appendChild(el('span', { 'class': 'net', style: 'background:var(--signal)', text: 'New' }));
+        var kids = [tile(t), el('h3', { text: t.name }), badges, el('p', { text: t.netNote || t.desc })];
+        if (t.netNote) kids[3].setAttribute('title', t.desc);
+        kids.push(el('span', t.external ? { 'class': 'saved', text: 'Opens its own site. Needs internet.' } : { 'class': 'saved', 'data-saved': t.id }));
+        g.appendChild(el('a', linkAttrs(t, 'card'), kids));
       });
       grids.appendChild(g);
     });
 
     if (!shown) {
-      var msg = 'No tools match "' + term + '".';
+      var msg = 'No tools match' + (term ? ' "' + term + '"' : ' this filter') + '.';
       nav.appendChild(el('div', { 'class': 'empty', text: msg }));
       grids.appendChild(el('p', { 'class': 'empty', text: msg }));
     }
+    paintSaved();
   }
 
   function renderRecent() {
@@ -399,6 +510,7 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
     frame.removeAttribute('src');
     frame.src = 'about:blank';
     frameWrap.hidden = true;
+    hideGate();
     home.hidden = false;
     actions.hidden = true;
     title.textContent = 'HeyTools';
@@ -407,13 +519,127 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
     markCurrent();
   }
 
-  function openTool(t) {
-    current = t.id;
+  /* ---------- permission gate ----------
+     Browsers only allow access after a tap, so the app asks on a screen of its own, once per tool,
+     and only for tools that really need it. Websites cannot silently read a whole phone, so for
+     videos and music the person picks a folder (Movies, Music, DCIM...) and every file inside is added. */
+  var PKEY = 'heytools.perm.';
+  function permDone(id) { try { return localStorage.getItem(PKEY + id) === '1'; } catch (e) { return false; } }
+  function setPermDone(id) { try { localStorage.setItem(PKEY + id, '1'); } catch (e) { /* ignore */ } }
+  var pendingFiles = null;
+  var GATE = {
+    video:  { title: 'Allow access to your videos', body: 'Pick the folder where your videos live (for example Movies or DCIM). HeyTools lists every video inside it. Files are never uploaded.', ok: 'Choose video folder' },
+    audio:  { title: 'Allow access to your music', body: 'Pick your Music folder. HeyTools adds every song inside it to the player. Files are never uploaded.', ok: 'Choose music folder' },
+    camera: { title: 'Allow the camera', body: 'The scanner reads codes from your camera on this device. Nothing is recorded or uploaded.', ok: 'Allow camera' },
+    mic:    { title: 'Allow microphone and camera', body: 'The recorder needs these to capture voice and video. Recordings stay on your device.', ok: 'Allow access' },
+    motion: { title: 'Allow motion sensors', body: 'This tool reads your phone sensors to find direction and tilt. Nothing leaves your device.', ok: 'Allow sensors' }
+  };
+  var MEDIA_VIDEO = /\.(mp4|m4v|mkv|webm|mov|avi|ogv|ts|3gp|wmv)$/i;
+  var MEDIA_AUDIO = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|3gp)$/i;
+
+  function idbPut(handle) {
+    return new Promise(function (res) {
+      try {
+        var r = indexedDB.open('vp3', 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore('d', { keyPath: 'name' }); };
+        r.onsuccess = function () {
+          var tx = r.result.transaction('d', 'readwrite');
+          tx.objectStore('d').put({ name: handle.name, handle: handle });
+          tx.oncomplete = function () { res(true); };
+          tx.onerror = tx.onabort = function () { res(false); };
+        };
+        r.onerror = function () { res(false); };
+      } catch (e) { res(false); }
+    });
+  }
+  async function walkAudio(dir, out) {
+    for await (var entry of dir.entries()) {
+      if (out.length > 5000) return;
+      var n = entry[0], h = entry[1];
+      if (h.kind === 'directory') { if (n.charAt(0) !== '.') await walkAudio(h, out); }
+      else if (MEDIA_AUDIO.test(n)) { try { out.push(await h.getFile()); } catch (e) { /* skip */ } }
+    }
+  }
+  function pickFilesFallback(accept) {
+    return new Promise(function (res) {
+      var i = document.createElement('input');
+      i.type = 'file'; i.multiple = true; i.accept = accept;
+      i.onchange = function () { res(Array.prototype.slice.call(i.files)); };
+      i.oncancel = function () { res([]); };
+      i.click();
+    });
+  }
+  function askPermission(t, msg) {
+    var kind = t.perm;
+    if (kind === 'video') {
+      if (window.showDirectoryPicker) {
+        return showDirectoryPicker({ id: 'vp-media', mode: 'read', startIn: 'videos' })
+          .catch(function (e) { if (e.name === 'TypeError') return showDirectoryPicker({ mode: 'read' }); throw e; })
+          .then(function (h) { return idbPut(h); });
+      }
+      msg.textContent = 'This browser cannot open folders. Use the Import all button in the player to select videos.';
+      return Promise.resolve();
+    }
+    if (kind === 'audio') {
+      if (window.showDirectoryPicker) {
+        return showDirectoryPicker({ id: 'mp-media', mode: 'read', startIn: 'music' })
+          .catch(function (e) { if (e.name === 'TypeError') return showDirectoryPicker({ mode: 'read' }); throw e; })
+          .then(function (h) { var out = []; msg.textContent = 'Reading your music…'; return walkAudio(h, out).then(function () { pendingFiles = out; }); });
+      }
+      return pickFilesFallback('audio/*').then(function (f) { pendingFiles = f; });
+    }
+    if (kind === 'camera' || kind === 'mic') {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve();
+      return navigator.mediaDevices.getUserMedia(kind === 'mic' ? { audio: true, video: true } : { video: { facingMode: 'environment' } })
+        .then(function (st) { st.getTracks().forEach(function (x) { x.stop(); }); })
+        .catch(function (e) {
+          if (kind === 'mic') return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (st) { st.getTracks().forEach(function (x) { x.stop(); }); });
+          throw e;
+        });
+    }
+    if (kind === 'motion') {
+      var D = window.DeviceOrientationEvent;
+      if (D && typeof D.requestPermission === 'function') return D.requestPermission();
+      return Promise.resolve();
+    }
+    return Promise.resolve();
+  }
+  function showGate(t) {
+    var g = GATE[t.perm], box = $('gate');
+    box.textContent = '';
+    var msg = el('p', { 'class': 'gate-msg', role: 'status', 'aria-live': 'polite' });
+    var ok = el('button', { 'class': 'btn signal', type: 'button', text: g.ok });
+    var later = el('button', { 'class': 'btn ghost', type: 'button', text: 'Not now' });
+    ok.addEventListener('click', function () {
+      ok.disabled = true;
+      Promise.resolve(askPermission(t, msg)).then(function () {
+        setPermDone(t.id); hideGate(); loadTool(t);
+      }).catch(function (e) {
+        ok.disabled = false;
+        msg.textContent = (e && e.name === 'AbortError') ? 'No folder chosen. You can try again or tap Not now.' : 'Permission was not granted. You can change it in your browser or phone settings, or tap Not now.';
+      });
+    });
+    later.addEventListener('click', function () { hideGate(); loadTool(t); });
+    box.appendChild(el('div', { 'class': 'gate-card', role: 'dialog', 'aria-label': g.title }, [
+      tile(t), el('h2', { text: g.title }), el('p', { text: g.body }),
+      el('div', { 'class': 'row' }, [ok, later]), msg
+    ]));
+    box.hidden = false;
+    loading.classList.add('done');
+    ok.focus();
+  }
+  function hideGate() { $('gate').hidden = true; }
+
+  function loadTool(t) {
     var path = '../' + t.id + '/';
     loading.classList.remove('done');
     frame.title = t.name;
     frame.src = path;
     newTab.href = path;
+  }
+
+  function openTool(t) {
+    current = t.id;
     home.hidden = true;
     frameWrap.hidden = false;
     actions.hidden = false;
@@ -421,6 +647,9 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
     document.title = t.name + ' | HeyTools';
     pushRecent(t.id);
     markCurrent();
+    frame.src = 'about:blank';
+    if (t.perm && !permDone(t.id)) { newTab.href = '../' + t.id + '/'; showGate(t); }
+    else { hideGate(); loadTool(t); }
   }
 
   function route() {
@@ -451,7 +680,12 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
 
   frame.addEventListener('load', function () {
     if (frame.getAttribute('src') === 'about:blank') return;
+    if (!$('gate').hidden) return;
     loading.classList.add('done');
+    if (pendingFiles && pendingFiles.length && current === 'music-player') {
+      try { frame.contentWindow.postMessage({ type: 'heytools:files', files: pendingFiles }, location.origin); } catch (err) { /* ignore */ }
+      pendingFiles = null;
+    }
     try { interceptLinks(frame.contentDocument); } catch (err) { /* cross-origin: leave links alone */ }
   });
 
@@ -512,7 +746,7 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
   function net() {
     $('netState').textContent = navigator.onLine
       ? 'Private by design. Tools run in your browser.'
-      : 'You are offline. Tools that need the internet, such as speed test and streaming, will not work.';
+      : 'You are offline. Tools marked Works offline still run. Speed test, streaming and downloads need internet.';
   }
   window.addEventListener('online', net);
   window.addEventListener('offline', net);
@@ -526,7 +760,9 @@ iframe#frame{display:block;width:100%;height:100%;border:0;background:#fff}
   }
 
   window.addEventListener('hashchange', route);
+  refreshFilters();
   renderLists();
+  checkSaved();
   route();
 })();
 </script>

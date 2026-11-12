@@ -647,6 +647,7 @@ function addFiles(files){
 }
 $('#pickFiles').onclick=()=>$('#fileIn').click();$('#pickDir').onclick=()=>$('#dirIn').click();
 $('#fileIn').onchange=e=>{addFiles(e.target.files);e.target.value=''};$('#dirIn').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.type==='heytools:files'&&e.data.files&&e.data.files.length)addFiles(e.data.files)});
 let dc=0;const dropEl=$('#drop');
 addEventListener('dragenter',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){dc++;dropEl.classList.add('on')}});
 addEventListener('dragleave',()=>{dc=Math.max(0,dc-1);if(!dc)dropEl.classList.remove('on')});

@@ -133,6 +133,7 @@ footer a:hover{color:var(--ink)}
   .blocked{animation:none;opacity:1}
   .btn{transition:none}
 }
+@media (display-mode:standalone){#privacy,footer,.sec-head p{display:none}}
 </style>
 <script src="install-prompt.js" defer></script>
 </head>
@@ -208,7 +209,7 @@ footer a:hover{color:var(--ink)}
     <div class="wrap">
       <div class="sec-head">
         <h2>The tools</h2>
-        <p>Twenty-two tools so far. Each one opens in your browser and works securely on your device.</p>
+        <p>Twenty-seven tools so far. Each one opens in your browser and works securely on your device.</p>
       </div>
 
       <!-- Category Filter Bar -->
@@ -218,6 +219,7 @@ footer a:hover{color:var(--ink)}
         <button class="cat-btn" data-filter="media">Media & Video</button>
         <button class="cat-btn" data-filter="image">Image & PDF</button>
         <button class="cat-btn" data-filter="utility">Utilities & Security</button>
+        <button class="cat-btn" data-filter="dev">Developer & Design</button>
         <button class="cat-btn" data-filter="games">Games & Fun</button>
       </div>
 
@@ -245,10 +247,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="media">
           <span class="tag" style="background:var(--signal);color:var(--ink);">New</span>
           <h3>Video Player</h3>
-          <p>Free online video player for local files, live TV from around the world, and streaming platforms in 3D, 4D, 5D and 6D modes[cite: 15].</p>
+          <p>Free online video player for local files, live TV from around the world, and streaming platforms in 3D, 4D, 5D and 6D modes.</p>
           <div class="plans" aria-label="Video Player pricing">
             <div class="plan">
-              <div><b>Free</b><small>Runs entirely in browser, fully private[cite: 15]</small></div>
+              <div><b>Free</b><small>Runs entirely in browser, fully private</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -259,10 +261,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="media">
           <span class="tag">Free</span>
           <h3>Music Player</h3>
-          <p>Immersive 3D browser music player with spinning vinyl, live audio visualizer, Spotify, and streaming support[cite: 13, 14].</p>
+          <p>Immersive 3D browser music player with spinning vinyl, live audio visualizer, Spotify, and streaming support.</p>
           <div class="plans" aria-label="Music Player pricing">
             <div class="plan">
-              <div><b>Free</b><small>Nothing to install, fully private[cite: 13, 14]</small></div>
+              <div><b>Free</b><small>Nothing to install, fully private</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -273,10 +275,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="media">
           <span class="tag">Free</span>
           <h3>Recorder</h3>
-          <p>Free online voice, video, and screen recorder[cite: 12]. Record with pause, markers, and instant local device storage[cite: 12].</p>
+          <p>Free online voice, video, and screen recorder. Record with pause, markers, and instant local device storage.</p>
           <div class="plans" aria-label="Recorder pricing">
             <div class="plan">
-              <div><b>Free</b><small>Private by design, zero uploads[cite: 12]</small></div>
+              <div><b>Free</b><small>Private by design, zero uploads</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -287,10 +289,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="utility">
           <span class="tag">Free</span>
           <h3>Notes & To Do</h3>
-          <p>Capture ideas, colorful pinned notes, and daily tasks with reminders saved locally on your device[cite: 11].</p>
+          <p>Capture ideas, colorful pinned notes, and daily tasks with reminders saved locally on your device.</p>
           <div class="plans" aria-label="Notes & To Do pricing">
             <div class="plan">
-              <div><b>Free</b><small>Local browser storage, no upload[cite: 11]</small></div>
+              <div><b>Free</b><small>Local browser storage, no upload</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -301,10 +303,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="media">
           <span class="tag">Free</span>
           <h3>Emulsion</h3>
-          <p>Free image and video editor in your browser[cite: 10]. Layer-based image editing, multi-track timeline cuts, and instant export[cite: 10].</p>
+          <p>Free image and video editor in your browser. Layer-based image editing, multi-track timeline cuts, and instant export.</p>
           <div class="plans" aria-label="Emulsion pricing">
             <div class="plan">
-              <div><b>Free</b><small>No install or account[cite: 10]</small></div>
+              <div><b>Free</b><small>No install or account</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -315,10 +317,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="games">
           <span class="tag">Free</span>
           <h3>Cyber Rush</h3>
-          <p>Fast 3D cyberpunk endless runner[cite: 9]. Dodge meteors, rogue jets, and drone swarms over a glowing city[cite: 9].</p>
+          <p>Fast 3D cyberpunk endless runner. Dodge meteors, rogue jets, and drone swarms over a glowing city.</p>
           <div class="plans" aria-label="Cyber Rush pricing">
             <div class="plan">
-              <div><b>Free</b><small>No download or account[cite: 9]</small></div>
+              <div><b>Free</b><small>No download or account</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -329,10 +331,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="utility">
           <span class="tag">Free</span>
           <h3>Earth's Zipcode</h3>
-          <p>Official global postal & PIN code interactive 3D engine spanning 240+ countries and territories[cite: 7, 8].</p>
+          <p>Official global postal & PIN code interactive 3D engine spanning 240+ countries and territories.</p>
           <div class="plans" aria-label="Earth's Zipcode pricing">
             <div class="plan">
-              <div><b>Free</b><small>Global postal geocoding engine[cite: 7, 8]</small></div>
+              <div><b>Free</b><small>Global postal geocoding engine</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -343,10 +345,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="utility">
           <span class="tag">Free</span>
           <h3>Internet Speed</h3>
-          <p>Measure download, upload, ping, jitter, packet loss, and bufferbloat with a multi-stream client engine[cite: 6].</p>
+          <p>Measure download, upload, ping, jitter, packet loss, and bufferbloat with a multi-stream client engine.</p>
           <div class="plans" aria-label="Internet Speed pricing">
             <div class="plan">
-              <div><b>Free</b><small>No sign-up, runs in browser[cite: 6]</small></div>
+              <div><b>Free</b><small>No sign-up, runs in browser</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -357,7 +359,7 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="games">
           <span class="tag">Free</span>
           <h3>Dice Roller</h3>
-          <p>Roll fair, realistic 3D dice for board games, RPGs, and quick decisions with five game modes[cite: 5].</p>
+          <p>Roll fair, realistic 3D dice for board games, RPGs, and quick decisions with five game modes.</p>
           <div class="plans" aria-label="Dice Roller pricing">
             <div class="plan">
               <div><b>Free</b><small>Classic, D20, Yahtzee & more</small></div>
@@ -371,10 +373,10 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="utility">
           <span class="tag">Free</span>
           <h3>Word Counter</h3>
-          <p>Count words, characters, sentences, reading time, and check keyword density instantly as you type[cite: 4].</p>
+          <p>Count words, characters, sentences, reading time, and check keyword density instantly as you type.</p>
           <div class="plans" aria-label="Word Counter pricing">
             <div class="plan">
-              <div><b>Free</b><small>Saved locally on your device[cite: 4]</small></div>
+              <div><b>Free</b><small>Saved locally on your device</small></div>
               <div class="amt free">$0</div>
             </div>
           </div>
@@ -399,7 +401,7 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="games">
           <span class="tag">Free</span>
           <h3>Galleonwick Compass</h3>
-          <p>A free pirate's compass for your phone or computer. Find headings, set courses to coordinates[cite: 3], and sail true.</p>
+          <p>A free pirate's compass for your phone or computer. Find headings, set courses to coordinates, and sail true.</p>
           <div class="plans" aria-label="Compass pricing">
             <div class="plan">
               <div><b>Free</b><small>Live heading & great-circle course</small></div>
@@ -413,7 +415,7 @@ footer a:hover{color:var(--ink)}
         <article class="card" data-category="utility">
           <span class="tag" style="background:var(--signal);color:var(--ink);">Popular</span>
           <h3>Calculator Suite</h3>
-          <p>Scientific calculator, tip splitter, fuel cost, EMI, GST, VAT, BMI, age calculators and more[cite: 2].</p>
+          <p>Scientific calculator, tip splitter, fuel cost, EMI, GST, VAT, BMI, age calculators and more.</p>
           <div class="plans" aria-label="Calculator pricing">
             <div class="plan">
               <div><b>Free</b><small>Instant & private calculation</small></div>
@@ -533,6 +535,71 @@ footer a:hover{color:var(--ink)}
             </div>
           </div>
           <a class="btn primary" href="https://mithunsg08.github.io/heytools/password-generator" target="_blank" rel="noopener">Open Password Generator</a>
+        </article>
+
+        <article class="card" data-category="utility">
+          <span class="tag">Free · New</span>
+          <h3>Unit Converter</h3>
+          <p>Convert length, weight, temperature, volume, area, speed, time and data units. Works offline.</p>
+          <div class="plans" aria-label="Unit Converter pricing">
+            <div class="plan">
+              <div><b>Free</b><small>No sign-up, works offline</small></div>
+              <div class="amt free">$0</div>
+            </div>
+          </div>
+          <a class="btn primary" href="https://mithunsg08.github.io/heytools/unit-converter/" target="_blank" rel="noopener">Open Unit Converter</a>
+        </article>
+
+        <article class="card" data-category="utility">
+          <span class="tag">Free · New</span>
+          <h3>QR & Barcode Scanner</h3>
+          <p>Scan QR codes and barcodes with your camera or from an image. Nothing is uploaded.</p>
+          <div class="plans" aria-label="QR & Barcode Scanner pricing">
+            <div class="plan">
+              <div><b>Free</b><small>Camera stays on your device</small></div>
+              <div class="amt free">$0</div>
+            </div>
+          </div>
+          <a class="btn primary" href="https://mithunsg08.github.io/heytools/qr-scanner/" target="_blank" rel="noopener">Open QR & Barcode Scanner</a>
+        </article>
+
+        <article class="card" data-category="utility">
+          <span class="tag">Free · New</span>
+          <h3>Spirit Level</h3>
+          <p>A bubble level and angle meter that uses your phone sensors to check flat and upright surfaces.</p>
+          <div class="plans" aria-label="Spirit Level pricing">
+            <div class="plan">
+              <div><b>Free</b><small>Uses phone motion sensors</small></div>
+              <div class="amt free">$0</div>
+            </div>
+          </div>
+          <a class="btn primary" href="https://mithunsg08.github.io/heytools/spirit-level/" target="_blank" rel="noopener">Open Spirit Level</a>
+        </article>
+
+        <article class="card" data-category="dev">
+          <span class="tag">Free · New</span>
+          <h3>JSON Formatter</h3>
+          <p>Format, validate and minify JSON with clear error line and column. Private and offline.</p>
+          <div class="plans" aria-label="JSON Formatter pricing">
+            <div class="plan">
+              <div><b>Free</b><small>Runs in your browser</small></div>
+              <div class="amt free">$0</div>
+            </div>
+          </div>
+          <a class="btn primary" href="https://mithunsg08.github.io/heytools/json-formatter/" target="_blank" rel="noopener">Open JSON Formatter</a>
+        </article>
+
+        <article class="card" data-category="dev">
+          <span class="tag">Free · New</span>
+          <h3>Color Picker</h3>
+          <p>Pick colors, copy HEX, RGB and HSL, build palettes and check WCAG contrast.</p>
+          <div class="plans" aria-label="Color Picker pricing">
+            <div class="plan">
+              <div><b>Free</b><small>Eyedropper where supported</small></div>
+              <div class="amt free">$0</div>
+            </div>
+          </div>
+          <a class="btn primary" href="https://mithunsg08.github.io/heytools/color-picker/" target="_blank" rel="noopener">Open Color Picker</a>
         </article>
       </div>
     </div>
