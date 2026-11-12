@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Geo Camera</title>
+<style>
+  :root{--bg:#10161a;--panel:#1a2329;--ink:#eef3f5;--mute:#8fa1aa;--accent:#3ec1d3;--warn:#f2b84b}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:env(safe-area-inset-top,0) 12px env(safe-area-inset-bottom,0)}
+  header,.stage,.controls,.chips,#preview,#gallery,#panel{width:100%;max-width:560px}
+  header{padding:14px 4px 8px;display:flex;justify-content:space-between;align-items:center}
+  h1{font-size:1.25rem;margin:0}
+  #status{font-size:.82rem;padding:5px 11px;border-radius:99px;background:var(--panel);color:var(--mute)}
+  #status.on{color:var(--accent)} #status.off{color:var(--warn)}
+  .stage{position:relative;aspect-ratio:3/4;background:#000;border-radius:14px;overflow:hidden}
+  video{width:100%;height:100%;object-fit:cover;display:block}
+  #msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute);line-height:1.5}
+  #grid{position:absolute;inset:0;pointer-events:none;display:none;background:linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.4) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.4) 66.6%,transparent 66.8%),linear-gradient(0deg,transparent 33.2%,rgba(255,255,255,.4) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.4) 66.6%,transparent 66.8%)}
+  #livetag{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 10px;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:.76rem;line-height:1.4;pointer-events:none;display:none}
+  #livetag.top{bottom:auto;top:0;padding:10px 12px 26px;background:linear-gradient(rgba(0,0,0,.75),transparent)}
+  #count{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:7rem;font-weight:700;text-shadow:0 2px 14px #000;pointer-events:none}
+  #zoomrow{width:100%;max-width:560px;display:none;align-items:center;gap:10px;padding:10px 4px 0;font-size:.8rem;color:var(--mute)}
+  #zoomrow input{flex:1;accent-color:var(--accent)}
+  .controls{display:flex;align-items:center;justify-content:center;gap:28px;padding:14px 0 8px}
+  button{font:inherit;cursor:pointer;border:0;color:var(--ink)}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  #shot{width:72px;height:72px;border-radius:50%;background:#fff;border:5px solid var(--bg);box-shadow:0 0 0 3px #fff}
+  #shot:active{transform:scale(.94)} #shot:disabled{opacity:.4;cursor:not-allowed}
+  .side{background:var(--panel);border-radius:10px;padding:10px 14px;font-size:.85rem;min-width:70px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding-bottom:12px}
+  .chip{background:var(--panel);border-radius:99px;padding:7px 13px;font-size:.8rem}
+  .chip.act{background:var(--accent);color:#06232a;font-weight:700}
+  #panel{display:none;background:var(--panel);border-radius:14px;padding:14px 16px;margin-bottom:14px;font-size:.88rem}
+  #panel h2{font-size:.95rem;margin:12px 0 6px;color:var(--accent)} #panel h2:first-child{margin-top:0}
+  #panel label{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0}
+  #panel select,#panel input[type=text]{background:var(--bg);color:var(--ink);border:1px solid #2e3b43;border-radius:8px;padding:7px;font:inherit;max-width:60%}
+  #panel input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+  #preview{display:none;padding-bottom:18px}
+  #preview img{width:100%;border-radius:12px;display:block}
+  .row{display:flex;gap:8px;margin-top:10px}
+  .row button,.row a{flex:1;text-align:center;background:var(--panel);padding:12px 6px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:.85rem}
+  .row .pri{background:var(--accent);color:#06232a;font-weight:700} .row .del{color:#ff8f8f}
+  #gallery{display:none;padding-bottom:24px}
+  #gallery .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  #gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
+  .empty{color:var(--mute);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header><h1>Geo Camera</h1><span id="status">Location: checking…</span></header>
+
+<div class="stage">
+  <video id="video" playsinline autoplay muted></video>
+  <div id="grid"></div><div id="msg">Allow camera access to start.</div>
+  <div id="livetag"></div><div id="count"></div>
+</div>
+<div id="zoomrow"><span>Zoom</span><input type="range" id="zoom" aria-label="Zoom"><span id="zv">1x</span></div>
+
+<div class="controls">
+  <button class="side" id="flip">Flip</button>
+  <button id="shot" aria-label="Take photo" disabled></button>
+  <button class="side" id="galbtn">Gallery</button>
+</div>
+<div class="chips">
+  <button class="chip" id="timer">Timer: off</button>
+  <button class="chip" id="torch" style="display:none">Flash</button>
+  <button class="chip" id="gridbtn">Grid</button>
+  <button class="chip" id="retry">Location</button>
+  <button class="chip" id="setbtn">Settings</button>
+</div>
+
+<div id="panel">
+  <h2>Stamp details</h2>
+  <label>Country flag <input type="checkbox" data-k="flag"></label>
+  <label>Full address <input type="checkbox" data-k="addr"></label>
+  <label>Weather <input type="checkbox" data-k="weather"></label>
+  <label>Altitude and accuracy <input type="checkbox" data-k="alt"></label>
+  <label>Compass direction <input type="checkbox" data-k="compass"></label>
+  <label>Time zone <input type="checkbox" data-k="tz"></label>
+  <label>Coordinates <select data-k="coords"><option value="dec">Decimal</option><option value="dms">Degrees, minutes, seconds</option></select></label>
+  <label>Clock <select data-k="h12"><option value="24">24-hour</option><option value="12">12-hour</option></select></label>
+  <label>Caption <input type="text" data-k="caption" maxlength="60" placeholder="Site, job or note"></label>
+  <h2>Look</h2>
+  <label>Position <select data-k="pos"><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
+  <label>Theme <select data-k="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="ocean">Ocean</option></select></label>
+  <h2>Output</h2>
+  <label>Photo size <select data-k="res"><option value="max">Full camera size</option><option value="hd">HD (1920 px)</option></select></label>
+  <label>Save to device after capture <input type="checkbox" data-k="autosave"></label>
+</div>
+
+<div id="preview">
+  <img id="out" alt="Captured photo">
+  <div class="row"><a id="dl" class="pri">Save</a><button id="share">Share</button><button id="del" class="del">Delete</button></div>
+  <div class="row"><button id="close">Back to camera</button></div>
+</div>
+<div id="gallery"><div class="tiles" id="tiles"></div></div>
+<canvas id="canvas" hidden></canvas>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const video = $('video'), canvas = $('canvas'), shot = $('shot'), live = $('livetag');
+  let stream = null, facing = 'environment', track = null, torchOn = false, heading = null, compassOn = false;
+  let geo = null, geoState = 'pending', flagImg = null, current = null;
+
+  /* ---------- Settings (remembered on this device) ---------- */
+  const defaults = {flag:true, addr:true, weather:true, alt:true, compass:true, tz:true, coords:'dec', h12:'24',
+                    caption:'', pos:'bottom', theme:'dark', res:'max', autosave:true, grid:false, timer:0};
+  let st = {...defaults};
+  try { st = {...defaults, ...JSON.parse(localStorage.getItem('geocam') || '{}')}; } catch (e) {}
+  const save = () => { try { localStorage.setItem('geocam', JSON.stringify(st)); } catch (e) {} };
+
+  document.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.dataset.k;
+    if (el.type === 'checkbox') el.checked = !!st[k]; else el.value = st[k];
+    el.onchange = el.oninput = () => { st[k] = el.type === 'checkbox' ? el.checked : el.value; save(); applyUI(); updateLive(); if (k === 'compass' && el.checked) enableCompass(); };
+  });
+  function applyUI() {
+    $('grid').style.display = st.grid ? 'block' : 'none';
+    $('gridbtn').classList.toggle('act', st.grid);
+    $('timer').textContent = 'Timer: ' + (st.timer ? st.timer + 's' : 'off');
+    $('timer').classList.toggle('act', !!st.timer);
+    live.className = st.pos === 'top' ? 'top' : '';
+  }
+  const setStatus = (t, c) => { $('status').textContent = t; $('status').className = c || ''; };
+
+  /* ---------- Camera, zoom, flash ---------- */
+  async function startCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    torchOn = false; $('torch').classList.remove('act');
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing, width:{ideal:3840}, height:{ideal:2880}}, audio:false});
+      video.srcObject = stream; track = stream.getVideoTracks()[0];
+      $('msg').style.display = 'none'; shot.disabled = false;
+      const c = track.getCapabilities ? track.getCapabilities() : {};
+      const z = $('zoom');
+      if (c.zoom) { z.min = c.zoom.min; z.max = c.zoom.max; z.step = c.zoom.step || 0.1; z.value = c.zoom.min; $('zoomrow').style.display = 'flex'; $('zv').textContent = '1x'; }
+      else $('zoomrow').style.display = 'none';
+      $('torch').style.display = c.torch ? '' : 'none';
+    } catch (e) {
+      $('msg').style.display = 'flex';
+      $('msg').textContent = 'Camera is blocked or unavailable. Allow camera access in your browser settings, then reload. (Camera needs https or a local file.)';
+      shot.disabled = true;
+    }
+  }
+  $('zoom').oninput = e => { track.applyConstraints({advanced:[{zoom:+e.target.value}]}).catch(()=>{}); $('zv').textContent = (+e.target.value).toFixed(1) + 'x'; };
+  $('torch').onclick = () => { torchOn = !torchOn; track.applyConstraints({advanced:[{torch:torchOn}]}).catch(()=>{}); $('torch').classList.toggle('act', torchOn); };
+
+  /* ---------- Compass ---------- */
+  function onOri(e) {
+    if (e.webkitCompassHeading != null) heading = e.webkitCompassHeading;
+    else if (e.alpha != null && (e.absolute || e.type === 'deviceorientationabsolute')) heading = (360 - e.alpha) % 360;
+  }
+  async function enableCompass() {
+    if (compassOn) return;
+    try {
+      if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission && await DeviceOrientationEvent.requestPermission() !== 'granted') return;
+      addEventListener('deviceorientationabsolute', onOri, true); addEventListener('deviceorientation', onOri, true); compassOn = true;
+    } catch (e) {}
+  }
+  const dirName = h => ['N','NE','E','SE','S','SW','W','NW'][Math.round(h / 45) % 8];
+
+  /* ---------- Location, address, flag, weather ---------- */
+  function requestLocation() {
+    geo = null; flagImg = null; geoState = 'pending'; updateLive();
+    if (!navigator.geolocation) { geoState = 'denied'; setStatus('Location: unsupported', 'off'); return; }
+    setStatus('Location: waiting…');
+    navigator.geolocation.getCurrentPosition(async pos => {
+      geoState = 'granted';
+      const c = pos.coords;
+      geo = {lat:c.latitude, lon:c.longitude, acc:c.accuracy, alt:c.altitude, name:'Locating…', address:'Fetching address…', cc:'', weather:''};
+      setStatus('Location: on', 'on'); updateLive();
+      await Promise.all([reverseGeocode(), getWeather()]);
+      updateLive();
+    }, () => { geoState = 'denied'; setStatus('Location: off – plain photos', 'off'); updateLive(); },
+    {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+  }
+  async function reverseGeocode() {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${geo.lat}&lon=${geo.lon}`);
+      const d = await r.json(), a = d.address || {};
+      geo.cc = (a.country_code || '').toLowerCase();
+      const city = a.city || a.town || a.village || a.county || '';
+      geo.name = [city, a.state, a.country].filter(Boolean).join(', ') || d.name || 'Unknown place';
+      geo.address = d.display_name || geo.name;
+      if (geo.cc) {
+        const img = new Image(); img.crossOrigin = 'anonymous';
+        await new Promise(res => { img.onload = () => { flagImg = img; res(); }; img.onerror = res; img.src = `https://flagcdn.com/w160/${geo.cc}.png`; });
+      }
+    } catch (e) { geo.name = 'Place name unavailable'; geo.address = 'Address could not be fetched (check internet)'; }
+  }
+  const wx = c => c===0?'Clear':c<=3?'Partly cloudy':c<=48?'Fog':c<=57?'Drizzle':c<=67?'Rain':c<=77?'Snow':c<=82?'Showers':c<=86?'Snow showers':'Thunderstorm';
+  async function getWeather() {
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code`);
+      const c = (await r.json()).current;
+      geo.weather = `${Math.round(c.temperature_2m)}°C ${wx(c.weather_code)}`;
+    } catch (e) {}
+  }
+
+  /* ---------- Text for the stamp (used on screen and on the photo) ---------- */
+  const dms = (v, p, n) => { const a = Math.abs(v), d = Math.floor(a), m = Math.floor((a - d) * 60), s = ((a - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}" ${v >= 0 ? p : n}`; };
+  const dec = (v, p, n) => Math.abs(v).toFixed(6) + '° ' + (v >= 0 ? p : n);
+  function buildLines() {
+    const d = new Date(), f = st.coords === 'dms' ? dms : dec;
+    const time = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:st.h12 === '12', timeZoneName:st.tz ? 'short' : undefined});
+    const day = d.toLocaleDateString('en-US', {weekday:'long'}), date = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+    const info = [`${day}, ${date}  ${time}`, `Lat ${f(geo.lat,'N','S')}   Long ${f(geo.lon,'E','W')}`];
+    if (st.alt) info.push(`Alt ${geo.alt != null ? Math.round(geo.alt) + ' m' : 'n/a'}   Accuracy ±${Math.round(geo.acc)} m`);
+    const extra = [];
+    if (st.weather && geo.weather) extra.push(geo.weather);
+    if (st.compass && heading != null) extra.push(`${Math.round(heading)}° ${dirName(heading)}`);
+    if (extra.length) info.push(extra.join('   '));
+    return {title:geo.name, addr:st.addr ? geo.address : '', info, caption:st.caption.trim()};
+  }
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function updateLive() {
+    if (geoState !== 'granted' || !geo) { live.style.display = 'none'; return; }
+    const l = buildLines(); live.style.display = 'block';
+    live.innerHTML = `<b>${esc(l.title)}</b><br>${l.addr ? esc(l.addr) + '<br>' : ''}${l.info.map(esc).join('<br>')}${l.caption ? '<br><b>' + esc(l.caption) + '</b>' : ''}`;
+  }
+  setInterval(updateLive, 1000);
+
+  /* ---------- Capture ---------- */
+  const themes = {dark:{bg:'rgba(0,0,0,.78)', fg:'#fff', sub:'#e4eef1', ac:'#7fe3f0'},
+                  light:{bg:'rgba(255,255,255,.88)', fg:'#10161a', sub:'#33424a', ac:'#0a7385'},
+                  ocean:{bg:'rgba(6,50,58,.88)', fg:'#fff', sub:'#d6eef2', ac:'#ffd166'}};
+  function wrap(ctx, text, maxW) {
+    const out = []; let line = '';
+    for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+    if (line) out.push(line); return out;
+  }
+  function drawStamp(ctx, w, h) {
+    const L = buildLines(), th = themes[st.theme] || themes.dark;
+    const u = Math.max(14, Math.round(w / 38)), pad = u * .9, lh = u * 1.4;
+    const flagW = st.flag && flagImg ? u * 4 : 0, tx = pad + (flagW ? flagW + pad : 0), maxW = w - tx - pad;
+    ctx.font = `bold ${u * 1.25}px sans-serif`; const title = wrap(ctx, L.title, maxW);
+    ctx.font = `${u}px sans-serif`; const addr = L.addr ? wrap(ctx, L.addr, maxW).slice(0, 3) : [];
+    const boxH = pad * 2 + lh * (title.length * 1.2 + addr.length + L.info.length + (L.caption ? 1.2 : 0));
+    const y0 = st.pos === 'top' ? 0 : h - boxH;
+    ctx.fillStyle = th.bg; ctx.fillRect(0, y0, w, boxH);
+    let y = y0 + pad; ctx.textBaseline = 'top';
+    if (flagW) { const fh = flagW * flagImg.naturalHeight / flagImg.naturalWidth; ctx.drawImage(flagImg, pad, y, flagW, fh); ctx.strokeStyle = th.sub; ctx.lineWidth = 2; ctx.strokeRect(pad, y, flagW, fh); }
+    ctx.fillStyle = th.fg; ctx.font = `bold ${u * 1.25}px sans-serif`; title.forEach(t => { ctx.fillText(t, tx, y); y += lh * 1.2; });
+    ctx.font = `${u}px sans-serif`; ctx.fillStyle = th.sub; addr.forEach(t => { ctx.fillText(t, tx, y); y += lh; });
+    ctx.fillStyle = th.ac; L.info.forEach(t => { ctx.fillText(t, tx, y); y += lh; });
+    if (L.caption) { ctx.font = `bold ${u * 1.1}px sans-serif`; ctx.fillStyle = th.fg; ctx.fillText(L.caption, tx, y + lh * .1); }
+  }
+
+  function capture() {
+    let w = video.videoWidth, h = video.videoHeight; if (!w) return;
+    const sc = st.res === 'hd' ? Math.min(1, 1920 / Math.max(w, h)) : 1;
+    canvas.width = Math.round(w * sc); canvas.height = Math.round(h * sc); w = canvas.width; h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    if (facing === 'user') { ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, w, h); ctx.restore(); }
+    else ctx.drawImage(video, 0, 0, w, h);
+    const stamped = geoState === 'granted' && geo;   // no location = plain photo, no details
+    if (stamped) drawStamp(ctx, w, h);
+    canvas.toBlob(blob => {
+      const d = new Date(), p = n => String(n).padStart(2, '0');
+      const name = `${stamped ? 'geo-photo' : 'photo'}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`;
+      current = {id:Date.now(), name, blob};
+      dbAdd(current); showPreview(current, st.autosave);
+    }, 'image/jpeg', 0.92);
+  }
+  function countdown() {
+    enableCompass();
+    if (!st.timer) return capture();
+    let n = st.timer; shot.disabled = true; const c = $('count'); c.style.display = 'flex'; c.textContent = n;
+    const iv = setInterval(() => { n--; if (n > 0) c.textContent = n; else { clearInterval(iv); c.style.display = 'none'; shot.disabled = false; capture(); } }, 1000);
+  }
+
+  /* ---------- Preview, share, delete ---------- */
+  let curUrl = null;
+  function showPreview(rec, autosave) {
+    current = rec; if (curUrl) URL.revokeObjectURL(curUrl); curUrl = URL.createObjectURL(rec.blob);
+    $('out').src = curUrl; const a = $('dl'); a.href = curUrl; a.download = rec.name;
+    $('gallery').style.display = 'none'; $('preview').style.display = 'block';
+    $('share').style.display = (navigator.canShare && navigator.canShare({files:[new File([rec.blob], rec.name, {type:'image/jpeg'})]})) ? '' : 'none';
+    if (autosave) a.click();
+    $('preview').scrollIntoView({behavior:'smooth'});
+  }
+  $('share').onclick = () => navigator.share({files:[new File([current.blob], current.name, {type:'image/jpeg'})], title:'Geo Camera'}).catch(() => {});
+  $('del').onclick = async () => { await dbDel(current.id); $('preview').style.display = 'none'; openGallery(); };
+  $('close').onclick = () => { $('preview').style.display = 'none'; $('gallery').style.display = 'none'; scrollTo({top:0, behavior:'smooth'}); };
+
+  /* ---------- Gallery (stored on this device, in the browser) ---------- */
+  const dbp = new Promise((res, rej) => { try { const r = indexedDB.open('geocam', 1); r.onupgradeneeded = () => r.result.createObjectStore('p', {keyPath:'id'}); r.onsuccess = () => res(r.result); r.onerror = rej; } catch (e) { rej(e); } });
+  const dbDo = (mode, fn) => dbp.then(db => new Promise((res, rej) => { const t = db.transaction('p', mode), rq = fn(t.objectStore('p')); t.oncomplete = () => res(rq && rq.result); t.onerror = rej; })).catch(() => []);
+  const dbAdd = r => dbDo('readwrite', s => s.put(r)), dbDel = id => dbDo('readwrite', s => s.delete(id)), dbAll = () => dbDo('readonly', s => s.getAll());
+  async function openGallery() {
+    const all = ((await dbAll()) || []).sort((a, b) => b.id - a.id), box = $('tiles'); box.innerHTML = '';
+    if (!all.length) box.innerHTML = '<div class="empty" style="grid-column:1/-1">No photos yet. Take one and it appears here.</div>';
+    all.forEach(r => { const i = new Image(); i.src = URL.createObjectURL(r.blob); i.alt = r.name; i.onclick = () => showPreview(r, false); box.appendChild(i); });
+    $('preview').style.display = 'none'; $('gallery').style.display = 'block'; $('gallery').scrollIntoView({behavior:'smooth'});
+  }
+
+  /* ---------- Wiring ---------- */
+  shot.onclick = countdown;
+  $('flip').onclick = () => { facing = facing === 'user' ? 'environment' : 'user'; video.style.transform = facing === 'user' ? 'scaleX(-1)' : ''; startCamera(); };
+  $('retry').onclick = requestLocation;
+  $('galbtn').onclick = openGallery;
+  $('setbtn').onclick = () => { const p = $('panel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; };
+  $('gridbtn').onclick = () => { st.grid = !st.grid; save(); applyUI(); };
+  $('timer').onclick = () => { st.timer = st.timer === 0 ? 3 : st.timer === 3 ? 10 : 0; save(); applyUI(); };
+
+  applyUI(); requestLocation(); startCamera();
+})();
+</script>
+</body>
+</html>
