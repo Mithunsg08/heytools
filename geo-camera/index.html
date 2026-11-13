@@ -9,19 +9,18 @@
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%}
   body{background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:env(safe-area-inset-top,0) 12px env(safe-area-inset-bottom,0)}
-  header,.stage,.controls,.chips,#preview,#gallery,#panel{width:100%;max-width:560px}
+  header,.stage,.controls,.chips,#preview,#gallery,#panel,#zoomrow{width:100%;max-width:560px}
   header{padding:14px 4px 8px;display:flex;justify-content:space-between;align-items:center}
   h1{font-size:1.25rem;margin:0}
   #status{font-size:.82rem;padding:5px 11px;border-radius:99px;background:var(--panel);color:var(--mute)}
   #status.on{color:var(--accent)} #status.off{color:var(--warn)}
   .stage{position:relative;aspect-ratio:3/4;background:#000;border-radius:14px;overflow:hidden}
-  video{width:100%;height:100%;object-fit:cover;display:block}
+  video,#ov{position:absolute;inset:0;width:100%;height:100%}
+  video{object-fit:cover;display:block} #ov{pointer-events:none}
   #msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute);line-height:1.5}
   #grid{position:absolute;inset:0;pointer-events:none;display:none;background:linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.4) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.4) 66.6%,transparent 66.8%),linear-gradient(0deg,transparent 33.2%,rgba(255,255,255,.4) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.4) 66.6%,transparent 66.8%)}
-  #livetag{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 10px;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:.76rem;line-height:1.4;pointer-events:none;display:none}
-  #livetag.top{bottom:auto;top:0;padding:10px 12px 26px;background:linear-gradient(rgba(0,0,0,.75),transparent)}
   #count{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:7rem;font-weight:700;text-shadow:0 2px 14px #000;pointer-events:none}
-  #zoomrow{width:100%;max-width:560px;display:none;align-items:center;gap:10px;padding:10px 4px 0;font-size:.8rem;color:var(--mute)}
+  #zoomrow{display:none;align-items:center;gap:10px;padding:10px 4px 0;font-size:.8rem;color:var(--mute)}
   #zoomrow input{flex:1;accent-color:var(--accent)}
   .controls{display:flex;align-items:center;justify-content:center;gap:28px;padding:14px 0 8px}
   button{font:inherit;cursor:pointer;border:0;color:var(--ink)}
@@ -33,10 +32,15 @@
   .chip{background:var(--panel);border-radius:99px;padding:7px 13px;font-size:.8rem}
   .chip.act{background:var(--accent);color:#06232a;font-weight:700}
   #panel{display:none;background:var(--panel);border-radius:14px;padding:14px 16px;margin-bottom:14px;font-size:.88rem}
-  #panel h2{font-size:.95rem;margin:12px 0 6px;color:var(--accent)} #panel h2:first-child{margin-top:0}
+  #panel h2{font-size:.95rem;margin:14px 0 6px;color:var(--accent)} #panel h2:first-child{margin-top:0}
   #panel label{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0}
   #panel select,#panel input[type=text]{background:var(--bg);color:var(--ink);border:1px solid #2e3b43;border-radius:8px;padding:7px;font:inherit;max-width:60%}
   #panel input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+  #panel input[type=color]{width:46px;height:30px;border:0;background:none;padding:0}
+  #panel input[type=range]{width:55%;accent-color:var(--accent)}
+  #sws{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0 6px}
+  .sw{width:34px;height:34px;border-radius:50%;border:2px solid #ffffff55;position:relative}
+  .sw i{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:2px solid #1a2329}
   #preview{display:none;padding-bottom:18px}
   #preview img{width:100%;border-radius:12px;display:block}
   .row{display:flex;gap:8px;margin-top:10px}
@@ -53,8 +57,8 @@
 
 <div class="stage">
   <video id="video" playsinline autoplay muted></video>
-  <div id="grid"></div><div id="msg">Allow camera access to start.</div>
-  <div id="livetag"></div><div id="count"></div>
+  <div id="grid"></div><canvas id="ov" width="900" height="1200"></canvas>
+  <div id="msg">Allow camera access to start.</div><div id="count"></div>
 </div>
 <div id="zoomrow"><span>Zoom</span><input type="range" id="zoom" aria-label="Zoom"><span id="zv">1x</span></div>
 
@@ -64,15 +68,27 @@
   <button class="side" id="galbtn">Gallery</button>
 </div>
 <div class="chips">
+  <button class="chip" id="langbtn">Language: English</button>
   <button class="chip" id="timer">Timer: off</button>
   <button class="chip" id="torch" style="display:none">Flash</button>
   <button class="chip" id="gridbtn">Grid</button>
   <button class="chip" id="retry">Location</button>
-  <button class="chip" id="setbtn">Settings</button>
+  <button class="chip" id="setbtn">Card style</button>
 </div>
 
 <div id="panel">
-  <h2>Stamp details</h2>
+  <h2>Language</h2>
+  <label>Card language <select data-k="lang"><option value="en">English (default)</option><option value="native">Native (local language)</option></select></label>
+  <h2>Card colours</h2>
+  <div id="sws"></div>
+  <label>Card colour <input type="color" data-k="cbg"></label>
+  <label>Text colour <input type="color" data-k="cfg"></label>
+  <label>Accent colour <input type="color" data-k="cac"></label>
+  <label>Transparency <input type="range" data-k="alpha" min="30" max="100"></label>
+  <label>Corner roundness <input type="range" data-k="radius" min="0" max="40"></label>
+  <label>Card position <select data-k="pos"><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
+  <h2>Card details</h2>
+  <label>Satellite map <input type="checkbox" data-k="map"></label>
   <label>Country flag <input type="checkbox" data-k="flag"></label>
   <label>Full address <input type="checkbox" data-k="addr"></label>
   <label>Weather <input type="checkbox" data-k="weather"></label>
@@ -80,14 +96,10 @@
   <label>Compass direction <input type="checkbox" data-k="compass"></label>
   <label>Time zone <input type="checkbox" data-k="tz"></label>
   <label>Coordinates <select data-k="coords"><option value="dec">Decimal</option><option value="dms">Degrees, minutes, seconds</option></select></label>
-  <label>Clock <select data-k="h12"><option value="24">24-hour</option><option value="12">12-hour</option></select></label>
+  <label>Clock <select data-k="h12"><option value="12">12-hour</option><option value="24">24-hour</option></select></label>
   <label>Caption <input type="text" data-k="caption" maxlength="60" placeholder="Site, job or note"></label>
-  <h2>Look</h2>
-  <label>Position <select data-k="pos"><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
-  <label>Theme <select data-k="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="ocean">Ocean</option></select></label>
   <h2>Output</h2>
   <label>Photo size <select data-k="res"><option value="max">Full camera size</option><option value="hd">HD (1920 px)</option></select></label>
-  <label>Save to device after capture <input type="checkbox" data-k="autosave"></label>
 </div>
 
 <div id="preview">
@@ -101,28 +113,31 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const video = $('video'), canvas = $('canvas'), shot = $('shot'), live = $('livetag');
+  const video = $('video'), canvas = $('canvas'), shot = $('shot');
+  const FONT = '"Segoe UI","Noto Sans",system-ui,sans-serif';
   let stream = null, facing = 'environment', track = null, torchOn = false, heading = null, compassOn = false;
-  let geo = null, geoState = 'pending', flagImg = null, current = null;
+  let geo = null, geoState = 'pending', flagImg = null, mapCanvas = null, current = null;
 
   /* ---------- Settings (remembered on this device) ---------- */
-  const defaults = {flag:true, addr:true, weather:true, alt:true, compass:true, tz:true, coords:'dec', h12:'24',
-                    caption:'', pos:'bottom', theme:'dark', res:'max', autosave:true, grid:false, timer:0};
+  const presets = {Dark:['#101418','#ffffff','#7fe3f0'], Light:['#ffffff','#10161a','#0a7385'], Ocean:['#06323a','#ffffff','#ffd166'],
+                   Forest:['#10301f','#f2fff6','#9be37f'], Sunset:['#4a1d2e','#fff4ee','#ffb36b'], Violet:['#2a1a4a','#ffffff','#c7a6ff']};
+  const defaults = {lang:'en', cbg:'#101418', cfg:'#ffffff', cac:'#7fe3f0', alpha:72, radius:22, pos:'bottom', map:true, flag:true, addr:true,
+                    weather:true, alt:true, compass:true, tz:true, coords:'dec', h12:'12', caption:'', res:'max', autosave:true, grid:false, timer:0};
   let st = {...defaults};
   try { st = {...defaults, ...JSON.parse(localStorage.getItem('geocam') || '{}')}; } catch (e) {}
   const save = () => { try { localStorage.setItem('geocam', JSON.stringify(st)); } catch (e) {} };
-
-  document.querySelectorAll('[data-k]').forEach(el => {
-    const k = el.dataset.k;
-    if (el.type === 'checkbox') el.checked = !!st[k]; else el.value = st[k];
-    el.onchange = el.oninput = () => { st[k] = el.type === 'checkbox' ? el.checked : el.value; save(); applyUI(); updateLive(); if (k === 'compass' && el.checked) enableCompass(); };
-  });
+  const inputs = [...document.querySelectorAll('[data-k]')];
+  function syncInputs() { inputs.forEach(el => { const v = st[el.dataset.k]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; }); }
+  inputs.forEach(el => { el.onchange = el.oninput = () => {
+    const k = el.dataset.k; st[k] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? +el.value : el.value;
+    save(); applyUI(); redraw(); if (k === 'compass' && el.checked) enableCompass(); }; });
+  Object.entries(presets).forEach(([n, c]) => { const b = document.createElement('button'); b.className = 'sw'; b.title = n; b.setAttribute('aria-label', n + ' card colours');
+    b.style.background = c[0]; b.innerHTML = `<i style="background:${c[2]}"></i>`;
+    b.onclick = () => { [st.cbg, st.cfg, st.cac] = c; save(); syncInputs(); redraw(); }; $('sws').appendChild(b); });
   function applyUI() {
-    $('grid').style.display = st.grid ? 'block' : 'none';
-    $('gridbtn').classList.toggle('act', st.grid);
-    $('timer').textContent = 'Timer: ' + (st.timer ? st.timer + 's' : 'off');
-    $('timer').classList.toggle('act', !!st.timer);
-    live.className = st.pos === 'top' ? 'top' : '';
+    $('grid').style.display = st.grid ? 'block' : 'none'; $('gridbtn').classList.toggle('act', st.grid);
+    $('timer').textContent = 'Timer: ' + (st.timer ? st.timer + 's' : 'off'); $('timer').classList.toggle('act', !!st.timer);
+    $('langbtn').textContent = 'Language: ' + (st.lang === 'en' ? 'English' : 'Native'); $('langbtn').classList.toggle('act', st.lang !== 'en');
   }
   const setStatus = (t, c) => { $('status').textContent = t; $('status').className = c || ''; };
 
@@ -134,9 +149,8 @@
       stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing, width:{ideal:3840}, height:{ideal:2880}}, audio:false});
       video.srcObject = stream; track = stream.getVideoTracks()[0];
       $('msg').style.display = 'none'; shot.disabled = false;
-      const c = track.getCapabilities ? track.getCapabilities() : {};
-      const z = $('zoom');
-      if (c.zoom) { z.min = c.zoom.min; z.max = c.zoom.max; z.step = c.zoom.step || 0.1; z.value = c.zoom.min; $('zoomrow').style.display = 'flex'; $('zv').textContent = '1x'; }
+      const c = track.getCapabilities ? track.getCapabilities() : {}, z = $('zoom');
+      if (c.zoom) { z.min = c.zoom.min; z.max = c.zoom.max; z.step = c.zoom.step || .1; z.value = c.zoom.min; $('zoomrow').style.display = 'flex'; $('zv').textContent = '1x'; }
       else $('zoomrow').style.display = 'none';
       $('torch').style.display = c.torch ? '' : 'none';
     } catch (e) {
@@ -162,93 +176,128 @@
   }
   const dirName = h => ['N','NE','E','SE','S','SW','W','NW'][Math.round(h / 45) % 8];
 
-  /* ---------- Location, address, flag, weather ---------- */
+  /* ---------- Location, address (English + native), flag, weather, satellite map ---------- */
   function requestLocation() {
-    geo = null; flagImg = null; geoState = 'pending'; updateLive();
+    geo = null; flagImg = null; mapCanvas = null; geoState = 'pending'; redraw();
     if (!navigator.geolocation) { geoState = 'denied'; setStatus('Location: unsupported', 'off'); return; }
     setStatus('Location: waiting…');
     navigator.geolocation.getCurrentPosition(async pos => {
-      geoState = 'granted';
-      const c = pos.coords;
-      geo = {lat:c.latitude, lon:c.longitude, acc:c.accuracy, alt:c.altitude, name:'Locating…', address:'Fetching address…', cc:'', weather:''};
-      setStatus('Location: on', 'on'); updateLive();
-      await Promise.all([reverseGeocode(), getWeather()]);
-      updateLive();
-    }, () => { geoState = 'denied'; setStatus('Location: off – plain photos', 'off'); updateLive(); },
+      geoState = 'granted'; const c = pos.coords;
+      geo = {lat:c.latitude, lon:c.longitude, acc:c.accuracy, alt:c.altitude, cc:'', temp:null, wx:'',
+             en:{title:'Locating…', addr:'Fetching address…'}, nat:null, locale:'en-GB'};
+      setStatus('Location: on', 'on'); redraw();
+      loadMap().then(redraw); getWeather().then(redraw);
+      await reverseGeocode(); redraw();
+    }, () => { geoState = 'denied'; setStatus('Location: off – plain photos', 'off'); redraw(); },
     {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+  }
+  const uniq = a => a.filter((v, i) => v && v !== a[i - 1]);
+  async function nominatim(lang) {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=${lang}&lat=${geo.lat}&lon=${geo.lon}`);
+    const d = await r.json(), a = d.address || {};
+    const place = a.village || a.hamlet || a.town || a.city || a.suburb || a.county || '';
+    const road = a.house_number && a.road ? a.house_number + ' ' + a.road : (a.road || a.amenity || a.building || '');
+    return {cc:(a.country_code || '').toLowerCase(),
+            title:uniq([place, a.state, a.country]).join(', ') || d.name || '—',
+            addr:uniq([road, a.neighbourhood || a.suburb || a.hamlet, a.city || a.town || a.village || a.county, a.state, a.postcode, a.country]).join(', ') || d.display_name || ''};
   }
   async function reverseGeocode() {
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${geo.lat}&lon=${geo.lon}`);
-      const d = await r.json(), a = d.address || {};
-      geo.cc = (a.country_code || '').toLowerCase();
-      const city = a.city || a.town || a.village || a.county || '';
-      geo.name = [city, a.state, a.country].filter(Boolean).join(', ') || d.name || 'Unknown place';
-      geo.address = d.display_name || geo.name;
-      if (geo.cc) {
-        const img = new Image(); img.crossOrigin = 'anonymous';
-        await new Promise(res => { img.onload = () => { flagImg = img; res(); }; img.onerror = res; img.src = `https://flagcdn.com/w160/${geo.cc}.png`; });
-      }
-    } catch (e) { geo.name = 'Place name unavailable'; geo.address = 'Address could not be fetched (check internet)'; }
+      const en = await nominatim('en'); geo.cc = en.cc; geo.en = en;
+      try { const n = await nominatim('xx'); geo.nat = n; geo.locale = pickLocale(n.title + n.addr, geo.cc); } catch (e) { geo.nat = null; }
+      if (geo.cc) await new Promise(res => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => { flagImg = i; res(); }; i.onerror = res; i.src = `https://flagcdn.com/w160/${geo.cc}.png`; });
+    } catch (e) { geo.en = {title:'Place name unavailable', addr:'Address could not be fetched (check internet)'}; }
   }
-  const wx = c => c===0?'Clear':c<=3?'Partly cloudy':c<=48?'Fog':c<=57?'Drizzle':c<=67?'Rain':c<=77?'Snow':c<=82?'Showers':c<=86?'Snow showers':'Thunderstorm';
+  function pickLocale(t, cc) {
+    const sc = [[/[\u0C80-\u0CFF]/,'kn'],[/[\u0900-\u097F]/,'hi'],[/[\u0B80-\u0BFF]/,'ta'],[/[\u0C00-\u0C7F]/,'te'],[/[\u0D00-\u0D7F]/,'ml'],[/[\u0980-\u09FF]/,'bn'],
+      [/[\u0A80-\u0AFF]/,'gu'],[/[\u0A00-\u0A7F]/,'pa'],[/[\u0B00-\u0B7F]/,'or'],[/[\u3040-\u30FF]/,'ja'],[/[\uAC00-\uD7AF]/,'ko'],[/[\u4E00-\u9FFF]/,'zh'],
+      [/[\u0E00-\u0E7F]/,'th'],[/[\u0600-\u06FF]/,cc === 'ir' ? 'fa' : cc === 'pk' ? 'ur' : 'ar'],[/[\u0400-\u04FF]/,cc === 'ua' ? 'uk' : 'ru'],[/[\u0370-\u03FF]/,'el'],[/[\u0590-\u05FF]/,'he']];
+    for (const [rx, l] of sc) if (rx.test(t)) return l;
+    return {fr:'fr',de:'de',at:'de',ch:'de',es:'es',mx:'es-MX',co:'es',cl:'es',pe:'es',ar:'es',it:'it',pt:'pt',br:'pt-BR',nl:'nl',tr:'tr',id:'id',vn:'vi',pl:'pl',se:'sv',no:'nb',dk:'da',fi:'fi',cz:'cs',ro:'ro',hu:'hu',my:'ms',ph:'fil'}[cc] || 'en-GB';
+  }
+  const wx = c => c === 0 ? 'Clear' : c <= 3 ? 'Partly cloudy' : c <= 48 ? 'Fog' : c <= 57 ? 'Drizzle' : c <= 67 ? 'Rain' : c <= 77 ? 'Snow' : c <= 82 ? 'Showers' : c <= 86 ? 'Snow showers' : 'Thunderstorm';
   async function getWeather() {
-    try {
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code`);
-      const c = (await r.json()).current;
-      geo.weather = `${Math.round(c.temperature_2m)}°C ${wx(c.weather_code)}`;
-    } catch (e) {}
+    try { const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code`);
+      const c = (await r.json()).current; geo.temp = Math.round(c.temperature_2m); geo.wx = wx(c.weather_code); } catch (e) {}
+  }
+  async function loadMap() {          // satellite imagery (Esri World Imagery), 3x3 tiles around the point
+    const z = 18, n = 2 ** z, lr = geo.lat * Math.PI / 180;
+    const x = (geo.lon + 180) / 360 * n, y = (1 - Math.log(Math.tan(lr) + 1 / Math.cos(lr)) / Math.PI) / 2 * n;
+    const tx = Math.floor(x) - 1, ty = Math.floor(y) - 1, c = document.createElement('canvas'); c.width = c.height = 512;
+    const cx = c.getContext('2d'); cx.fillStyle = '#26382c'; cx.fillRect(0, 0, 512, 512); let ok = 0;
+    await Promise.all([0,1,2].flatMap(i => [0,1,2].map(j => new Promise(res => {
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = () => { cx.drawImage(im, (tx + i - x) * 256 + 256, (ty + j - y) * 256 + 256, 256, 256); ok++; res(); };
+      im.onerror = res; im.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty + j}/${tx + i}`; }))));
+    mapCanvas = ok ? c : null;
   }
 
-  /* ---------- Text for the stamp (used on screen and on the photo) ---------- */
+  /* ---------- Card content ---------- */
   const dms = (v, p, n) => { const a = Math.abs(v), d = Math.floor(a), m = Math.floor((a - d) * 60), s = ((a - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}" ${v >= 0 ? p : n}`; };
   const dec = (v, p, n) => Math.abs(v).toFixed(6) + '° ' + (v >= 0 ? p : n);
   function buildLines() {
-    const d = new Date(), f = st.coords === 'dms' ? dms : dec;
-    const time = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:st.h12 === '12', timeZoneName:st.tz ? 'short' : undefined});
-    const day = d.toLocaleDateString('en-US', {weekday:'long'}), date = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-    const info = [`${day}, ${date}  ${time}`, `Lat ${f(geo.lat,'N','S')}   Long ${f(geo.lon,'E','W')}`];
-    if (st.alt) info.push(`Alt ${geo.alt != null ? Math.round(geo.alt) + ' m' : 'n/a'}   Accuracy ±${Math.round(geo.acc)} m`);
-    const extra = [];
-    if (st.weather && geo.weather) extra.push(geo.weather);
-    if (st.compass && heading != null) extra.push(`${Math.round(heading)}° ${dirName(heading)}`);
-    if (extra.length) info.push(extra.join('   '));
-    return {title:geo.name, addr:st.addr ? geo.address : '', info, caption:st.caption.trim()};
+    const nat = st.lang === 'native' && geo.nat, T = nat ? geo.nat : geo.en, loc = nat ? geo.locale : 'en-GB', d = new Date(), f = st.coords === 'dms' ? dms : dec;
+    const time = d.toLocaleTimeString(loc, {hour:'2-digit', minute:'2-digit', hour12:st.h12 === '12', timeZoneName:st.tz ? 'short' : undefined});
+    const day = d.toLocaleDateString(loc, {weekday:'long'}), date = d.toLocaleDateString(loc, {day:'2-digit', month:'2-digit', year:'numeric'});
+    const info = [{t:`Lat ${f(geo.lat,'N','S')}  Long ${f(geo.lon,'E','W')}`, a:1}, {t:`${day}, ${date} ${time}`, a:1}];
+    if (st.alt) info.push({t:`Alt ${geo.alt != null ? Math.round(geo.alt) + ' m' : 'n/a'}   ±${Math.round(geo.acc)} m`});
+    const ex = [];
+    if (st.weather && geo.temp != null) ex.push(`${geo.temp}°C` + (nat ? '' : ' ' + geo.wx));
+    if (st.compass && heading != null) ex.push(`${Math.round(heading)}° ${dirName(heading)}`);
+    if (ex.length) info.push({t:ex.join('   ')});
+    return {title:T.title, addr:st.addr ? T.addr : '', info, caption:st.caption.trim()};
   }
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  function updateLive() {
-    if (geoState !== 'granted' || !geo) { live.style.display = 'none'; return; }
-    const l = buildLines(); live.style.display = 'block';
-    live.innerHTML = `<b>${esc(l.title)}</b><br>${l.addr ? esc(l.addr) + '<br>' : ''}${l.info.map(esc).join('<br>')}${l.caption ? '<br><b>' + esc(l.caption) + '</b>' : ''}`;
-  }
-  setInterval(updateLive, 1000);
-
-  /* ---------- Capture ---------- */
-  const themes = {dark:{bg:'rgba(0,0,0,.78)', fg:'#fff', sub:'#e4eef1', ac:'#7fe3f0'},
-                  light:{bg:'rgba(255,255,255,.88)', fg:'#10161a', sub:'#33424a', ac:'#0a7385'},
-                  ocean:{bg:'rgba(6,50,58,.88)', fg:'#fff', sub:'#d6eef2', ac:'#ffd166'}};
-  function wrap(ctx, text, maxW) {
-    const out = []; let line = '';
-    for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+  const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; };
+  function rr(c, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function wrap(c, text, maxW) {
+    const cjk = /[\u3040-\u9fff\uac00-\ud7af\u0e00-\u0e7f]/.test(text), tok = cjk ? [...text] : text.split(' '), sep = cjk ? '' : ' ', out = []; let line = '';
+    for (const w of tok) { const t = line ? line + sep + w : w; if (c.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
     if (line) out.push(line); return out;
   }
-  function drawStamp(ctx, w, h) {
-    const L = buildLines(), th = themes[st.theme] || themes.dark;
-    const u = Math.max(14, Math.round(w / 38)), pad = u * .9, lh = u * 1.4;
-    const flagW = st.flag && flagImg ? u * 4 : 0, tx = pad + (flagW ? flagW + pad : 0), maxW = w - tx - pad;
-    ctx.font = `bold ${u * 1.25}px sans-serif`; const title = wrap(ctx, L.title, maxW);
-    ctx.font = `${u}px sans-serif`; const addr = L.addr ? wrap(ctx, L.addr, maxW).slice(0, 3) : [];
-    const boxH = pad * 2 + lh * (title.length * 1.2 + addr.length + L.info.length + (L.caption ? 1.2 : 0));
-    const y0 = st.pos === 'top' ? 0 : h - boxH;
-    ctx.fillStyle = th.bg; ctx.fillRect(0, y0, w, boxH);
-    let y = y0 + pad; ctx.textBaseline = 'top';
-    if (flagW) { const fh = flagW * flagImg.naturalHeight / flagImg.naturalWidth; ctx.drawImage(flagImg, pad, y, flagW, fh); ctx.strokeStyle = th.sub; ctx.lineWidth = 2; ctx.strokeRect(pad, y, flagW, fh); }
-    ctx.fillStyle = th.fg; ctx.font = `bold ${u * 1.25}px sans-serif`; title.forEach(t => { ctx.fillText(t, tx, y); y += lh * 1.2; });
-    ctx.font = `${u}px sans-serif`; ctx.fillStyle = th.sub; addr.forEach(t => { ctx.fillText(t, tx, y); y += lh; });
-    ctx.fillStyle = th.ac; L.info.forEach(t => { ctx.fillText(t, tx, y); y += lh; });
-    if (L.caption) { ctx.font = `bold ${u * 1.1}px sans-serif`; ctx.fillStyle = th.fg; ctx.fillText(L.caption, tx, y + lh * .1); }
+  function drawPin(c, x, y, s) {
+    c.save(); c.translate(x, y); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-s * .75, -s * .55, -s * .55, -s * 1.1); c.arc(0, -s * 1.1, s * .55, Math.PI, 0); c.quadraticCurveTo(s * .75, -s * .55, 0, 0);
+    c.fillStyle = '#e53935'; c.fill(); c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = s * .08; c.stroke();
+    c.beginPath(); c.arc(0, -s * 1.1, s * .22, 0, 7); c.fillStyle = '#6e0d10'; c.fill(); c.restore();
+  }
+  function drawMap(c, x, y, w, h, r, u) {
+    c.save(); rr(c, x, y, w, h, r); c.clip();
+    const sw = w < h ? 512 * w / h : 512, sh = w < h ? 512 : 512 * h / w; c.drawImage(mapCanvas, (512 - sw) / 2, (512 - sh) / 2, sw, sh, x, y, w, h);
+    const cx = x + w / 2, cy = y + h / 2 + u * .5, R = Math.min(w, h) * .55, rot = ((heading || 0) * Math.PI) / 180, g = c.createRadialGradient(cx, cy, 0, cx, cy, R);
+    g.addColorStop(0, 'rgba(66,133,244,.75)'); g.addColorStop(1, 'rgba(66,133,244,0)');
+    c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R, -Math.PI / 2 - .5 + rot, -Math.PI / 2 + .5 + rot); c.closePath(); c.fillStyle = g; c.fill();
+    drawPin(c, cx, cy, u * 1.05);
+    c.font = `${u * .6}px ${FONT}`; c.textBaseline = 'bottom'; c.fillStyle = 'rgba(255,255,255,.85)'; c.shadowColor = '#000'; c.shadowBlur = 4; c.fillText('© Esri', x + u * .35, y + h - u * .25);
+    c.restore();
   }
 
+  /* The card: map, place, flag, address, coordinates and date all sit inside one rounded box */
+  function drawStamp(c, w, h, blur) {
+    const L = buildLines(), u = Math.max(12, Math.round(w / 38)), m = u * .9, p = u * .85, gap = u * .85, lh = u * 1.38, cw = w - 2 * m, rad = st.radius * u / 22;
+    const hasMap = st.map && mapCanvas, ms = hasMap ? cw * .27 : 0, tx = m + p + (hasMap ? ms + gap : 0), maxW = m + cw - p - tx;
+    c.textBaseline = 'top';
+    c.font = `700 ${u * 1.35}px ${FONT}`; const title = wrap(c, L.title, maxW).slice(0, 2);
+    c.font = `400 ${u * .95}px ${FONT}`; const addr = L.addr ? wrap(c, L.addr, maxW).slice(0, 3) : [];
+    const fw = st.flag && flagImg ? u * 2.6 : 0, fh = fw ? fw * flagImg.naturalHeight / flagImg.naturalWidth : 0;
+    const th = title.length * lh * 1.12 + (fh ? fh + u * .4 : 0) + addr.length * lh + L.info.length * lh + (L.caption ? lh * 1.1 : 0);
+    const ch = Math.max(th, hasMap ? ms * .85 : 0) + 2 * p, y0 = st.pos === 'top' ? m : h - m - ch;
+    c.save(); rr(c, m, y0, cw, ch, rad);
+    if (blur && 'filter' in c) { c.save(); c.clip(); c.filter = 'blur(16px)'; c.drawImage(c.canvas, 0, 0); c.restore(); }
+    c.fillStyle = hexA(st.cbg, st.alpha / 100); c.fill(); c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 2; c.stroke(); c.restore();
+    if (hasMap) drawMap(c, m + p, y0 + p, ms, ch - 2 * p, Math.max(6, rad * .55), u);
+    let y = y0 + p + Math.max(0, (ch - 2 * p - th) / 2);
+    c.fillStyle = st.cfg; c.font = `700 ${u * 1.35}px ${FONT}`; title.forEach(t => { c.fillText(t, tx, y); y += lh * 1.12; });
+    if (fh) { c.drawImage(flagImg, tx, y, fw, fh); c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1; c.strokeRect(tx, y, fw, fh); y += fh + u * .4; }
+    c.font = `400 ${u * .95}px ${FONT}`; c.fillStyle = hexA(st.cfg, .88); addr.forEach(t => { c.fillText(t, tx, y); y += lh; });
+    L.info.forEach(i => { c.fillStyle = i.a ? st.cac : hexA(st.cfg, .88); c.fillText(i.t, tx, y); y += lh; });
+    if (L.caption) { c.font = `700 ${u}px ${FONT}`; c.fillStyle = st.cfg; c.fillText(L.caption, tx, y + lh * .1); }
+  }
+  function redraw() {
+    const o = $('ov'), c = o.getContext('2d'); c.clearRect(0, 0, o.width, o.height);
+    if (geoState === 'granted' && geo) drawStamp(c, o.width, o.height, false);   // no location = no card
+  }
+  setInterval(redraw, 1000);
+
+  /* ---------- Capture ---------- */
   function capture() {
     let w = video.videoWidth, h = video.videoHeight; if (!w) return;
     const sc = st.res === 'hd' ? Math.min(1, 1920 / Math.max(w, h)) : 1;
@@ -256,18 +305,16 @@
     const ctx = canvas.getContext('2d');
     if (facing === 'user') { ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, w, h); ctx.restore(); }
     else ctx.drawImage(video, 0, 0, w, h);
-    const stamped = geoState === 'granted' && geo;   // no location = plain photo, no details
-    if (stamped) drawStamp(ctx, w, h);
+    const stamped = geoState === 'granted' && geo;
+    if (stamped) drawStamp(ctx, w, h, true);
     canvas.toBlob(blob => {
       const d = new Date(), p = n => String(n).padStart(2, '0');
       const name = `${stamped ? 'geo-photo' : 'photo'}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`;
-      current = {id:Date.now(), name, blob};
-      dbAdd(current); showPreview(current, st.autosave);
+      current = {id:Date.now(), name, blob}; dbAdd(current); showPreview(current, true);
     }, 'image/jpeg', 0.92);
   }
   function countdown() {
-    enableCompass();
-    if (!st.timer) return capture();
+    enableCompass(); if (!st.timer) return capture();
     let n = st.timer; shot.disabled = true; const c = $('count'); c.style.display = 'flex'; c.textContent = n;
     const iv = setInterval(() => { n--; if (n > 0) c.textContent = n; else { clearInterval(iv); c.style.display = 'none'; shot.disabled = false; capture(); } }, 1000);
   }
@@ -279,14 +326,13 @@
     $('out').src = curUrl; const a = $('dl'); a.href = curUrl; a.download = rec.name;
     $('gallery').style.display = 'none'; $('preview').style.display = 'block';
     $('share').style.display = (navigator.canShare && navigator.canShare({files:[new File([rec.blob], rec.name, {type:'image/jpeg'})]})) ? '' : 'none';
-    if (autosave) a.click();
-    $('preview').scrollIntoView({behavior:'smooth'});
+    if (autosave) a.click(); $('preview').scrollIntoView({behavior:'smooth'});
   }
   $('share').onclick = () => navigator.share({files:[new File([current.blob], current.name, {type:'image/jpeg'})], title:'Geo Camera'}).catch(() => {});
   $('del').onclick = async () => { await dbDel(current.id); $('preview').style.display = 'none'; openGallery(); };
   $('close').onclick = () => { $('preview').style.display = 'none'; $('gallery').style.display = 'none'; scrollTo({top:0, behavior:'smooth'}); };
 
-  /* ---------- Gallery (stored on this device, in the browser) ---------- */
+  /* ---------- Gallery (kept in this browser, on this device) ---------- */
   const dbp = new Promise((res, rej) => { try { const r = indexedDB.open('geocam', 1); r.onupgradeneeded = () => r.result.createObjectStore('p', {keyPath:'id'}); r.onsuccess = () => res(r.result); r.onerror = rej; } catch (e) { rej(e); } });
   const dbDo = (mode, fn) => dbp.then(db => new Promise((res, rej) => { const t = db.transaction('p', mode), rq = fn(t.objectStore('p')); t.oncomplete = () => res(rq && rq.result); t.onerror = rej; })).catch(() => []);
   const dbAdd = r => dbDo('readwrite', s => s.put(r)), dbDel = id => dbDo('readwrite', s => s.delete(id)), dbAll = () => dbDo('readonly', s => s.getAll());
@@ -300,13 +346,13 @@
   /* ---------- Wiring ---------- */
   shot.onclick = countdown;
   $('flip').onclick = () => { facing = facing === 'user' ? 'environment' : 'user'; video.style.transform = facing === 'user' ? 'scaleX(-1)' : ''; startCamera(); };
-  $('retry').onclick = requestLocation;
-  $('galbtn').onclick = openGallery;
+  $('retry').onclick = requestLocation; $('galbtn').onclick = openGallery;
   $('setbtn').onclick = () => { const p = $('panel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; };
   $('gridbtn').onclick = () => { st.grid = !st.grid; save(); applyUI(); };
   $('timer').onclick = () => { st.timer = st.timer === 0 ? 3 : st.timer === 3 ? 10 : 0; save(); applyUI(); };
+  $('langbtn').onclick = () => { st.lang = st.lang === 'en' ? 'native' : 'en'; save(); syncInputs(); applyUI(); redraw(); };
 
-  applyUI(); requestLocation(); startCamera();
+  syncInputs(); applyUI(); requestLocation(); startCamera();
 })();
 </script>
 </body>
