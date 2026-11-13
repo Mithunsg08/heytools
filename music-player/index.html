@@ -648,6 +648,7 @@ function addFiles(files){
 $('#pickFiles').onclick=()=>$('#fileIn').click();$('#pickDir').onclick=()=>$('#dirIn').click();
 $('#fileIn').onchange=e=>{addFiles(e.target.files);e.target.value=''};$('#dirIn').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.type==='heytools:files'&&e.data.files&&e.data.files.length)addFiles(e.data.files)});
+addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:native-audio')return;try{const have=new Set(S.q.filter(x=>x.nid).map(x=>x.nid));const fresh=e.data.items.filter(i=>!have.has(i.id)).map(i=>mk({kind:'url',nid:i.id,src:i.url,title:(i.title||'').replace(/\.[^.]+$/,''),artist:i.artist&&i.artist!=='<unknown>'?i.artist:(i.folder||'On this phone'),dur:Math.round((i.duration||0)/1000)}));if(!fresh.length)return;S.q.push(...fresh);if(typeof renderQueue==='function')renderQueue();else if(typeof renderQ==='function')renderQ();if(typeof toast==='function')toast(fresh.length+' songs found on your phone')}catch(err){console.warn(err)}});
 let dc=0;const dropEl=$('#drop');
 addEventListener('dragenter',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){dc++;dropEl.classList.add('on')}});
 addEventListener('dragleave',()=>{dc=Math.max(0,dc-1);if(!dc)dropEl.classList.remove('on')});

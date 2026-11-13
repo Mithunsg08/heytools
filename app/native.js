@@ -1,0 +1,30 @@
+/* Bridge to the Android app (Capacitor). In a normal browser every call reports "not native" and the web fallbacks are used. */
+(function () {
+  var C = window.Capacitor;
+  var native = !!(C && C.isNativePlatform && C.isNativePlatform());
+  var P = null;
+  if (native) { try { P = C.registerPlugin ? C.registerPlugin('MediaLibrary') : C.Plugins.MediaLibrary; } catch (e) { P = null; } }
+
+  function url(path) {
+    return C.convertFileSrc('file://' + path.split('/').map(encodeURIComponent).join('/'));
+  }
+  window.HeyNative = {
+    isNative: native && !!P,
+    /* Ask Android for access to videos or music. Resolves true when granted. */
+    ensure: function (kind) {
+      return P.requestAccess({ kind: kind }).then(function (r) { return !!(r && r.granted); });
+    },
+    has: function (kind) {
+      return P.checkAccess({ kind: kind }).then(function (r) { return !!(r && r.granted); }).catch(function () { return false; });
+    },
+    /* List every video or song on the phone. */
+    scan: function (kind) {
+      return P.scan({ kind: kind }).then(function (r) {
+        return (r.items || []).map(function (i) {
+          return { id: i.id, title: i.title, path: i.path, size: i.size, duration: i.duration, artist: i.artist || '', album: i.album || '',
+                   folder: (i.path || '').split('/').slice(-2, -1)[0] || '', url: url(i.path) };
+        });
+      });
+    }
+  };
+})();

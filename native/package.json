@@ -1,0 +1,11 @@
+{
+  "name": "heytools-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Android wrapper for HeyTools. Adds access to the videos and music stored on the phone.",
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "HeyTools",
   "short_name": "HeyTools",
-  "description": "26 private tools in one app. Everything runs in your browser and your files never leave your device.",
+  "description": "30 private tools in one app. Everything runs in your browser and your files never leave your device.",
   "id": "./",
   "start_url": "./?source=pwa",
   "scope": "../",

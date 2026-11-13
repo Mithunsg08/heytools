@@ -204,34 +204,40 @@ const rose=$('rose');
 function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||rose).appendChild(e);return e}
 for(let i=0;i<360;i+=5){
   const major=i%90===0,mid=i%45===0,ten=i%10===0;
-  const len=major?24:mid?18:ten?12:6;
-  el('line',{x1:200,y1:20,x2:200,y2:20+len,stroke:'#43260f','stroke-width':major?3.2:ten?1.6:1,transform:`rotate(${i} 200 200)`});
-  if(i%30===0){const t=el('text',{x:200,y:60,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#5a3513','font-family':'Georgia,serif',transform:`rotate(${i} 200 200)`});t.textContent=i}
+  const len=major?26:mid?19:ten?13:7;
+  el('line',{x1:200,y1:14,x2:200,y2:14+len,stroke:major&&i===0?'#a3281b':'#43260f','stroke-width':major?3.4:ten?1.8:1,transform:`rotate(${i} 200 200)`});
+  if(i%30===0){const t=el('text',{x:200,y:62,'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#5a3513','font-family':'Georgia,serif',transform:`rotate(${i} 200 200)`});t.textContent=i}
 }
-// star points
-function star(angle,len,w,fill){el('polygon',{points:`200,${200-len} ${200+w},200 200,${200+len*0.35} ${200-w},200`,fill,stroke:'#43260f','stroke-width':1.5,transform:`rotate(${angle} 200 200)`})}
-[45,135,225,315].forEach(a=>star(a,112,13,'#d6a43a'));
-[0,90,180,270].forEach(a=>star(a,150,17,a===0?'#a3281b':'#8a5f16'));
-el('circle',{cx:200,cy:200,r:104,fill:'none',stroke:'#8a5f16','stroke-width':1.5,'stroke-dasharray':'3 5'});
-[['N',0],['E',90],['S',180],['W',270]].forEach(([l,a])=>{const t=el('text',{x:200,y:96,'text-anchor':'middle','font-size':34,'font-family':'Pirata One',fill:l==='N'?'#a3281b':'#2a170b',transform:`rotate(${a} 200 200)`});t.textContent=l});
-[['NE',45],['SE',135],['SW',225],['NW',315]].forEach(([l,a])=>{const t=el('text',{x:200,y:84,'text-anchor':'middle','font-size':18,'font-family':'Pirata One',fill:'#2a170b',transform:`rotate(${a} 200 200)`});t.textContent=l});
-['NNE','ENE','ESE','SSE','SSW','WSW','WNW','NNW'].forEach((l,i)=>{const a=22.5+i*45;const t=el('text',{x:200,y:150,'text-anchor':'middle','font-size':9,'font-family':'IM Fell English',fill:'#8a5f16',transform:`rotate(${a} 200 200)`});t.textContent=l});
+el('circle',{cx:200,cy:200,r:122,fill:'none',stroke:'#8a5f16','stroke-width':1.2,'stroke-dasharray':'2 5'});
+/* star points sit INSIDE the letter ring so nothing overlaps */
+function star(angle,len,w,fill){el('polygon',{points:`200,${200-len} ${200+w},200 200,${200+len*0.32} ${200-w},200`,fill,stroke:'#43260f','stroke-width':1.4,transform:`rotate(${angle} 200 200)`})}
+[45,135,225,315].forEach(a=>star(a,58,9,'#d6a43a'));
+[0,90,180,270].forEach(a=>star(a,82,13,a===0?'#a3281b':'#8a5f16'));
+/* letters sit on small plates so they stay readable */
+[['N',0],['E',90],['S',180],['W',270]].forEach(([l,a])=>{
+  const g=el('g',{transform:`rotate(${a} 200 200)`});
+  el('circle',{cx:200,cy:98,r:19,fill:l==='N'?'#a3281b':'#43260f'},g);
+  const t=el('text',{x:200,y:109,'text-anchor':'middle','font-size':30,'font-family':'Pirata One, serif',fill:'#fff3d6'},g);t.textContent=l;
+  /* keep the letter upright relative to the screen's up when the dial turns: handled by rotating the plate only */
+});
+[['NE',45],['SE',135],['SW',225],['NW',315]].forEach(([l,a])=>{const t=el('text',{x:200,y:104,'text-anchor':'middle','font-size':17,'font-family':'Pirata One, serif',fill:'#2a170b',transform:`rotate(${a} 200 200)`});t.textContent=l});
 // treasure X marker (rotates with rose)
 const mark=el('g',{id:'mark',visibility:'hidden'});
-el('circle',{cx:200,cy:128,r:14,fill:'#fff3d6',stroke:'#a3281b','stroke-width':2},mark);
-el('path',{d:'M192 120 L208 136 M208 120 L192 136',stroke:'#a3281b','stroke-width':4,'stroke-linecap':'round'},mark);
+el('circle',{cx:200,cy:40,r:13,fill:'#fff3d6',stroke:'#a3281b','stroke-width':2},mark);
+el('path',{d:'M193 33 L207 47 M207 33 L193 47',stroke:'#a3281b','stroke-width':4,'stroke-linecap':'round'},mark);
 
 /* ---- state ---- */
 let heading=0,smooth=null,sensorOn=false,manual=false;
 let myPos=null,target=null,courseBearing=null;
 const pts=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const full=['North','North-Northeast','Northeast','East-Northeast','East','East-Southeast','Southeast','South-Southeast','South','South-Southwest','Southwest','West-Southwest','West','West-Northwest','Northwest','North-Northwest'];
-let decl=0,lastEvt=0;
+let decl=0,lastEvt=0,rot=0;
 const norm=d=>((d%360)+360)%360;
 
 function render(h){
   heading=norm(h);
-  rose.style.transform=`rotate(${-heading}deg)`;
+  const dd=((-heading-rot)%360+540)%360-180;rot+=dd;   // always turn the short way, never spin through north
+  rose.style.transform=`rotate(${rot}deg)`;
   $('deg').textContent=Math.round(heading)%360+'°';
   $('card').textContent=pts[Math.round(heading/22.5)%16];
   $('facing').textContent='Facing '+full[Math.round(heading/22.5)%16];
@@ -248,11 +254,13 @@ function go(n){
 /* ---- sensor ---- */
 /* Tilt-compensated heading from alpha/beta/gamma (W3C method), so the reading stays right when the phone is held upright or tilted. */
 function tiltHeading(al,be,ga){
+  /* Rotation matrix from alpha/beta/gamma. If the phone lies mostly flat, follow where its TOP points.
+     If it is held upright, follow where its BACK (camera side) points. Both agree when only pitched, so the switch never jumps. */
   const r=Math.PI/180,cA=Math.cos(al*r),sA=Math.sin(al*r),cB=Math.cos(be*r),sB=Math.sin(be*r),cG=Math.cos(ga*r),sG=Math.sin(ga*r);
-  const rA=-cA*sG-sA*sB*cG,rB=-sA*sG+cA*sB*cG;
-  let h=Math.atan(rA/rB)*180/Math.PI;
-  if(rB<0)h+=180;else if(rA<0)h+=360;
-  return h;
+  const R12=-cB*sA,R22=cA*cB,R13=cG*sA*sB+cA*sG,R23=sA*sG-cA*cG*sB,R33=cB*cG;
+  const flat=Math.abs(R33)>0.75;
+  const h=flat?Math.atan2(R12,R22):Math.atan2(-R13,-R23);
+  return{h:(h*180/Math.PI+360)%360,flat};
 }
 function setSrc(kind,txt){$('dot').className='dot '+kind;$('srcTxt').textContent=txt}
 let gotAbs=false;
@@ -263,7 +271,7 @@ function onOrient(e){
   if(typeof e.webkitCompassHeading==='number'&&e.webkitCompassHeading>=0){h=e.webkitCompassHeading}   // iPhone: already magnetic north, already corrected for tilt
   else if(e.alpha!=null&&e.beta!=null&&e.gamma!=null&&(e.absolute||e.type==='deviceorientationabsolute')){
     if(e.type==='deviceorientationabsolute')gotAbs=true;
-    h=tiltHeading(e.alpha,e.beta,e.gamma)+ang;
+    const t=tiltHeading(e.alpha,e.beta,e.gamma);h=t.h+(t.flat?ang:0);
   }
   if(h==null)return;
   h=norm(h+decl);
@@ -292,7 +300,7 @@ async function start(){
   }catch(err){$('msg').textContent='Sensor unavailable. Try "Steer by hand".'}
 }
 // Android and desktop need no permission: start listening straight away so the dial is already live.
-if(!(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'))listen();
+listen();   // harmless on iPhone: events only arrive after the button grants permission. On Android the dial wakes up by itself.
 $('decl').oninput=e=>{const v=parseFloat(e.target.value);decl=isFinite(v)?Math.max(-60,Math.min(60,v)):0;if(sensorOn)setSrc('live','Live sensor · '+(decl?'true north':'magnetic north'))};
 $('start').onclick=start;
 function enableManual(){

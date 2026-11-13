@@ -1,0 +1,7 @@
+{
+  "appId": "com.heytools.app",
+  "appName": "HeyTools",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false, "backgroundColor": "#0F172A" }
+}

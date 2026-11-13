@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Expense Tracker – Daily Spending & Monthly Budget, Private</title>
+<meta name="description" content="Track daily expenses by category, set a monthly budget, see where your money goes and export to CSV. Free, private, works offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#14213D">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/expense-tracker/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Expense Tracker – Daily Spending & Monthly Budget, Private">
+<meta property="og:description" content="Track daily expenses by category, set a monthly budget, see where your money goes and export to CSV. Free, private, works offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314213D'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E💸%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Expense Tracker","applicationCategory":"LifestyleApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Track daily expenses by category, set a monthly budget, see where your money goes and export to CSV. Free, private, works offline."}</script>
+<style>
+:root{--bg:#EEF1F6;--panel:#fff;--ink:#14213D;--muted:#4F5B75;--line:#CBD3E2;--blue:#2B4EFF;--signal:#FFC93C;--ok:#0E8A5F;--bad:#C0392B}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1424;--panel:#172036;--ink:#EEF1F6;--muted:#A9B3C9;--line:#2C3957;--blue:#7C93FF}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:820px;margin:0 auto;padding:22px 16px 56px}
+h1{font-size:clamp(1.7rem,5vw,2.4rem);line-height:1.1;margin:.2em 0 .3em;letter-spacing:-.02em}
+h2{font-size:1.2rem;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 20px}
+.card{background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:18px;margin-bottom:16px}
+label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 4px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--bg)}
+button{cursor:pointer;padding:10px 16px;border-radius:10px;border:2px solid var(--ink);background:var(--ink);color:var(--bg);font-weight:600}
+button.alt{background:var(--panel);color:var(--ink)}
+button.sig{background:var(--signal);color:#14213D}
+button.x{padding:4px 10px;font-size:.85rem}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.msg{min-height:1.4em;color:var(--muted);margin:10px 0 0}
+.seo{margin-top:36px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:28px;font-size:.85rem;color:var(--muted)}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+.tot{font-size:2.2rem;font-weight:800}.bar{height:12px;border-radius:99px;background:var(--bg);border:2px solid var(--ink);overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--ok)}.bar i.over{background:var(--bad)}ul.list{list-style:none;margin:0;padding:0}ul.list li{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}ul.list li:last-child{border:0}.amt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}.cat{font-size:1.3rem}.sub{color:var(--muted);font-size:.85rem}.cb{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;margin:6px 0;font-size:.9rem}.cb .bar{margin:0;height:10px}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Expense Tracker</h1>
+<p class="lead">Log what you spend, see it by category and stay inside your monthly budget.</p>
+<div class="card"><div class="row" style="margin:0;justify-content:space-between"><div><div class="sub" id="mlabel">This month</div><div class="tot" id="tot">0</div></div><div><label for="month" style="margin:0">Month</label><input id="month" type="month"></div></div>
+<div class="bar"><i id="bud"></i></div><div class="sub" id="budtxt"></div>
+<div class="grid2"><div><label for="budget">Monthly budget (optional)</label><input id="budget" type="number" min="0" step="any" inputmode="decimal" placeholder="e.g. 20000"></div><div><label for="cur">Currency symbol</label><input id="cur" maxlength="4" value="₹"></div></div></div>
+<div class="card"><h2>Add expense</h2>
+<div class="grid2"><div><label for="amt">Amount</label><input id="amt" type="number" min="0" step="any" inputmode="decimal"></div><div><label for="cat">Category</label><select id="cat"></select></div></div>
+<div class="grid2"><div><label for="note">Note</label><input id="note" maxlength="80" placeholder="Optional"></div><div><label for="date">Date</label><input id="date" type="date"></div></div>
+<div class="row"><button id="add" class="sig" type="button">Add expense</button></div><p class="msg" id="msg" role="status" aria-live="polite"></p></div>
+<div class="card"><h2>By category</h2><div id="cats"></div></div>
+<div class="card"><h2>Expenses</h2><ul class="list" id="list"></ul><div class="row"><button id="csv" class="alt" type="button">Export CSV</button><button id="clr" class="alt" type="button">Clear this month</button></div></div>
+<section class="seo">
+<h2>A simple private expense tracker</h2><p>Add each purchase in a few taps, group spending by category and compare it with a monthly budget. Everything is stored on your device, so it works offline and nothing is uploaded.</p>
+</section>
+<footer>Part of <a href="../" style="color:inherit">HeyTools</a>. Your data stays on this device.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id),K='heytools.expenses.v1';
+const CATS=[['🍽️','Food'],['🛒','Groceries'],['🚌','Transport'],['🏠','Home & bills'],['🛍️','Shopping'],['🎬','Fun'],['💊','Health'],['📚','Learning'],['✨','Other']];
+let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.items=st.items||[];st.budget=st.budget||'';st.cur=st.cur||'₹';
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+const today=()=>new Date().toISOString().slice(0,10),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>st.cur+(+n).toLocaleString(undefined,{maximumFractionDigits:2});
+$('cat').innerHTML=CATS.map(c=>`<option>${c[0]} ${c[1]}</option>`).join('');$('date').value=today();$('month').value=today().slice(0,7);$('budget').value=st.budget;$('cur').value=st.cur;
+function draw(){
+ const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m)).sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id),tot=rows.reduce((s,x)=>s+x.a,0);
+ $('tot').textContent=money(tot);const b=+st.budget;
+ if(b>0){const p=tot/b*100;$('bud').style.width=Math.min(100,p)+'%';$('bud').className=p>100?'over':'';$('budtxt').textContent=p>100?'Over budget by '+money(tot-b):money(b-tot)+' left of '+money(b)+' ('+Math.round(p)+'% used)'}else{$('bud').style.width='0';$('budtxt').textContent='Set a monthly budget to track progress.'}
+ const by={};rows.forEach(x=>by[x.c]=(by[x.c]||0)+x.a);const mx=Math.max(1,...Object.values(by));
+ $('cats').innerHTML=Object.keys(by).length?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="cb"><span>${esc(c)}</span><div class="bar"><i style="width:${v/mx*100}%"></i></div><b>${money(v)}</b></div>`).join(''):'<p class="sub">No expenses this month.</p>';
+ $('list').innerHTML=rows.length?rows.map(x=>`<li><span class="cat">${esc(x.c.split(' ')[0])}</span><div><div>${esc(x.n||x.c.split(' ').slice(1).join(' '))}</div><div class="sub">${esc(x.d)}</div></div><span class="amt">${money(x.a)}</span><button class="alt x" data-d="${x.id}" aria-label="Delete expense">✕</button></li>`).join(''):'<li class="sub">Nothing added yet.</li>'}
+$('add').onclick=()=>{const a=parseFloat($('amt').value);if(!(a>0)){$('msg').textContent='Enter an amount above 0.';return}
+ st.items.push({id:Date.now(),a,c:$('cat').value,n:$('note').value.trim(),d:$('date').value||today()});save();$('amt').value='';$('note').value='';$('msg').textContent='Added.';$('month').value=($('date').value||today()).slice(0,7);draw()};
+$('list').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;st.items=st.items.filter(x=>x.id!=b.dataset.d);save();draw()};
+$('month').oninput=draw;$('budget').oninput=e=>{st.budget=e.target.value;save();draw()};$('cur').oninput=e=>{st.cur=e.target.value||'₹';save();draw()};
+$('clr').onclick=()=>{if(confirm('Delete every expense in this month?')){const m=$('month').value;st.items=st.items.filter(x=>!x.d.startsWith(m));save();draw()}};
+$('csv').onclick=()=>{const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m));const csv='Date,Category,Note,Amount\n'+rows.map(x=>[x.d,x.c,'"'+(x.n||'').replace(/"/g,'""')+'"',x.a].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='expenses-'+m+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+draw();
+})();
+</script>
+</body>
+</html>

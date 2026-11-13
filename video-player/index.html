@@ -519,6 +519,8 @@ async function walk(dir,pre,out,st,root){for await(const [n,h] of dir.entries())
   if(h.kind==='directory'){if(!n.startsWith('.'))await walk(h,pre+n+'/',out,st,root)}
   else if(MEDIA.test(n)){out.push({src:'local',hk:'l:'+root+'/'+pre+n,title:n,path:pre+n,handle:h,kind:'file',folder:root});st.n++;if(st.n%100===0)toast('Found '+st.n+' videos…',60000)}}}
 const heroReady=n=>{if(!cur&&n)$('#hero p').textContent=`✓ ${n.toLocaleString()} videos ready — choose one from the Library below.`};
+/* Android app: every video on the phone arrives here as a playable URL */
+addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:native-video')return;try{const have=new Set(lib.map(x=>x.hk));const fresh=e.data.items.filter(i=>!have.has('n:'+i.id)).map(i=>({src:'local',kind:'file',hk:'n:'+i.id,title:i.title,path:(i.folder?i.folder+'/':'')+i.title,url:i.url,size:i.size,folder:i.folder||''}));if(!fresh.length)return;lib=lib.concat(fresh);renderLib();heroReady(lib.length)}catch(err){console.warn(err)}});
 async function scan(h,quiet){
   if(!quiet)toast('Scanning “'+h.name+'”…',60000);const out=[],st={n:0};
   try{await walk(h,'',out,st,h.name)}catch{return toast('Couldn’t read that folder')}
