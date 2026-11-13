@@ -186,7 +186,7 @@
       geo = {lat:c.latitude, lon:c.longitude, acc:c.accuracy, alt:c.altitude, cc:'', temp:null, wx:'',
              en:{title:'Locating…', addr:'Fetching address…'}, nat:null, locale:'en-GB'};
       setStatus('Location: on', 'on'); redraw();
-      loadMap().then(redraw); getWeather().then(redraw);
+      loadMap().then(redraw); getWeather().then(() => syncTime()).then(redraw);
       await reverseGeocode(); redraw();
     }, () => { geoState = 'denied'; setStatus('Location: off – plain photos', 'off'); redraw(); },
     {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
@@ -217,9 +217,27 @@
   }
   const wx = c => c === 0 ? 'Clear' : c <= 3 ? 'Partly cloudy' : c <= 48 ? 'Fog' : c <= 57 ? 'Drizzle' : c <= 67 ? 'Rain' : c <= 77 ? 'Snow' : c <= 82 ? 'Showers' : c <= 86 ? 'Snow showers' : 'Thunderstorm';
   async function getWeather() {
-    try { const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code`);
-      const c = (await r.json()).current; geo.temp = Math.round(c.temperature_2m); geo.wx = wx(c.weather_code); } catch (e) {}
+    try { const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code&timezone=auto`);
+      const j = await r.json(), c = j.current; geo.tz = j.timezone; geo.temp = Math.round(c.temperature_2m); geo.wx = wx(c.weather_code); } catch (e) {}
   }
+  /* ---------- Trusted time (internet clock, never the phone clock) ---------- */
+  let tOff = null, lastSync = -1e9;
+  const trustedNow = () => tOff + performance.now();
+  const timeOK = () => tOff != null && geo && geo.tz && performance.now() - lastSync < 180000;
+  async function syncTime() {
+    const srcs = [
+      async () => { const j = await (await fetch('https://timeapi.io/api/time/current/zone?timeZone=UTC', {cache:'no-store'})).json(); return Date.UTC(j.year, j.month - 1, j.day, j.hour, j.minute, j.seconds, j.milliSeconds || 0); },
+      async () => (await (await fetch('https://worldtimeapi.org/api/timezone/Etc/UTC', {cache:'no-store'})).json()).unixtime * 1000];
+    for (const f of srcs) { try { const t0 = performance.now(), ms = await f(), t1 = performance.now(); if (!(ms > 1.7e12)) continue; tOff = ms + (t1 - t0) / 2 - t1; lastSync = t1; break; } catch (e) {} }
+    if (geo && !geo.tz) { try { geo.tz = (await (await fetch(`https://timeapi.io/api/time/current/coordinate?latitude=${geo.lat}&longitude=${geo.lon}`)).json()).timeZone; } catch (e) {} }
+    timeStatus();
+  }
+  function timeStatus() {
+    if (geoState !== 'granted') return;
+    setStatus(timeOK() ? 'Location on · time verified' : 'Location on · time NOT verified', timeOK() ? 'on' : 'off');
+  }
+  setInterval(() => { if (geoState === 'granted') syncTime(); }, 60000);
+
   async function loadMap() {          // satellite imagery (Esri World Imagery), 3x3 tiles around the point
     const z = 18, n = 2 ** z, lr = geo.lat * Math.PI / 180;
     const x = (geo.lon + 180) / 360 * n, y = (1 - Math.log(Math.tan(lr) + 1 / Math.cos(lr)) / Math.PI) / 2 * n;
@@ -236,10 +254,10 @@
   const dms = (v, p, n) => { const a = Math.abs(v), d = Math.floor(a), m = Math.floor((a - d) * 60), s = ((a - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}" ${v >= 0 ? p : n}`; };
   const dec = (v, p, n) => Math.abs(v).toFixed(6) + '° ' + (v >= 0 ? p : n);
   function buildLines() {
-    const nat = st.lang === 'native' && geo.nat, T = nat ? geo.nat : geo.en, loc = nat ? geo.locale : 'en-GB', d = new Date(), f = st.coords === 'dms' ? dms : dec;
-    const time = d.toLocaleTimeString(loc, {hour:'2-digit', minute:'2-digit', hour12:st.h12 === '12', timeZoneName:st.tz ? 'short' : undefined});
-    const day = d.toLocaleDateString(loc, {weekday:'long'}), date = d.toLocaleDateString(loc, {day:'2-digit', month:'2-digit', year:'numeric'});
-    const info = [{t:`Lat ${f(geo.lat,'N','S')}  Long ${f(geo.lon,'E','W')}`, a:1}, {t:`${day}, ${date} ${time}`, a:1}];
+    const nat = st.lang === 'native' && geo.nat, T = nat ? geo.nat : geo.en, loc = nat ? geo.locale : 'en-GB', d = new Date(timeOK() ? trustedNow() : 0), f = st.coords === 'dms' ? dms : dec;
+    const z = timeOK() ? geo.tz : 'UTC', time = d.toLocaleTimeString(loc, {timeZone:z, hour:'2-digit', minute:'2-digit', hour12:st.h12 === '12', timeZoneName:st.tz ? 'short' : undefined});
+    const day = d.toLocaleDateString(loc, {timeZone:z, weekday:'long'}), date = d.toLocaleDateString(loc, {timeZone:z, day:'2-digit', month:'2-digit', year:'numeric'});
+    const info = [{t:`Lat ${f(geo.lat,'N','S')}  Long ${f(geo.lon,'E','W')}`, a:1}, {t:timeOK() ? `${day}, ${date} ${time}` : 'Verifying real time…', a:1}];
     if (st.alt) info.push({t:`Alt ${geo.alt != null ? Math.round(geo.alt) + ' m' : 'n/a'}   ±${Math.round(geo.acc)} m`});
     const ex = [];
     if (st.weather && geo.temp != null) ex.push(`${geo.temp}°C` + (nat ? '' : ' ' + geo.wx));
@@ -306,15 +324,17 @@
     if (facing === 'user') { ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, w, h); ctx.restore(); }
     else ctx.drawImage(video, 0, 0, w, h);
     const stamped = geoState === 'granted' && geo;
+    if (stamped && !timeOK()) { alert('The real time could not be verified (internet needed), so no photo was taken. This stops a wrong time being stamped.'); return; }
     if (stamped) drawStamp(ctx, w, h, true);
     canvas.toBlob(blob => {
-      const d = new Date(), p = n => String(n).padStart(2, '0');
-      const name = `${stamped ? 'geo-photo' : 'photo'}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`;
+      const d = new Date(stamped ? trustedNow() : Date.now()), p = n => String(n).padStart(2, '0');
+      const name = `${stamped ? 'geo-photo' : 'photo'}_${d.getUTCFullYear()}${p(d.getUTCMonth()+1)}${p(d.getUTCDate())}_${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z.jpg`;
       current = {id:Date.now(), name, blob}; dbAdd(current); showPreview(current, true);
     }, 'image/jpeg', 0.92);
   }
-  function countdown() {
-    enableCompass(); if (!st.timer) return capture();
+  async function countdown() {
+    enableCompass(); if (geoState === 'granted' && !timeOK()) await syncTime();
+    if (!st.timer) return capture();
     let n = st.timer; shot.disabled = true; const c = $('count'); c.style.display = 'flex'; c.textContent = n;
     const iv = setInterval(() => { n--; if (n > 0) c.textContent = n; else { clearInterval(iv); c.style.display = 'none'; shot.disabled = false; capture(); } }, 1000);
   }
