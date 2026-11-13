@@ -1,66 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HeyTools | All your private tools in one app</title>
-<meta name="description" content="HeyTools is one app with 30 private tools: media players, editors, calculators, trackers and utilities. Everything runs on your device and your files never leave it.">
-<meta name="theme-color" content="#0F172A">
+<meta name="description" content="HeyTools is one app with 31 private tools: media players, editors, calculators, trackers and utilities. Everything runs on your device and your files never leave it.">
+<meta name="theme-color" content="#F5F5F7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="HeyTools">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="app.css">
+<script>
+/* apply the saved theme before first paint so there is no flash */
+try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme&&p.theme!=='light')document.documentElement.setAttribute('data-theme',p.theme)}catch(e){}
+</script>
 </head>
 <body>
-<div class="app" id="app">
-  <div class="scrim" id="scrim"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-reload" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></symbol>
+    <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  </defs>
+</svg>
 
-  <aside class="side" id="side" aria-label="Tools menu">
-    <div class="side-head">
-      <a class="brand" href="#/" aria-label="HeyTools home"><span class="logo">H</span><span>HeyTools</span></a>
-      <button class="icon-btn only-mobile" id="closeSide" type="button" aria-label="Close menu">✕</button>
-    </div>
-    <div class="search"><input id="q" type="search" placeholder="Search tools" aria-label="Search tools" autocomplete="off" enterkeyhint="search"></div>
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="All tools">
+    <a class="brand" href="#/" aria-label="HeyTools home"><img src="icons/icon.svg" alt="" width="32" height="32"><span>HeyTools</span></a>
     <nav id="nav" aria-label="Tools"></nav>
     <div class="side-foot">
-      <button class="btn primary block" id="install" type="button" hidden>Install HeyTools app</button>
-      <p class="hint" id="iosHint" hidden>On iPhone: tap Share, then Add to Home Screen.</p>
-      <button class="btn block" id="openSettings" type="button">⚙︎ Customize &amp; settings</button>
-      <p class="net-state" id="netState" role="status"></p>
+      <button class="btn primary block install-btn" type="button" hidden>Install HeyTools app</button>
+      <button class="btn block" id="openSettings" type="button"><svg class="i"><use href="#i-settings"/></svg>Customize &amp; settings</button>
+      <p class="hint net-state" role="status"></p>
     </div>
   </aside>
 
   <main class="main">
     <header class="top">
-      <button class="icon-btn only-mobile" id="openSide" type="button" aria-label="Open menu">☰</button>
-      <h1 class="top-title" id="title">HeyTools</h1>
+      <button class="icon-btn" id="backBtn" type="button" aria-label="Back to tools" hidden><svg class="i"><use href="#i-back"/></svg></button>
+      <a class="top-brand" id="topBrand" href="#/"><img src="icons/icon.svg" alt="" width="30" height="30"><span id="title">HeyTools</span></a>
       <div class="actions" id="actions" hidden>
-        <button class="icon-btn" id="reload" type="button" aria-label="Reload tool" title="Reload">⟳</button>
-        <button class="icon-btn" id="full" type="button" aria-label="Full screen" title="Full screen">⛶</button>
-        <a class="icon-btn" id="newTab" href="#" target="_blank" rel="noopener" aria-label="Open in new tab" title="Open in new tab">↗</a>
+        <button class="icon-btn" id="reload" type="button" aria-label="Reload tool" title="Reload"><svg class="i"><use href="#i-reload"/></svg></button>
+        <button class="icon-btn" id="full" type="button" aria-label="Full screen" title="Full screen"><svg class="i"><use href="#i-full"/></svg></button>
+        <a class="icon-btn" id="newTab" href="#" target="_blank" rel="noopener" aria-label="Open in new tab" title="Open in new tab"><svg class="i"><use href="#i-ext"/></svg></a>
       </div>
-      <button class="icon-btn" id="topSettings" type="button" aria-label="Customize and settings" title="Customize and settings">⚙︎</button>
+      <button class="icon-btn" id="topSettings" type="button" aria-label="Customize and settings" title="Customize and settings"><svg class="i"><use href="#i-settings"/></svg></button>
     </header>
 
     <div class="stage">
       <section class="home" id="home">
         <div class="home-inner">
-          <div class="home-head">
-            <div>
-              <h2 class="home-title">Your tools</h2>
-              <p class="home-sub" id="homeSub"></p>
-            </div>
-            <div class="home-actions">
-              <button class="btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filterPanel">Filter <span class="count" id="filterCount" hidden></span></button>
-              <button class="btn" id="customizeBtn" type="button">✎ Customize</button>
+          <h2 class="home-title">Your tools.</h2>
+          <p class="home-sub" id="homeSub"></p>
+
+          <label class="searchbox"><svg class="i"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Search tools" aria-label="Search tools" autocomplete="off" enterkeyhint="search"></label>
+
+          <div class="bar" id="bar">
+            <div class="cats" id="cats" role="tablist" aria-label="Categories"></div>
+            <div class="bar-actions">
+              <button class="btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filterPanel"><svg class="i"><use href="#i-filter"/></svg>Filter <span class="count" id="filterCount" hidden></span></button>
+              <button class="btn" id="customizeBtn" type="button"><svg class="i"><use href="#i-edit"/></svg>Customize</button>
             </div>
           </div>
-
-          <div class="note" id="firstNote"><strong>First time needs internet.</strong> Open the app online once so each tool saves itself to your device. After that, tools marked <em>Works offline</em> run without a connection.</div>
 
           <div class="filter-panel" id="filterPanel" hidden role="group" aria-label="Show tools that">
             <button class="chip-btn" data-net="all" type="button">All</button>
@@ -69,12 +80,17 @@
             <button class="chip-btn" data-net="online" type="button">Needs internet</button>
           </div>
 
-          <div class="cats" id="cats" role="tablist" aria-label="Categories"></div>
+          <p class="note" id="firstNote"><strong>First time needs internet.</strong> Open the app online once so each tool saves itself to your device. After that, tools marked <em>Works offline</em> run without a connection.</p>
 
           <div class="edit-bar" id="editBar" hidden>
-            <div><strong>Customize your app.</strong> Drag <span aria-hidden="true">⠿</span> to reorder. Tap the eye to hide a tool.</div>
+            <div><strong>Customize your app.</strong> Drag <span aria-hidden="true">⠿</span> to reorder. Tap Hide to remove a tool.</div>
             <div class="edit-actions"><button class="btn" id="resetLayout" type="button">Reset</button><button class="btn primary" id="doneEdit" type="button">Done</button></div>
           </div>
+
+          <section class="recent" id="recent" hidden aria-labelledby="recentTitle">
+            <div class="sec-head"><h3 id="recentTitle"><svg class="i"><use href="#i-clock"/></svg>Recently used</h3><button class="link" id="clearRecent" type="button">Clear</button></div>
+            <div class="recent-row" id="recentRow"></div>
+          </section>
 
           <div class="grid" id="grid"></div>
           <p class="empty" id="empty" hidden></p>
@@ -98,21 +114,24 @@
   </main>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
 <div class="sheet-wrap" id="sheetWrap" hidden>
   <div class="sheet-scrim" id="sheetScrim"></div>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-    <div class="sheet-head"><h2 id="sheetTitle">Settings</h2><button class="icon-btn" id="closeSheet" type="button" aria-label="Close">✕</button></div>
+    <div class="sheet-head"><h2 id="sheetTitle">Settings</h2><button class="btn" id="closeSheet" type="button">Done</button></div>
     <div class="sheet-body">
       <div class="set">
-        <label class="set-l">Theme</label>
-        <div class="seg" data-pref="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div>
+        <span class="set-l">Theme</span>
+        <p class="set-s">White and black by default. Pick any theme you like, including dark.</p>
+        <div class="themes" id="themes" role="radiogroup" aria-label="Theme"></div>
       </div>
       <div class="set">
-        <label class="set-l">Layout</label>
+        <span class="set-l">Layout</span>
         <div class="seg" data-pref="layout"><button type="button" data-v="grid">Grid</button><button type="button" data-v="list">List</button></div>
       </div>
       <div class="set">
-        <label class="set-l">Tile size</label>
+        <span class="set-l">Tile size</span>
         <div class="seg" data-pref="density"><button type="button" data-v="compact">Compact</button><button type="button" data-v="comfortable">Comfortable</button></div>
       </div>
       <div class="set row">
@@ -124,9 +143,14 @@
         <input class="switch" type="checkbox" id="optText">
       </div>
       <div class="set">
-        <label class="set-l">Your layout</label>
+        <span class="set-l">Your tools</span>
         <p class="set-s" id="layoutInfo"></p>
-        <div class="row-btns"><button class="btn primary" id="sheetCustomize" type="button">✎ Reorder &amp; hide tools</button><button class="btn" id="sheetReset" type="button">Reset layout</button></div>
+        <div class="row-btns"><button class="btn primary" id="sheetCustomize" type="button"><svg class="i"><use href="#i-edit"/></svg>Reorder &amp; hide tools</button><button class="btn" id="sheetReset" type="button">Reset layout</button><button class="btn" id="sheetClearRecent" type="button">Clear history</button></div>
+      </div>
+      <div class="set">
+        <button class="btn primary block install-btn" type="button" hidden>Install HeyTools app</button>
+        <p class="hint ios-hint" hidden>On iPhone: tap Share, then Add to Home Screen.</p>
+        <p class="hint net-state" role="status"></p>
       </div>
     </div>
   </div>

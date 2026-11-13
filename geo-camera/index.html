@@ -51,6 +51,47 @@
   #gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
   .empty{color:var(--mute);text-align:center;padding:20px}
 </style>
+<meta name="description" content="Geo Camera takes photos stamped with the place, time, weather and a satellite map. Free, private and works in your browser.">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/geo-camera/">
+<style id="premium">
+  /* refined, camera-style look: pure black, clear type, soft glass controls */
+  :root{--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--mute:#98989D;--accent:#FFD60A;--warn:#FF9F0A;--line:#38383A}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding-left:14px;padding-right:14px}
+  header{padding:12px 2px 14px}
+  h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+  #status{font-weight:600;font-size:.76rem;padding:7px 13px;background:var(--panel)}
+  #status.on{color:#30D158}#status.off{color:var(--warn)}
+  .stage{border-radius:26px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 24px 48px -24px rgba(0,0,0,.8)}
+  #msg{font-size:.95rem;color:var(--mute)}
+  #zoomrow{padding:14px 6px 0}
+  #zoomrow input{accent-color:var(--accent)}
+  .controls{padding:20px 0 12px;gap:22px}
+  #shot{width:78px;height:78px;border:4px solid #000;box-shadow:0 0 0 3px #fff;transition:transform .12s}
+  .side{background:var(--panel);border-radius:99px;padding:13px 20px;font-weight:600;font-size:.86rem;min-width:84px;transition:background .15s}
+  .side:hover{background:var(--panel2)}
+  .chips{gap:8px;padding-bottom:16px}
+  .chip{background:var(--panel);color:var(--ink);border-radius:99px;padding:9px 15px;font-weight:600;font-size:.78rem;transition:background .15s}
+  .chip:hover{background:var(--panel2)}
+  .chip.act{background:var(--accent);color:#000}
+  #panel{background:var(--panel);border-radius:22px;padding:18px 20px;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+  #panel h2{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:18px 0 6px}
+  #panel label{padding:9px 0;border-bottom:1px solid var(--line)}
+  #panel label:last-child{border-bottom:0}
+  #panel select,#panel input[type=text]{background:var(--panel2);border:0;border-radius:10px;padding:9px 10px;color:var(--ink)}
+  #panel input[type=checkbox]{accent-color:var(--accent)}
+  .sw{border-color:rgba(255,255,255,.35)} .sw i{border-color:var(--panel)}
+  #preview img{border-radius:20px}
+  .row{gap:10px;margin-top:12px}
+  .row button,.row a{background:var(--panel);border-radius:14px;padding:14px 8px;font-weight:600;font-size:.88rem}
+  .row .pri{background:var(--accent);color:#000}
+  .row .del{color:#FF453A}
+  #gallery .tiles{gap:8px}
+  #gallery img{border-radius:14px}
+  .empty{color:var(--mute)}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline-color:var(--accent)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
 <body>
 <header><h1>Geo Camera</h1><span id="status">Location: checking…</span></header>

@@ -27,16 +27,40 @@ m = m.replace('<application', add + '\n    <uses-feature android:name="android.h
 if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '<application android:requestLegacyExternalStorage="true"');
 fs.writeFileSync(mp, m);
 
-/* App icon: use the HeyTools icon for the launcher. Needs ImageMagick (present on GitHub runners); skipped if missing. */
-try {
+/* App icon: the HeyTools logo from app/icons. Resized with ImageMagick when available, otherwise copied as is. */
+(function () {
   const icon = path.resolve(__dirname, '../../app/icons/icon-512.png');
   const res = path.join(root, 'app/src/main/res');
   fs.rmSync(path.join(res, 'mipmap-anydpi-v26'), { recursive: true, force: true });
   const sizes = { 'mipmap-mdpi': 48, 'mipmap-hdpi': 72, 'mipmap-xhdpi': 96, 'mipmap-xxhdpi': 144, 'mipmap-xxxhdpi': 192 };
+  let tool = null;
+  for (const t of ['magick', 'convert']) { try { cp.execSync(t + ' -version', { stdio: 'ignore' }); tool = t; break; } catch (e) { /* try next */ } }
   for (const [dir, px] of Object.entries(sizes)) {
     const d = path.join(res, dir); fs.mkdirSync(d, { recursive: true });
-    for (const n of ['ic_launcher.png', 'ic_launcher_round.png', 'ic_launcher_foreground.png'])
-      cp.execSync(`convert "${icon}" -resize ${px}x${px} "${path.join(d, n)}"`);
+    for (const n of ['ic_launcher.png', 'ic_launcher_round.png', 'ic_launcher_foreground.png']) {
+      const out = path.join(d, n);
+      try { if (!tool) throw new Error('no ImageMagick'); cp.execSync(`${tool} "${icon}" -resize ${px}x${px} "${out}"`); }
+      catch (e) { fs.copyFileSync(icon, out); }
+    }
   }
-} catch (e) { console.log('Icon step skipped:', e.message.split('\n')[0]); }
+})();
+
+/* Launch screen: replace the default Capacitor logo with the HeyTools logo on a plain background. */
+(function () {
+  const icon = path.resolve(__dirname, '../../app/icons/icon-512.png');
+  const res = path.join(root, 'app/src/main/res');
+  let tool = null;
+  for (const t of ['magick', 'convert']) { try { cp.execSync(t + ' -version', { stdio: 'ignore' }); tool = t; break; } catch (e) { /* try next */ } }
+  if (!tool) { console.log('Launch screen step skipped: no ImageMagick'); return; }
+  const files = [];
+  (function walk(d) { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walk(p); else if (n === 'splash.png') files.push(p); } })(res);
+  for (const f of files) {
+    try {
+      const size = cp.execSync(`${tool === 'magick' ? 'magick identify' : 'identify'} -format "%wx%h" "${f}"`).toString().trim();
+      const [w, h] = size.split('x').map(Number), logo = Math.round(Math.min(w, h) * 0.32);
+      cp.execSync(`${tool} -size ${w}x${h} xc:"#F5F5F7" \\( "${icon}" -resize ${logo}x${logo} \\) -gravity center -composite "${f}"`);
+    } catch (e) { console.log('Splash skipped for', f, e.message.split('\n')[0]); }
+  }
+  console.log('Launch screen updated:', files.length, 'image(s)');
+})();
 console.log('Android project patched.');

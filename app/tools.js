@@ -1,6 +1,6 @@
 /* HeyTools registry. To add a tool: add a line to HEY_TOOLS (and the folder to ../heytools-sw.js).
    net:  'offline' | 'partial' | 'online'
-   perm: 'video' | 'audio' | 'camera' | 'mic' | 'motion'  -> permission screen before the tool opens
+   perm: 'video' | 'audio' | 'camera' | 'mic' | 'motion' | 'geo'  -> permission screen before the tool opens
    hide: CSS that hides the page text / SEO sections when the tool runs inside the app. */
 window.HEY_CATS = [
   { id: 'media',    label: 'Media' },
@@ -15,6 +15,7 @@ window.HEY_TOOLS = [
   { id: 'video-player', name: 'Video Player', cat: 'media', icon: '▶️', net: 'partial', perm: 'video', netNote: 'Videos on your phone work offline. Live TV and streaming need internet.', desc: 'Plays every video on your phone, live TV and streaming links.', hide: '.seo,footer' },
   { id: 'music-player', name: 'Music Player', cat: 'media', icon: '🎵', net: 'partial', perm: 'audio', netNote: 'Music on your phone works offline. Streaming needs internet.', desc: '3D player for all the music on your phone, plus streaming.', hide: '#about,footer' },
   { id: 'recorder', name: 'Recorder', cat: 'media', icon: '🎙️', net: 'offline', perm: 'mic', desc: 'Record voice, video or your screen. Saved on your device.', hide: 'article.seo,footer' },
+  { id: 'geo-camera', name: 'Geo Camera', cat: 'media', icon: '📍', net: 'partial', perm: 'geo', netNote: 'The camera works offline. Address, weather and map need internet.', desc: 'Photos stamped with place, time, weather and a map.', hide: 'header h1,footer' },
   { id: 'emulsion', name: 'Emulsion', cat: 'media', icon: '🎞️', net: 'offline', desc: 'Image and video editor with layers and a timeline.', hide: '.hero,#features,#compare,#guides,#shortcuts,#faq,footer' },
   { id: 'video-loop', name: 'Video Loop', cat: 'media', icon: '🔁', net: 'offline', desc: 'Turn short clips into seamless long loops.', hide: 'footer' },
   { id: 'media-downloads', name: 'Media Downloads', cat: 'media', icon: '⬇️', net: 'online', desc: 'Download public media from a link.', hide: '#features,#faq,footer' },

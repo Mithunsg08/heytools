@@ -1,20 +1,41 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var TOOLS = window.HEY_TOOLS, CATS = window.HEY_CATS, NATIVE = window.HeyNative || { isNative: false };
+  var TOOLS = window.HEY_TOOLS, CATS = window.HEY_CATS, NATIVE = window.HeyNative || { isNative: false, hasMedia: false };
   var byId = {}, catLabel = {};
   TOOLS.forEach(function (t) { byId[t.id] = t; });
   CATS.forEach(function (c) { catLabel[c.id] = c.label; });
 
   var NET = { offline: 'Works offline', partial: 'Partly offline', online: 'Needs internet' };
-  var PERM_LABEL = { video: 'Asks for videos', audio: 'Asks for music', camera: 'Asks for camera', mic: 'Asks for mic + camera', motion: 'Asks for motion sensor' };
+  var PERM_LABEL = { video: 'Asks for your videos', audio: 'Asks for your music', camera: 'Asks for the camera', mic: 'Asks for mic + camera', motion: 'Asks for the motion sensor', geo: 'Asks for camera + location' };
+
+  /* ---------- themes (white and black by default) ---------- */
+  var THEMES = [
+    { id: 'light',    name: 'Light',    tone: 'light', bg: '#F5F5F7', panel: '#FFFFFF', panel2: '#F2F2F4', ink: '#1D1D1F', muted: '#6E6E73', line: '#E5E5EA', accent: '#0071E3', accentInk: '#FFFFFF' },
+    { id: 'paper',    name: 'Paper',    tone: 'light', bg: '#FFFFFF', panel: '#FFFFFF', panel2: '#F4F4F4', ink: '#000000', muted: '#6B6B6B', line: '#E6E6E6', accent: '#000000', accentInk: '#FFFFFF' },
+    { id: 'dark',     name: 'Dark',     tone: 'dark',  bg: '#000000', panel: '#1C1C1E', panel2: '#2C2C2E', ink: '#F5F5F7', muted: '#98989D', line: '#38383A', accent: '#2997FF', accentInk: '#000000' },
+    { id: 'midnight', name: 'Midnight', tone: 'dark',  bg: '#000000', panel: '#0E0E10', panel2: '#1A1A1D', ink: '#FFFFFF', muted: '#8E8E93', line: '#232326', accent: '#F5F5F7', accentInk: '#000000' },
+    { id: 'graphite', name: 'Graphite', tone: 'dark',  bg: '#1C1C1E', panel: '#2C2C2E', panel2: '#3A3A3C', ink: '#F2F2F7', muted: '#A1A1A6', line: '#48484A', accent: '#0A84FF', accentInk: '#FFFFFF' },
+    { id: 'ocean',    name: 'Ocean',    tone: 'light', bg: '#EAF3FB', panel: '#FFFFFF', panel2: '#EEF5FB', ink: '#0B2540', muted: '#54708C', line: '#D5E4F2', accent: '#0A7AFF', accentInk: '#FFFFFF' },
+    { id: 'forest',   name: 'Forest',   tone: 'light', bg: '#EDF4EE', panel: '#FFFFFF', panel2: '#F1F7F2', ink: '#11291A', muted: '#5A7364', line: '#D6E5DA', accent: '#1F8F4E', accentInk: '#FFFFFF' },
+    { id: 'sunset',   name: 'Sunset',   tone: 'light', bg: '#FFF3EA', panel: '#FFFFFF', panel2: '#FFF6EF', ink: '#3A1D10', muted: '#8B6552', line: '#F5DFD0', accent: '#F26B2D', accentInk: '#FFFFFF' },
+    { id: 'rose',     name: 'Rose',     tone: 'light', bg: '#FFF0F4', panel: '#FFFFFF', panel2: '#FFF5F8', ink: '#3B0F1F', muted: '#8C5B6A', line: '#F6D9E1', accent: '#E0245E', accentInk: '#FFFFFF' },
+    { id: 'lavender', name: 'Lavender', tone: 'light', bg: '#F2EFFF', panel: '#FFFFFF', panel2: '#F6F4FF', ink: '#1F1747', muted: '#6B6590', line: '#E1DBF7', accent: '#6C4CF1', accentInk: '#FFFFFF' },
+    { id: 'sand',     name: 'Sand',     tone: 'light', bg: '#F4EFE6', panel: '#FFFDF9', panel2: '#F7F2E9', ink: '#2A2113', muted: '#7A6D58', line: '#E7DEC9', accent: '#A06A1C', accentInk: '#FFFFFF' },
+    { id: 'aurora',   name: 'Aurora',   tone: 'dark',  bg: '#06130F', panel: '#0D1F19', panel2: '#142A22', ink: '#E8FFF5', muted: '#86A99A', line: '#1D3A2E', accent: '#30D98B', accentInk: '#04130C' },
+    { id: 'plum',     name: 'Plum',     tone: 'dark',  bg: '#12081C', panel: '#1C0F2A', panel2: '#26163A', ink: '#F6EDFF', muted: '#A48FBD', line: '#34214D', accent: '#BF5AF2', accentInk: '#12081C' }
+  ];
+  var themeById = {}; THEMES.forEach(function (t) { themeById[t.id] = t; });
+  function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
 
   /* ---------- storage ---------- */
   function get(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
 
-  var PREFS = Object.assign({ theme: 'system', layout: 'grid', density: 'comfortable', desc: true, text: false }, get('heytools.prefs.v1', {}));
+  var PREFS = Object.assign({ theme: 'light', layout: 'grid', density: 'comfortable', desc: true, text: false }, get('heytools.prefs.v2', {}));
+  if (PREFS.theme !== 'auto' && !themeById[PREFS.theme]) PREFS.theme = 'light';
   var LAYOUT = get('heytools.layout.v1', { order: [], hidden: [] });
+  var RECENT = get('heytools.recent.v1', []);
   function normalizeLayout() {
     var seen = {}, order = [];
     (LAYOUT.order || []).forEach(function (id) { if (byId[id] && !seen[id]) { seen[id] = 1; order.push(id); } });
@@ -23,15 +44,15 @@
     LAYOUT.hidden = (LAYOUT.hidden || []).filter(function (id) { return byId[id]; });
   }
   normalizeLayout();
+  RECENT = RECENT.filter(function (r) { return r && byId[r.id]; }).slice(0, 12);
   function saveLayout() { put('heytools.layout.v1', LAYOUT); }
-  function savePrefs() { put('heytools.prefs.v1', PREFS); }
+  function savePrefs() { put('heytools.prefs.v2', PREFS); }
   function isHidden(id) { return LAYOUT.hidden.indexOf(id) !== -1; }
 
   /* ---------- state ---------- */
   var current = null, editing = false, netFilter = 'all', cat = 'all';
   var q = $('q'), nav = $('nav'), grid = $('grid'), frame = $('frame'), loading = $('loading');
 
-  /* ---------- small DOM helper ---------- */
   function el(tag, attrs, kids) {
     var n = document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function (k) {
@@ -41,24 +62,54 @@
     return n;
   }
   function ico(t) { var i = el('span', { 'class': 'ico', 'data-cat': t.cat, 'aria-hidden': 'true' }); i.textContent = t.icon; return i; }
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
 
-  /* ---------- preferences ---------- */
+  /* ---------- tool address ----------
+     The Android app serves files itself and answers any address without a file name (like /calculator/) with the home page,
+     so inside the app every tool must be opened by its real file: /calculator/index.html */
+  function toolPath(t) { return '../' + t.id + '/' + (NATIVE.isNative ? 'index.html' : ''); }
+
+  /* ---------- theme + preferences ---------- */
+  function resolveTheme() {
+    if (PREFS.theme !== 'auto') return themeById[PREFS.theme];
+    return themeById[window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'];
+  }
+  function applyTheme() {
+    var t = resolveTheme(), s = document.documentElement.style;
+    s.setProperty('--bg', t.bg); s.setProperty('--panel', t.panel); s.setProperty('--panel2', t.panel2);
+    s.setProperty('--ink', t.ink); s.setProperty('--muted', t.muted); s.setProperty('--line', t.line);
+    s.setProperty('--accent', t.accent); s.setProperty('--accent-ink', t.accentInk); s.setProperty('--glass', rgba(t.bg, 0.78));
+    document.documentElement.setAttribute('data-theme', PREFS.theme);
+    document.documentElement.setAttribute('data-tone', t.tone);
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', t.bg);
+  }
+  function renderThemes() {
+    var box = $('themes'); box.textContent = '';
+    [{ id: 'auto', name: 'Auto', tone: 'light', bg: '#F5F5F7', panel: '#1C1C1E', accent: '#2997FF' }].concat(THEMES).forEach(function (t) {
+      var sw = el('span', { 'class': 'sw' }, [el('i', { 'class': 'a' }), el('i', { 'class': 'b' }), el('i', { 'class': 'c' })]);
+      sw.style.background = t.bg;
+      sw.children[0].style.background = t.panel; sw.children[1].style.background = t.accent; sw.children[2].style.background = t.accent;
+      if (t.id === 'auto') { sw.style.background = 'linear-gradient(105deg,#F5F5F7 50%,#000 50%)'; sw.children[0].style.background = '#fff'; sw.children[1].style.background = '#0071E3'; sw.children[2].style.background = '#2997FF'; }
+      var b = el('button', { 'class': 'theme', type: 'button', role: 'radio', 'aria-checked': String(PREFS.theme === t.id), 'data-theme-id': t.id }, [sw, el('span', { 'class': 'tn', text: t.name })]);
+      b.addEventListener('click', function () { PREFS.theme = t.id; savePrefs(); applyTheme(); renderThemes(); });
+      box.appendChild(b);
+    });
+  }
   function applyPrefs() {
-    var root = document.documentElement, b = document.body;
-    if (PREFS.theme === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', PREFS.theme);
-    b.setAttribute('data-layout', PREFS.layout);
-    b.setAttribute('data-density', PREFS.density);
-    b.setAttribute('data-desc', PREFS.desc ? 'on' : 'off');
-    var dark = PREFS.theme === 'dark' || (PREFS.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    var m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', dark ? '#141B2E' : '#0F172A');
+    var b = document.body;
+    b.setAttribute('data-layout', PREFS.layout); b.setAttribute('data-density', PREFS.density); b.setAttribute('data-desc', PREFS.desc ? 'on' : 'off');
+    applyTheme();
     var segs = document.querySelectorAll('.seg');
     for (var i = 0; i < segs.length; i++) {
       var key = segs[i].getAttribute('data-pref'), btns = segs[i].querySelectorAll('button');
       for (var j = 0; j < btns.length; j++) btns[j].setAttribute('aria-pressed', String(PREFS[key] === btns[j].getAttribute('data-v')));
     }
-    $('optDesc').checked = !!PREFS.desc;
-    $('optText').checked = !!PREFS.text;
-    $('layoutInfo').textContent = LAYOUT.hidden.length ? LAYOUT.hidden.length + ' hidden tool' + (LAYOUT.hidden.length > 1 ? 's' : '') + '. Drag tiles to put the ones you use most first.' : 'Drag tiles to put the ones you use most first. Hide the ones you do not need.';
+    $('optDesc').checked = !!PREFS.desc; $('optText').checked = !!PREFS.text;
+    $('layoutInfo').textContent = (LAYOUT.hidden.length ? LAYOUT.hidden.length + ' hidden. ' : '') + 'Drag tiles to put the ones you use most first. Hide the ones you do not need.';
   }
   document.querySelectorAll('.seg').forEach(function (s) {
     s.addEventListener('click', function (e) {
@@ -68,7 +119,34 @@
   });
   $('optDesc').addEventListener('change', function (e) { PREFS.desc = e.target.checked; savePrefs(); applyPrefs(); });
   $('optText').addEventListener('change', function (e) { PREFS.text = e.target.checked; savePrefs(); applyPrefs(); if (current) applyHide(byId[current]); });
-  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyPrefs);
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if (PREFS.theme === 'auto') applyTheme(); });
+
+  /* ---------- recently used ---------- */
+  function recordRecent(id) {
+    RECENT = RECENT.filter(function (r) { return r.id !== id; });
+    RECENT.unshift({ id: id, t: Date.now() });
+    RECENT = RECENT.slice(0, 12); put('heytools.recent.v1', RECENT);
+  }
+  function ago(ts) {
+    var m = Math.round((Date.now() - ts) / 60000);
+    if (m < 1) return 'Just now'; if (m < 60) return m + ' min ago';
+    var h = Math.round(m / 60); if (h < 24) return h + ' h ago';
+    var d = Math.round(h / 24); return d === 1 ? 'Yesterday' : d + ' days ago';
+  }
+  function clearRecent() { RECENT = []; put('heytools.recent.v1', RECENT); render(); toast('History cleared'); }
+  function renderRecent() {
+    var box = $('recent'), row = $('recentRow');
+    row.textContent = '';
+    var list = RECENT.filter(function (r) { return !isHidden(r.id); }).slice(0, 8);
+    var show = list.length && !editing && !q.value.trim() && netFilter === 'all' && cat === 'all';
+    box.hidden = !show; if (!show) return;
+    list.forEach(function (r) {
+      var t = byId[r.id];
+      row.appendChild(el('a', linkAttrs(t, 'rcard'), [ico(t), el('span', {}, [el('span', { 'class': 'nm', text: t.name }), el('span', { 'class': 'ago', text: ago(r.t) })])]));
+    });
+  }
+  $('clearRecent').addEventListener('click', clearRecent);
+  $('sheetClearRecent').addEventListener('click', function () { clearRecent(); });
 
   /* ---------- offline "saved" status ---------- */
   var saved = {};
@@ -111,16 +189,16 @@
 
   /* ---------- rendering ---------- */
   function render() {
-    renderCats(); renderNav(); renderGrid(); renderTray(); paintSaved();
+    renderCats(); renderNav(); renderGrid(); renderRecent(); renderTray(); paintSaved();
     var hidden = LAYOUT.hidden.length;
-    $('homeSub').textContent = visibleTools().length + ' tools' + (hidden ? ' · ' + hidden + ' hidden' : '') + (NATIVE.isNative ? '' : ' · private, on your device');
+    $('homeSub').textContent = visibleTools().length + ' tools' + (hidden ? ' · ' + hidden + ' hidden' : '') + ' · private, on your device';
     var active = netFilter !== 'all' ? 1 : 0;
     $('filterCount').hidden = !active; $('filterCount').textContent = active;
   }
   function renderCats() {
     var box = $('cats'); box.textContent = '';
-    if (editing) { box.hidden = true; return; }
-    box.hidden = false;
+    $('bar').hidden = editing;
+    if (editing) return;
     var present = {}; visibleTools().forEach(function (t) { present[t.cat] = 1; });
     if (cat !== 'all' && !present[cat]) cat = 'all';
     [{ id: 'all', label: 'All' }].concat(CATS.filter(function (c) { return present[c.id]; })).forEach(function (c) {
@@ -131,27 +209,21 @@
   }
   function renderNav() {
     nav.textContent = '';
-    var list = visibleTools().filter(function (t) {
-      var term = q.value.trim().toLowerCase();
-      return !term || (t.name + ' ' + t.desc).toLowerCase().indexOf(term) !== -1;
-    });
-    list.forEach(function (t) {
+    visibleTools().forEach(function (t) {
       var a = el('a', linkAttrs(t, 'nav-item'), [ico(t), el('span', { 'class': 'nm', text: t.name }), el('span', { 'class': 'dot ' + t.net, title: NET[t.net] })]);
       if (t.id === current) a.setAttribute('aria-current', 'page');
       nav.appendChild(a);
     });
-    if (!list.length) nav.appendChild(el('p', { 'class': 'empty', text: 'No tools found.' }));
   }
   function card(t) {
-    var chips = el('div', { 'class': 'chips' }, [el('span', { 'class': 'chip ' + t.net, text: NET[t.net] })]);
-    if (t.perm) chips.appendChild(el('span', { 'class': 'chip perm', text: PERM_LABEL[t.perm] }));
-    if (t.isNew) chips.appendChild(el('span', { 'class': 'chip new', text: 'New' }));
-    var main = el('a', linkAttrs(t, 'tool-main'), [ico(t), el('span', { 'class': 'meta' }, [el('span', { 'class': 'name', text: t.name }), el('span', { 'class': 'desc', text: t.desc })])]);
-    var a = el('article', { 'class': 'tool', 'data-id': t.id }, [
-      main, chips,
-      t.netNote ? el('div', { 'class': 'note-line', text: t.netNote }) : null,
-      t.external ? el('div', { 'class': 'saved', text: 'Opens its own site. Needs internet.' }) : el('div', { 'class': 'saved', 'data-saved': t.id })
-    ]);
+    var nameEl = el('span', { 'class': 'name', text: t.name });
+    if (t.isNew) nameEl.appendChild(el('span', { 'class': 'new', text: 'NEW' }));
+    var main = el('a', linkAttrs(t, 'tool-main'), [ico(t), el('span', { 'class': 'meta' }, [nameEl, el('span', { 'class': 'desc', text: t.desc })])]);
+    var status = el('div', { 'class': 'status' }, [el('span', { 'class': 'st ' + t.net }, [el('i', { 'class': 'dot ' + t.net }), document.createTextNode(NET[t.net])])]);
+    if (t.external) { status.appendChild(el('span', { 'class': 'sep', text: '·' })); status.appendChild(el('span', { 'class': 'saved', text: 'Opens its own site' })); }
+    else if (t.net !== 'online') { status.appendChild(el('span', { 'class': 'sep', text: '·' })); status.appendChild(el('span', { 'class': 'saved', 'data-saved': t.id })); }
+    var extra = t.netNote || (t.perm ? PERM_LABEL[t.perm] : '');
+    var a = el('article', { 'class': 'tool', 'data-id': t.id }, [main, extra ? el('div', { 'class': 'note-line', text: extra }) : null, status]);
     var h = el('button', { 'class': 'handle', type: 'button', 'aria-label': 'Drag to reorder ' + t.name + '. With the keyboard, use arrow keys.', title: 'Drag to reorder' }); h.textContent = '⠿';
     var e = el('button', { 'class': 'eye', type: 'button', 'aria-label': 'Hide ' + t.name, title: 'Hide' }); e.textContent = 'Hide';
     a.appendChild(h); a.appendChild(e);
@@ -187,8 +259,8 @@
   /* ---------- customize mode: drag to reorder, hide / unhide ---------- */
   function setEditing(on) {
     editing = on;
-    if (on) { q.value = ''; netFilter = 'all'; cat = 'all'; $('filterPanel').hidden = true; $('filterBtn').setAttribute('aria-expanded', 'false'); if (location.hash && location.hash !== '#/') location.hash = '#/'; }
-    $('editBar').hidden = !on; $('filterBtn').hidden = on; $('customizeBtn').hidden = on; $('firstNote').hidden = on;
+    if (on) { q.value = ''; netFilter = 'all'; cat = 'all'; $('filterPanel').hidden = true; $('filterBtn').setAttribute('aria-expanded', 'false'); if (current) location.hash = '#/'; }
+    $('editBar').hidden = !on; $('firstNote').hidden = on; document.querySelector('.searchbox').hidden = on;
     render();
   }
   function persistOrderFromDom() {
@@ -204,11 +276,10 @@
     var h = e.target.closest('.handle'); if (!h) return;
     e.preventDefault();
     var cardEl = h.closest('.tool'), r = cardEl.getBoundingClientRect();
-    drag = { card: cardEl, gx: e.clientX - r.left, gy: e.clientY - r.top, x: e.clientX, y: e.clientY, id: e.pointerId, handle: h };
+    drag = { card: cardEl, gx: e.clientX - r.left, gy: e.clientY - r.top, x: e.clientX, y: e.clientY, id: e.pointerId };
     cardEl.classList.add('dragging');
     try { h.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-    moveDrag();
-    raf = requestAnimationFrame(loop);
+    moveDrag(); raf = requestAnimationFrame(loop);
   });
   grid.addEventListener('pointermove', function (e) { if (drag && e.pointerId === drag.id) { drag.x = e.clientX; drag.y = e.clientY; moveDrag(); } });
   function endDrag(e) {
@@ -237,7 +308,7 @@
   }
   function loop() {                                   // scroll the page while dragging near an edge
     if (!drag) return;
-    var home = $('home'), r = home.getBoundingClientRect(), edge = 70, speed = 0;
+    var home = $('home'), r = home.getBoundingClientRect(), edge = 80, speed = 0;
     if (drag.y < r.top + edge) speed = -Math.ceil((r.top + edge - drag.y) / 5);
     else if (drag.y > r.bottom - edge) speed = Math.ceil((drag.y - (r.bottom - edge)) / 5);
     if (speed) { home.scrollTop += speed; moveDrag(); }
@@ -264,7 +335,7 @@
   });
   $('sheetReset').addEventListener('click', function () { $('resetLayout').click(); });
 
-  /* ---------- filter ---------- */
+  /* ---------- filter + search ---------- */
   $('filterBtn').addEventListener('click', function () {
     var p = $('filterPanel'); p.hidden = !p.hidden;
     $('filterBtn').setAttribute('aria-expanded', String(!p.hidden));
@@ -276,12 +347,13 @@
     document.querySelectorAll('[data-net]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-net') === netFilter)); });
   }
   q.addEventListener('input', function () { render(); });
-  q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = nav.querySelector('.nav-item'); if (f) f.click(); } });
+  q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = grid.querySelector('.tool-main'); if (f) f.click(); } });
 
   /* ---------- settings sheet ---------- */
-  function openSheet() { applyPrefs(); $('sheetWrap').hidden = false; $('closeSheet').focus(); }
+  function sheetOpen() { return !$('sheetWrap').hidden; }
+  function openSheet() { applyPrefs(); renderThemes(); $('sheetWrap').hidden = false; $('closeSheet').focus(); }
   function closeSheet() { $('sheetWrap').hidden = true; }
-  $('openSettings').addEventListener('click', function () { closeSide(); openSheet(); });
+  $('openSettings').addEventListener('click', openSheet);
   $('topSettings').addEventListener('click', openSheet);
   $('closeSheet').addEventListener('click', closeSheet);
   $('sheetScrim').addEventListener('click', closeSheet);
@@ -297,6 +369,7 @@
     audio:  { title: 'Allow access to your music', web: 'Pick your Music folder. HeyTools adds every song inside it to the player. Files are never uploaded.', nat: 'HeyTools will find every song on this phone so you can play them. Files are never uploaded.', ok: 'Allow access' },
     camera: { title: 'Allow the camera', web: 'The scanner reads codes from your camera on this device. Nothing is recorded or uploaded.', nat: 'The scanner reads codes from your camera on this device. Nothing is recorded or uploaded.', ok: 'Allow camera' },
     mic:    { title: 'Allow microphone and camera', web: 'The recorder needs these to capture voice and video. Recordings stay on your device.', nat: 'The recorder needs these to capture voice and video. Recordings stay on your device.', ok: 'Allow access' },
+    geo:    { title: 'Allow camera and location', web: 'Geo Camera puts the place, time and weather on each photo. It needs the camera and your location. Photos stay on your device.', nat: 'Geo Camera puts the place, time and weather on each photo. It needs the camera and your location. Photos stay on your device.', ok: 'Allow access' },
     motion: { title: 'Allow motion sensors', web: 'This tool reads your phone sensors to find direction and tilt. Nothing leaves your device.', nat: 'This tool reads your phone sensors to find direction and tilt. Nothing leaves your device.', ok: 'Allow sensors' }
   };
   var MEDIA_AUDIO = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba)$/i;
@@ -331,7 +404,7 @@
   function stopTracks(st) { st.getTracks().forEach(function (x) { x.stop(); }); }
   function askPermission(t, msg) {
     var kind = t.perm;
-    if (NATIVE.isNative && (kind === 'video' || kind === 'audio')) {
+    if (NATIVE.hasMedia && (kind === 'video' || kind === 'audio')) {
       return NATIVE.ensure(kind).then(function (ok) { if (!ok) throw new Error('denied'); });
     }
     if (kind === 'video') {
@@ -360,6 +433,16 @@
           throw e;
         });
     }
+    if (kind === 'geo') {
+      var cam = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+        ? navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(stopTracks) : Promise.resolve();
+      return cam.then(function () {                      // a refused location does not block the camera
+        return new Promise(function (res) {
+          if (!navigator.geolocation) return res();
+          navigator.geolocation.getCurrentPosition(function () { res(); }, function () { res(); }, { timeout: 8000 });
+        });
+      });
+    }
     if (kind === 'motion') {
       var D = window.DeviceOrientationEvent;
       if (D && typeof D.requestPermission === 'function') return D.requestPermission().then(function (r) { if (r !== 'granted') throw new Error('denied'); });
@@ -380,37 +463,42 @@
       });
     });
     later.addEventListener('click', function () { hideGate(); loadTool(t); });
-    box.appendChild(el('div', { 'class': 'gate-card', role: 'dialog', 'aria-label': g.title }, [ico(t), el('h2', { text: g.title }), el('p', { text: NATIVE.isNative ? g.nat : g.web }), el('div', { 'class': 'row' }, [ok, later]), msg]));
+    box.appendChild(el('div', { 'class': 'gate-card', role: 'dialog', 'aria-label': g.title }, [ico(t), el('h2', { text: g.title }), el('p', { text: NATIVE.hasMedia ? g.nat : g.web }), el('div', { 'class': 'row' }, [ok, later]), msg]));
     box.hidden = false; loading.classList.add('done'); ok.focus();
   }
   function hideGate() { $('gate').hidden = true; }
 
   /* ---------- opening tools ---------- */
   function loadTool(t) {
-    var path = '../' + t.id + '/';
     loading.classList.remove('done');
-    frame.title = t.name; frame.src = path; $('newTab').href = path;
+    frame.title = t.name; frame.src = toolPath(t); $('newTab').href = toolPath(t);
+  }
+  function setChrome() {
+    var inTool = !!current;
+    $('backBtn').hidden = !inTool;
+    $('topBrand').querySelector('img').hidden = inTool;
+    $('actions').hidden = !inTool;
+    $('newTab').hidden = !!NATIVE.isNative;
   }
   function openTool(t) {
     current = t.id;
-    $('home').hidden = true; $('frameWrap').hidden = false; $('actions').hidden = false;
+    $('home').hidden = true; $('frameWrap').hidden = false;
     $('title').textContent = t.name; document.title = t.name + ' | HeyTools';
     editing = false; document.body.classList.remove('editing');
-    renderNav();
+    recordRecent(t.id); setChrome(); renderNav();
     frame.src = 'about:blank';
-    $('newTab').href = '../' + t.id + '/';
     if (t.perm && !permDone(t.id)) showGate(t); else { hideGate(); loadTool(t); }
   }
   function showHome() {
     current = null; frame.src = 'about:blank'; $('frameWrap').hidden = true; hideGate();
-    $('home').hidden = false; $('actions').hidden = true; $('title').textContent = 'HeyTools';
-    document.title = 'HeyTools | All your private tools in one app'; renderNav();
+    $('home').hidden = false; $('title').textContent = 'HeyTools';
+    document.title = 'HeyTools | All your private tools in one app';
+    setChrome(); render();
   }
   function route() {
     var id = decodeURIComponent((location.hash || '').replace(/^#\/?/, '')).replace(/\/$/, '');
     var t = byId[id];
     if (t && !t.external) openTool(t); else showHome();
-    closeSide();
   }
 
   /* hide the page text (guides, FAQs, footers) so only the tool shows */
@@ -426,7 +514,7 @@
 
   /* hand phone media to the players (Android app) */
   function pushNativeMedia(t) {
-    if (!NATIVE.isNative || (t.perm !== 'video' && t.perm !== 'audio')) return;
+    if (!NATIVE.hasMedia || (t.perm !== 'video' && t.perm !== 'audio')) return;
     var kind = t.perm;
     NATIVE.has(kind).then(function (ok) {
       if (!ok) return;
@@ -467,41 +555,49 @@
     try { interceptLinks(frame.contentDocument); } catch (err) { /* ignore */ }
   });
 
-  /* ---------- toolbar ---------- */
+  /* ---------- toolbar + Back button ---------- */
   $('reload').addEventListener('click', function () {
     if (!current) return; loading.classList.remove('done');
     try { frame.contentWindow.location.reload(); } catch (e) { frame.src = frame.src; }
   });
   $('full').addEventListener('click', function () {
     var f = frame.requestFullscreen || frame.webkitRequestFullscreen;
-    if (f) { try { f.call(frame); } catch (e) { /* ignore */ } } else { window.open($('newTab').href, '_blank', 'noopener'); }
+    if (f) { try { f.call(frame); } catch (e) { /* ignore */ } } else if (!NATIVE.isNative) { window.open($('newTab').href, '_blank', 'noopener'); }
   });
-
-  /* ---------- drawer ---------- */
-  var appEl = $('app');
-  function openSide() { appEl.classList.add('open'); }
-  function closeSide() { appEl.classList.remove('open'); }
-  $('openSide').addEventListener('click', openSide);
-  $('closeSide').addEventListener('click', closeSide);
-  $('scrim').addEventListener('click', closeSide);
+  /* Back always steps back one screen: settings -> customize -> tool -> tool list. On the tool list a second press exits. */
+  var lastBack = 0;
+  function handleBack() {
+    if (sheetOpen()) { closeSheet(); return; }
+    if (editing) { setEditing(false); return; }
+    if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) { /* ignore */ } return; }
+    if (current) { location.hash = '#/'; return; }
+    if (q.value) { q.value = ''; render(); return; }
+    if (NATIVE.isNative) {
+      if (Date.now() - lastBack < 2000) { NATIVE.exit(); return; }
+      lastBack = Date.now(); toast('Press back again to exit');
+    }
+  }
+  $('backBtn').addEventListener('click', handleBack);
+  NATIVE.onBack && NATIVE.onBack(handleBack);
   document.addEventListener('keydown', function (e) {
     var tag = (e.target && e.target.tagName) || '';
-    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); openSide(); q.focus(); }
-    if (e.key === 'Escape') { closeSide(); closeSheet(); }
+    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && !current) { e.preventDefault(); q.focus(); }
+    if (e.key === 'Escape') { if (sheetOpen()) closeSheet(); }
   });
 
   /* ---------- install, online note, service worker ---------- */
-  var deferred = null, installBtn = $('install');
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; installBtn.hidden = false; });
-  installBtn.addEventListener('click', function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.finally(function () { deferred = null; installBtn.hidden = true; }); });
-  window.addEventListener('appinstalled', function () { installBtn.hidden = true; });
+  var deferred = null, installBtns = document.querySelectorAll('.install-btn');
+  function showInstall(on) { installBtns.forEach(function (b) { b.hidden = !on; }); }
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; showInstall(true); });
+  installBtns.forEach(function (b) { b.addEventListener('click', function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.finally(function () { deferred = null; showInstall(false); }); }); });
+  window.addEventListener('appinstalled', function () { showInstall(false); });
   var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  if (isIOS && !standalone) $('iosHint').hidden = false;
-  if (standalone || NATIVE.isNative) $('firstNote').querySelector('strong').textContent = NATIVE.isNative ? 'Everything is built into this app.' : 'First time needs internet.';
+  if (isIOS && !standalone && !NATIVE.isNative) document.querySelectorAll('.ios-hint').forEach(function (n) { n.hidden = false; });
   if (NATIVE.isNative) $('firstNote').innerHTML = '<strong>Everything is built into this app.</strong> Tools marked <em>Works offline</em> run without a connection. Tools marked <em>Needs internet</em> or <em>Partly offline</em> use the network for some features.';
   function net() {
-    $('netState').textContent = navigator.onLine ? 'Private by design. Tools run on your device.' : 'You are offline. Tools marked Works offline still run.';
+    var txt = navigator.onLine ? 'Private by design. Tools run on your device.' : 'You are offline. Tools marked Works offline still run.';
+    document.querySelectorAll('.net-state').forEach(function (n) { n.textContent = txt; });
   }
   window.addEventListener('online', net); window.addEventListener('offline', net); net();
   if (!NATIVE.isNative && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -509,5 +605,5 @@
   }
 
   window.addEventListener('hashchange', route);
-  applyPrefs(); syncFilterButtons(); render(); checkSaved(); route();
+  applyPrefs(); syncFilterButtons(); checkSaved(); route();
 })();

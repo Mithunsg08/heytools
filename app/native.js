@@ -2,14 +2,17 @@
 (function () {
   var C = window.Capacitor;
   var native = !!(C && C.isNativePlatform && C.isNativePlatform());
-  var P = null;
-  if (native) { try { P = C.registerPlugin ? C.registerPlugin('MediaLibrary') : C.Plugins.MediaLibrary; } catch (e) { P = null; } }
-
+  var P = null, A = null;
+  if (native) {
+    try { P = C.registerPlugin ? C.registerPlugin('MediaLibrary') : C.Plugins.MediaLibrary; } catch (e) { P = null; }
+    try { A = C.registerPlugin ? C.registerPlugin('App') : C.Plugins.App; } catch (e) { A = null; }
+  }
   function url(path) {
     return C.convertFileSrc('file://' + path.split('/').map(encodeURIComponent).join('/'));
   }
   window.HeyNative = {
-    isNative: native && !!P,
+    isNative: native,
+    hasMedia: native && !!P,
     /* Ask Android for access to videos or music. Resolves true when granted. */
     ensure: function (kind) {
       return P.requestAccess({ kind: kind }).then(function (r) { return !!(r && r.granted); });
@@ -25,6 +28,9 @@
                    folder: (i.path || '').split('/').slice(-2, -1)[0] || '', url: url(i.path) };
         });
       });
-    }
+    },
+    /* Android back button. Once a listener is set the app fully controls what Back does. */
+    onBack: function (cb) { if (A && A.addListener) A.addListener('backButton', cb); },
+    exit: function () { if (A && A.exitApp) A.exitApp(); }
   };
 })();
