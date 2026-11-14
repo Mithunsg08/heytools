@@ -730,12 +730,16 @@
     }).catch(function () { if (manual) toast('Could not check. Are you online?'); });
   }
   $('checkUpdate').addEventListener('click', function () { checkUpdate(true); });
-  function maybeCheckUpdate() { if (NATIVE.isNative && Date.now() - get('heytools.update.checked', 0) > 6 * 3600 * 1000) checkUpdate(false); }
+  function maybeCheckUpdate() { if (NATIVE.isNative && Date.now() - get('heytools.update.checked', 0) > 3600 * 1000) checkUpdate(false); }
   NATIVE.onResume && NATIVE.onResume(function () { maybeCheckUpdate(); syncPlayback(); });
 
   window.addEventListener('hashchange', route);
   applyPrefs(); syncFilterButtons(); checkSaved(); resumeLast(); route();
   loadBuild().then(function () { setVerInfo(); maybeCheckUpdate(); });
+  /* ask once for permission to show notifications (alarms, reminders and update alerts need it) */
+  if (NATIVE.isNative && window.HeyNotify && !get('heytools.notif.asked', false)) {
+    setTimeout(function () { put('heytools.notif.asked', true); HeyNotify.requestPermission(); }, 4000);
+  }
   setVerInfo();
   if (window.HeyTrack && (NATIVE.isNative || standalone)) { try { if (!sessionStorage.getItem('hey.open')) { sessionStorage.setItem('hey.open', '1'); HeyTrack.event('app_open'); } } catch (e) { HeyTrack.event('app_open'); } }
 })();

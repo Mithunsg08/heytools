@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java'])
+for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -119,6 +119,7 @@ fs.writeFileSync(mp, m);
     ].join('\n'));
     g = g.replace(/release \{\n(\s+)minifyEnabled false/, 'release {\n$1signingConfig signingConfigs.heytools\n$1minifyEnabled false');
   }
+  if (!g.includes('androidx.work:work-runtime')) g = g.replace("implementation project(':capacitor-android')", "implementation project(':capacitor-android')\n    implementation 'androidx.work:work-runtime:2.9.0'");
   if (!g.includes('checkReleaseBuilds')) g = g.replace('android {\n    namespace', 'android {\n    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n    namespace');
   fs.writeFileSync(gp, g);
   console.log('Version', run, process.env.HEY_KEYSTORE ? '(signed with the HeyTools key)' : '(default debug signing)');
