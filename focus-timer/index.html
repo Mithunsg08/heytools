@@ -56,6 +56,8 @@ footer{margin-top:28px;font-size:.85rem;color:var(--muted)}
 </section>
 <footer>Part of <a href="../" style="color:inherit">HeyTools</a>. Your data stays on this device.</footer>
 </div>
+<script src="../tones.js"></script>
+<script src="../heynotify.js"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id),K='heytools.focus.v1';
@@ -66,11 +68,14 @@ $('mw').value=cfg.work;$('ms').value=cfg.short;$('ml').value=cfg.long;
 const names={work:'Focus',short:'Short break',long:'Long break'},total=()=>cfg[mode]*60;
 function show(){const s=Math.max(0,Math.ceil(left)),m=String(Math.floor(s/60)).padStart(2,'0'),r=String(s%60).padStart(2,'0');$('time').textContent=m+':'+r;document.title=(tm?m+':'+r+' · ':'')+'Focus Timer';
  $('arc').style.strokeDashoffset=String(339.3*(1-left/total()));$('lbl').textContent=names[mode];$('cnt').textContent='Sessions done today: '+done}
-function setMode(m){mode=m;left=total();stop();document.querySelectorAll('[data-m]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));$('go').textContent='Start';show()}
+function setMode(m){mode=m;left=total();stop();if(window.HeyNotify)window.HeyNotify.cancelGroup('focus');document.querySelectorAll('[data-m]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));$('go').textContent='Start';show()}
 function chime(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[880,1175,1568].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=f;o.connect(g);g.connect(c.destination);const t=c.currentTime+i*.22;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+.2);o.start(t);o.stop(t+.22)})}catch(e){} if(navigator.vibrate)navigator.vibrate([200,100,200])}
 function tick(){left=(end-Date.now())/1000;if(left<=0){left=0;stop();chime();if(mode==='work'){done++;save();setMode(done%4===0?'long':'short')}else setMode('work');return}show()}
 function stop(){clearInterval(tm);tm=0}
-$('go').onclick=()=>{if(tm){stop();$('go').textContent='Resume';show();return}end=Date.now()+left*1000;tm=setInterval(tick,250);$('go').textContent='Pause'};
+function ping(on){if(!window.HeyNotify)return;
+ if(!on){window.HeyNotify.cancelGroup('focus');return}
+ window.HeyNotify.requestPermission().then(()=>window.HeyNotify.syncGroup('focus',[{id:900002,title:mode==='work'?'Focus session done':'Break is over',body:mode==='work'?'Time for a break.':'Ready for the next focus session?',at:end,tone:'chime'}]))}
+$('go').onclick=()=>{if(tm){stop();ping(false);$('go').textContent='Resume';show();return}end=Date.now()+left*1000;tm=setInterval(tick,250);$('go').textContent='Pause';ping(true)};
 $('reset').onclick=()=>setMode(mode);
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 [['mw','work'],['ms','short'],['ml','long']].forEach(([i,k])=>$(i).oninput=e=>{const v=Math.max(1,Math.min(180,parseInt(e.target.value)||1));cfg[k]=v;save();if(!tm&&mode===k){left=total();show()}});

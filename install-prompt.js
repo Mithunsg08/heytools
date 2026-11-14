@@ -30,6 +30,14 @@
   var BASE;
   try { BASE = new URL('./', script ? script.src : location.href).href; } catch (e) { return; }
   var APP_URL = BASE + 'app/';
+  var APK_URL = window.HEY_APK_URL || 'https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk';
+  var isAndroid = /android/i.test(navigator.userAgent);
+  /* load the download counter so a click on the button is counted */
+  (function () {
+    if (window.HeyTrack) return;
+    function add(src, next) { var s = document.createElement('script'); s.src = BASE + src; s.onload = next || null; s.onerror = next || null; document.head.appendChild(s); }
+    add('track-config.js', function () { add('heytrack.js'); });
+  })();
 
   /* Make the page installable: manifest link + service worker. */
   if (!document.querySelector('link[rel="manifest"]')) {
@@ -86,12 +94,13 @@
       '</style>' +
       '<div class="box" role="region" aria-label="Install the HeyTools app">' +
       '<button class="go" type="button"><span class="ico" aria-hidden="true"><i></i></span>' +
-      '<span>' + (isIOS ? 'Get the HeyTools app' : 'Install HeyTools app') + '</span></button>' +
+      '<span>' + (isIOS ? 'Get the HeyTools app' : isAndroid ? 'Get the Android app' : 'Install HeyTools app') + '</span></button>' +
       '<button class="x" type="button" aria-label="Dismiss">&#10005;</button>' +
       '</div>';
 
     root.querySelector('.go').addEventListener('click', function () {
       if (isIOS) { window.location.href = APP_URL; return; }
+      if (isAndroid) { try { if (window.HeyTrack) HeyTrack.event('download_click', { where: 'tool-page:' + location.pathname }); } catch (e) { /* ignore */ } window.location.href = APK_URL; return; }
       if (!deferred) return;
       deferred.prompt();
       deferred.userChoice.then(function (c) {
@@ -111,8 +120,8 @@
   });
   window.addEventListener('appinstalled', function () { remember(); hide(); });
 
-  /* iPhone and iPad have no install event: offer the way to the app page instead. */
-  if (isIOS) {
+  /* iPhone and iPad have no install event, and Android gets the full app (APK): show the button after the page loads. */
+  if (isIOS || isAndroid) {
     var go = function () { setTimeout(show, 1500); };
     if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
   }

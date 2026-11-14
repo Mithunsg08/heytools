@@ -6,6 +6,19 @@
 <title>HeyTools | Private tools that run in your browser</title>
 <meta name="description" content="HeyTools publishes small, useful tools that process everything inside your browser's memory. Your files never leave your device.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2314213D'/><rect x='6' y='6' width='10' height='10' rx='3' fill='%23FFC93C'/><rect x='16' y='16' width='10' height='10' rx='3' fill='%232B4EFF'/></svg>">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#14213D">
+<meta name="keywords" content="private online tools, offline tools, android app, video player, music player, alarm clock, notes, to do list, geo camera, unit converter, qr scanner">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:title" content="HeyTools | Private tools that run in your browser and as an Android app">
+<meta property="og:description" content="Video and music player, alarm clock, notes, geo camera and more. Everything runs on your device. Download the free Android app.">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="HeyTools | Private tools for your phone and browser">
+<meta name="twitter:description" content="Free private tools. Your files never leave your device. Android app available.">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"HeyTools","url":"https://mithunsg08.github.io/heytools/","description":"Private tools that run in your browser. Files never leave your device."},{"@type":"SoftwareApplication","name":"HeyTools","operatingSystem":"Android","applicationCategory":"UtilitiesApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"downloadUrl":"https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk","description":"One app with 30+ private tools: video and music player, alarm clock, notes, geo camera, converters and more."}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
@@ -134,7 +147,10 @@ footer a:hover{color:var(--ink)}
   .btn{transition:none}
 }
 @media (display-mode:standalone){#privacy,footer,.sec-head p{display:none}}
+.getapp-sec{padding:56px 0 8px}.ga-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:22px}.ga-card{background:var(--panel);border:2px solid var(--ink);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:10px}.ga-card h3{margin:0;font-size:1.15rem}.ga-card p{margin:0;color:var(--muted)}.ga-card .btn{align-self:flex-start;margin-top:auto}.ga-note{margin:10px 0 0;font-size:.85rem;color:var(--muted)}.ga-card.is-you{box-shadow:6px 6px 0 var(--signal)}
 </style>
+<script src="track-config.js"></script>
+<script src="heytrack.js"></script>
 <script src="install-prompt.js" defer></script>
 </head>
 <body>
@@ -143,6 +159,7 @@ footer a:hover{color:var(--ink)}
   <div class="wrap bar">
     <a class="logo" href="/">Hey<span>Tools</span></a>
     <nav aria-label="Main">
+      <a href="#get-app">Get the app</a>
       <a href="#tools">Tools</a>
       <a href="#privacy">Privacy</a>
     </nav>
@@ -156,7 +173,8 @@ footer a:hover{color:var(--ink)}
         <h1>Useful tools that never take your files.</h1>
         <p class="lead">HeyTools publishes the tools we build. Each one does its work inside your browser's memory, so your data stays on your device.</p>
         <div class="btns">
-          <a class="btn primary" href="#tools">Browse the tools</a>
+          <a class="btn primary" href="#get-app">Get the app</a>
+          <a class="btn ghost" href="#tools">Browse the tools</a>
           <a class="btn ghost" href="#privacy">How privacy works</a>
         </div>
       </div>
@@ -654,7 +672,48 @@ footer a:hover{color:var(--ink)}
           </div>
           <a class="btn primary" href="https://mithunsg08.github.io/heytools/geo-camera/" target="_blank" rel="noopener">Open Geo Camera</a>
         </article>
+
+        <article class="card" data-category="daily">
+          <span class="tag">Free · New</span>
+          <h3>Alarm Clock</h3>
+          <p>Alarms with 14 tones, repeat days and a snooze. In the Android app they ring even when the app is closed.</p>
+          <div class="plans" aria-label="Alarm Clock pricing">
+            <div class="plan">
+              <div><b>Free</b><small>Android app for alarms when closed</small></div>
+              <div class="amt free">$0</div>
+            </div>
+          </div>
+          <a class="btn primary" href="https://mithunsg08.github.io/heytools/alarm-clock/" target="_blank" rel="noopener">Open Alarm Clock</a>
+        </article>
       </div>
+    </div>
+  </section>
+
+  <section id="get-app" class="getapp-sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Get the HeyTools app</h2>
+        <p>One app with every tool. It finds the videos and music on your phone, keeps them playing in the background and sends alarm, to do and habit reminders.</p>
+      </div>
+      <div class="ga-grid">
+        <div class="ga-card" data-for="android">
+          <h3>Android phone or tablet</h3>
+          <p>Free download. Your phone may ask once to allow installs from your browser, and Google Play Protect may offer to scan the app. Tap <b>Scan</b> or <b>Install anyway</b>.</p>
+          <a class="btn primary" data-apk data-where="hub-section" href="https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk" download>Download for Android</a>
+          <p class="ga-note">Updates: the app tells you when a new version is ready.</p>
+        </div>
+        <div class="ga-card" data-for="ios">
+          <h3>iPhone and iPad</h3>
+          <p>Open the web app, tap Share, then <b>Add to Home Screen</b>. It works like an app and many tools run offline.</p>
+          <a class="btn ghost" href="app/">Open the web app</a>
+        </div>
+        <div class="ga-card" data-for="desktop">
+          <h3>Windows, Mac and Chromebook</h3>
+          <p>Open the web app and use your browser's install button to add it to your computer.</p>
+          <a class="btn ghost" href="app/">Open the web app</a>
+        </div>
+      </div>
+      <p class="ga-note">We count how many times the app is downloaded and the kind of device (phone, tablet, computer). We never see your name, files or anything you make.</p>
     </div>
   </section>
 
@@ -737,6 +796,10 @@ footer a:hover{color:var(--ink)}
       });
     });
   });
+</script>
+<script>
+(function(){var ua=navigator.userAgent||'',k=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1)?'ios':/Android/i.test(ua)?'android':'desktop';
+var c=document.querySelector('.ga-card[data-for="'+k+'"]');if(c){c.classList.add('is-you');c.parentNode.insertBefore(c,c.parentNode.firstChild)}})();
 </script>
 </body>
 </html>

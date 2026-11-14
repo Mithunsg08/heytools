@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path');
 const src = path.resolve(__dirname, '../..'), out = path.resolve(__dirname, '../www');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
-const skip = new Set(['native', 'node_modules']);
+const skip = new Set(['native', 'node_modules', 'dashboard', 'signing']);
 for (const name of fs.readdirSync(src)) {
   if (skip.has(name) || name.startsWith('.')) continue;
   const p = path.join(src, name), st = fs.statSync(p);
@@ -42,13 +42,49 @@ async function vendorLibs() {
     if (changed) fs.writeFileSync(page, html.replace(/\sintegrity=["'][^"']*["']/g, ''));
   }
 }
-module.exports = { vendorLibs };
+
+/* Google Fonts links: download the font CSS and the font files once so tools look the same offline. If a download fails the original link is kept. */
+const GF = /<link\b[^>]*\bhref=["'](https:\/\/fonts\.googleapis\.com\/[^"']+)["'][^>]*>/gi;
+const UA = 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36';
+async function vendorFonts() {
+  const dir = path.join(out, 'vendor', 'fonts'); fs.mkdirSync(dir, { recursive: true });
+  const pages = [];
+  (function walk(d) { for (const n of fs.readdirSync(d)) { const p = path.join(d, n), st = fs.statSync(p);
+    if (st.isDirectory()) { if (n !== 'vendor') walk(p); } else if (n === 'index.html' && path.dirname(p) !== out && path.basename(path.dirname(p)) !== 'app') pages.push(p); } })(out);
+  const done = {};
+  for (const page of pages) {
+    let html = fs.readFileSync(page, 'utf8'), changed = false;
+    for (const m of [...html.matchAll(GF)]) {
+      const url = m[1].replace(/&amp;/g, '&');
+      if (!(url in done)) {
+        try {
+          const res = await fetch(url, { headers: { 'User-Agent': UA } });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          let css = await res.text();
+          for (const f of [...new Set([...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/g)].map(x => x[1]))]) {
+            const fr = await fetch(f); if (!fr.ok) throw new Error('font HTTP ' + fr.status);
+            const name = crypto.createHash('sha1').update(f).digest('hex').slice(0, 10) + '.woff2';
+            fs.writeFileSync(path.join(dir, name), Buffer.from(await fr.arrayBuffer()));
+            css = css.split(f).join('./' + name);
+          }
+          const cssName = crypto.createHash('sha1').update(url).digest('hex').slice(0, 10) + '.css';
+          fs.writeFileSync(path.join(dir, cssName), css); done[url] = cssName; console.log('  bundled fonts', url.slice(0, 70));
+        } catch (e) { done[url] = null; console.log('  could not bundle fonts', url.slice(0, 70), '-', e.message); }
+      }
+      if (done[url]) { html = html.split(m[1]).join('../vendor/fonts/' + done[url]); changed = true; }
+    }
+    if (changed) fs.writeFileSync(page, html);
+  }
+}
+module.exports = { vendorLibs, vendorFonts };
 
 function finish() {
+/* build info: lets the app know which build it is, so it can tell when a newer one has been published */
+fs.writeFileSync(path.join(out, 'app', 'build.json'), JSON.stringify({ run: Number(process.env.GITHUB_RUN_NUMBER || 0), sha: (process.env.GITHUB_SHA || '').slice(0, 7), built: Date.now() }));
 fs.writeFileSync(path.join(out, 'index.html'),
   '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
   '<title>HeyTools</title><script>location.replace("app/index.html")</script>');
 console.log('Web files copied to', out);
 }
 
-vendorLibs().then(finish, e => { console.log('Library bundling skipped:', e.message); finish(); });
+vendorLibs().then(vendorFonts).then(finish, e => { console.log('Library bundling skipped:', e.message); finish(); });

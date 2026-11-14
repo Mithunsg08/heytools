@@ -187,7 +187,7 @@
     if (stream) stream.getTracks().forEach(t => t.stop());
     torchOn = false; $('torch').classList.remove('act');
     try {
-      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing, width:{ideal:3840}, height:{ideal:2880}}, audio:false});
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing, width:{ideal:1280}, height:{ideal:960}, frameRate:{ideal:30, max:30}}, audio:false});
       video.srcObject = stream; track = stream.getVideoTracks()[0];
       $('msg').style.display = 'none'; shot.disabled = false;
       const c = track.getCapabilities ? track.getCapabilities() : {}, z = $('zoom');
@@ -340,7 +340,11 @@
     const th = title.length * lh * 1.12 + (fh ? fh + u * .4 : 0) + addr.length * lh + L.info.length * lh + (L.caption ? lh * 1.1 : 0);
     const ch = Math.max(th, hasMap ? ms * .85 : 0) + 2 * p, y0 = st.pos === 'top' ? m : h - m - ch;
     c.save(); rr(c, m, y0, cw, ch, rad);
-    if (blur && 'filter' in c) { c.save(); c.clip(); c.filter = 'blur(16px)'; c.drawImage(c.canvas, 0, 0); c.restore(); }
+    if (blur && 'filter' in c) {
+      const tw = Math.max(8, Math.round(cw / 8)), th2 = Math.max(8, Math.round(ch / 8)), t = document.createElement('canvas'); t.width = tw; t.height = th2;
+      const tc = t.getContext('2d'); tc.filter = 'blur(2px)'; tc.drawImage(c.canvas, m, y0, cw, ch, 0, 0, tw, th2);
+      c.save(); c.clip(); c.drawImage(t, 0, 0, tw, th2, m, y0, cw, ch); c.restore();
+    }
     c.fillStyle = hexA(st.cbg, st.alpha / 100); c.fill(); c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 2; c.stroke(); c.restore();
     if (hasMap) drawMap(c, m + p, y0 + p, ms, ch - 2 * p, Math.max(6, rad * .55), u);
     let y = y0 + p + Math.max(0, (ch - 2 * p - th) / 2);
@@ -354,24 +358,43 @@
     const o = $('ov'), c = o.getContext('2d'); c.clearRect(0, 0, o.width, o.height);
     if (geoState === 'granted' && geo) drawStamp(c, o.width, o.height, false);   // no location = no card
   }
-  setInterval(redraw, 1000);
+  setInterval(() => { if (!document.hidden) redraw(); }, 1000);
 
   /* ---------- Capture ---------- */
-  function capture() {
-    let w = video.videoWidth, h = video.videoHeight; if (!w) return;
-    const sc = st.res === 'hd' ? Math.min(1, 1920 / Math.max(w, h)) : 1;
-    canvas.width = Math.round(w * sc); canvas.height = Math.round(h * sc); w = canvas.width; h = canvas.height;
-    const ctx = canvas.getContext('2d');
-    if (facing === 'user') { ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, w, h); ctx.restore(); }
-    else ctx.drawImage(video, 0, 0, w, h);
-    const stamped = geoState === 'granted' && geo;
-    if (stamped && !timeOK()) { alert('The real time could not be verified (internet needed), so no photo was taken. This stops a wrong time being stamped.'); return; }
-    if (stamped) drawStamp(ctx, w, h, true);
-    canvas.toBlob(blob => {
+  async function grabFrame() {
+    if (window.ImageCapture && track && track.readyState === 'live') {
+      try {
+        const ic = new ImageCapture(track);
+        const blob = await Promise.race([ic.takePhoto(), new Promise((_, rej) => setTimeout(rej, 5000))]);
+        const bmp = await createImageBitmap(blob);
+        return {src: bmp, w: bmp.width, h: bmp.height};
+      } catch (e) { /* fall back to the preview frame */ }
+    }
+    return {src: video, w: video.videoWidth, h: video.videoHeight};
+  }
+  let busy = false;
+  async function capture() {
+    if (busy || !video.videoWidth) return;
+    busy = true; shot.disabled = true;
+    try {
+      const stamped = geoState === 'granted' && geo;
+      if (stamped && !timeOK()) { alert('The real time could not be verified (internet needed), so no photo was taken. This stops a wrong time being stamped.'); return; }
+      const f = await grabFrame();
+      let w = f.w, h = f.h; if (!w) return;
+      const sc = st.res === 'hd' ? Math.min(1, 1920 / Math.max(w, h)) : Math.min(1, 4096 / Math.max(w, h));
+      canvas.width = Math.round(w * sc); canvas.height = Math.round(h * sc); w = canvas.width; h = canvas.height;
+      const ctx = canvas.getContext('2d');
+      if (facing === 'user') { ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(f.src, 0, 0, w, h); ctx.restore(); }
+      else ctx.drawImage(f.src, 0, 0, w, h);
+      if (f.src.close) f.src.close();
+      if (stamped) drawStamp(ctx, w, h, true);
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+      const tc = document.createElement('canvas'); tc.width = 320; tc.height = Math.round(320 * h / w); tc.getContext('2d').drawImage(canvas, 0, 0, tc.width, tc.height);
+      const thumb = await new Promise(res => tc.toBlob(res, 'image/jpeg', 0.7));
       const d = new Date(stamped ? trustedNow() : Date.now()), p = n => String(n).padStart(2, '0');
       const name = `${stamped ? 'geo-photo' : 'photo'}_${d.getUTCFullYear()}${p(d.getUTCMonth()+1)}${p(d.getUTCDate())}_${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z.jpg`;
-      current = {id:Date.now(), name, blob}; dbAdd(current); showPreview(current, true);
-    }, 'image/jpeg', 0.92);
+      current = {id:Date.now(), name, blob, thumb}; dbAdd(current); showPreview(current, true);
+    } finally { busy = false; shot.disabled = false; }
   }
   async function countdown() {
     enableCompass(); if (geoState === 'granted' && !timeOK()) await syncTime();
@@ -400,7 +423,7 @@
   async function openGallery() {
     const all = ((await dbAll()) || []).sort((a, b) => b.id - a.id), box = $('tiles'); box.innerHTML = '';
     if (!all.length) box.innerHTML = '<div class="empty" style="grid-column:1/-1">No photos yet. Take one and it appears here.</div>';
-    all.forEach(r => { const i = new Image(); i.src = URL.createObjectURL(r.blob); i.alt = r.name; i.onclick = () => showPreview(r, false); box.appendChild(i); });
+    all.forEach(r => { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(r.thumb || r.blob); i.alt = r.name; i.onclick = () => showPreview(r, false); box.appendChild(i); });
     $('preview').style.display = 'none'; $('gallery').style.display = 'block'; $('gallery').scrollIntoView({behavior:'smooth'});
   }
 
@@ -413,6 +436,11 @@
   $('timer').onclick = () => { st.timer = st.timer === 0 ? 3 : st.timer === 3 ? 10 : 0; save(); applyUI(); };
   $('langbtn').onclick = () => { st.lang = st.lang === 'en' ? 'native' : 'en'; save(); syncInputs(); applyUI(); redraw(); };
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+    else if (!stream) startCamera();
+  });
+  addEventListener('pagehide', () => { if (stream) stream.getTracks().forEach(t => t.stop()); });
   syncInputs(); applyUI(); requestLocation(); startCamera();
 })();
 </script>

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mithunsg08.github.io/heytools/sitemap.xml

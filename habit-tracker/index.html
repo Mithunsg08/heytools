@@ -47,12 +47,15 @@ ul.h{list-style:none;margin:0;padding:0}.h li{display:grid;grid-template-columns
 <h1>Habit Tracker</h1>
 <p class="lead">Tap to check in each day and keep your streak alive.</p>
 <div class="card"><h2>Today <span class="sub" id="today"></span></h2><div class="sub" id="prog"></div><ul class="h" id="list"></ul></div>
+<div class="card"><h2>Daily reminder</h2><div class="row" style="margin:0"><label for="rt" style="margin:0">Remind me at</label><input id="rt" type="time" value="20:00" style="width:auto"><button id="rton" class="alt" type="button" aria-pressed="false">Off</button></div><p class="msg" id="rmsg"></p></div>
 <div class="card"><h2>New habit</h2><div class="row" style="margin:0"><input id="name" maxlength="40" placeholder="e.g. Drink water, Read 10 pages" style="flex:1;min-width:200px"><button id="add" class="sig" type="button">Add</button></div><p class="msg" id="msg" role="status" aria-live="polite"></p></div>
 <section class="seo">
 <h2>Build habits that stick</h2><p>Add the habits you want to keep, check them off every day and watch your streak grow. A seven-day strip shows how consistent you have been. Your habits are saved on this device only.</p>
 </section>
 <footer>Part of <a href="../" style="color:inherit">HeyTools</a>. Your data stays on this device.</footer>
 </div>
+<script src="../tones.js"></script>
+<script src="../heynotify.js"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id),K='heytools.habits.v1';
@@ -72,6 +75,15 @@ $('list').onclick=e=>{const t=e.target.closest('[data-t]'),x=e.target.closest('[
 $('add').onclick=()=>{const n=$('name').value.trim();if(!n){$('msg').textContent='Type a habit name first.';return}st.h.push({id:Date.now(),n,d:[]});save();$('name').value='';$('msg').textContent='Added.';draw()};
 $('name').onkeydown=e=>{if(e.key==='Enter')$('add').click()};
 draw();
+/* daily reminder: a system notification in the Android app, so it arrives even when the app is closed */
+const RK='heytools.habits.remind';let rem={on:false,t:'20:00'};try{rem=JSON.parse(localStorage.getItem(RK))||rem}catch(e){}
+function syncRemind(){try{localStorage.setItem(RK,JSON.stringify(rem))}catch(e){}
+ $('rt').value=rem.t;$('rton').textContent=rem.on?'On':'Off';$('rton').setAttribute('aria-pressed',rem.on);
+ if(!window.HeyNotify)return;const p=rem.t.split(':');
+ window.HeyNotify.syncGroup('habit',rem.on&&st.h.length?[{id:900001,title:'Habit check-in',body:'Have you ticked off your habits today?',repeat:{weekdays:[1,2,3,4,5,6,7],hour:+p[0],minute:+p[1]||0}}]:[])}
+$('rton').onclick=()=>{rem.on=!rem.on;if(rem.on&&window.HeyNotify)window.HeyNotify.requestPermission().then(v=>{$('rmsg').textContent=v==='granted'?'Reminder set for '+rem.t+' every day.':'Notifications are blocked. Allow them in your phone settings.'});else $('rmsg').textContent='';syncRemind()};
+$('rt').onchange=e=>{rem.t=e.target.value||'20:00';syncRemind()};
+syncRemind();
 })();
 </script>
 </body>

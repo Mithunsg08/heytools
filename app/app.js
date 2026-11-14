@@ -32,7 +32,7 @@
   function get(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
 
-  var PREFS = Object.assign({ theme: 'light', layout: 'grid', density: 'comfortable', desc: true, text: false }, get('heytools.prefs.v2', {}));
+  var PREFS = Object.assign({ theme: 'light', layout: 'grid', density: 'comfortable', desc: true, text: false, resume: true }, get('heytools.prefs.v2', {}));
   if (PREFS.theme !== 'auto' && !themeById[PREFS.theme]) PREFS.theme = 'light';
   var LAYOUT = get('heytools.layout.v1', { order: [], hidden: [] });
   var RECENT = get('heytools.recent.v1', []);
@@ -51,7 +51,7 @@
 
   /* ---------- state ---------- */
   var current = null, editing = false, netFilter = 'all', cat = 'all';
-  var q = $('q'), nav = $('nav'), grid = $('grid'), frame = $('frame'), loading = $('loading');
+  var q = $('q'), nav = $('nav'), grid = $('grid'), loading = $('loading');
 
   function el(tag, attrs, kids) {
     var n = document.createElement(tag);
@@ -108,7 +108,7 @@
       var key = segs[i].getAttribute('data-pref'), btns = segs[i].querySelectorAll('button');
       for (var j = 0; j < btns.length; j++) btns[j].setAttribute('aria-pressed', String(PREFS[key] === btns[j].getAttribute('data-v')));
     }
-    $('optDesc').checked = !!PREFS.desc; $('optText').checked = !!PREFS.text;
+    $('optDesc').checked = !!PREFS.desc; $('optText').checked = !!PREFS.text; $('optResume').checked = PREFS.resume !== false;
     $('layoutInfo').textContent = (LAYOUT.hidden.length ? LAYOUT.hidden.length + ' hidden. ' : '') + 'Drag tiles to put the ones you use most first. Hide the ones you do not need.';
   }
   document.querySelectorAll('.seg').forEach(function (s) {
@@ -118,7 +118,8 @@
     });
   });
   $('optDesc').addEventListener('change', function (e) { PREFS.desc = e.target.checked; savePrefs(); applyPrefs(); });
-  $('optText').addEventListener('change', function (e) { PREFS.text = e.target.checked; savePrefs(); applyPrefs(); if (current) applyHide(byId[current]); });
+  $('optText').addEventListener('change', function (e) { PREFS.text = e.target.checked; savePrefs(); applyPrefs(); Object.keys(frames).forEach(function (k) { applyHide(byId[k], frames[k]); }); });
+  $('optResume').addEventListener('change', function (e) { PREFS.resume = e.target.checked; savePrefs(); });
   if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if (PREFS.theme === 'auto') applyTheme(); });
 
   /* ---------- recently used ---------- */
@@ -469,9 +470,53 @@
   function hideGate() { $('gate').hidden = true; }
 
   /* ---------- opening tools ---------- */
+  /* ---------- one frame per tool ----------
+     Leaving a tool that is playing music or video keeps its frame alive (hidden), so the sound does not stop.
+     Every other tool is unloaded when you leave it, which keeps the phone fast. */
+  var frames = {}, framesBox = $('frames'), svcOn = false;
+  function makeFrame(t) {
+    var f = document.createElement('iframe');
+    f.className = 'tool-frame'; f.title = t.name; f.setAttribute('data-id', t.id); f.setAttribute('allow', framesBox.getAttribute('data-allow') || ''); f.setAttribute('allowfullscreen', '');
+    f.addEventListener('load', function () { onFrameLoad(t, f); });
+    framesBox.appendChild(f); frames[t.id] = f; return f;
+  }
+  function showFrame(id) { Object.keys(frames).forEach(function (k) { frames[k].hidden = (k !== id); }); }
+  function dropFrame(id) { var f = frames[id]; if (!f) return; try { f.src = 'about:blank'; } catch (e) { /* ignore */ } f.remove(); delete frames[id]; }
+  function activeFrame() { return current ? frames[current] : null; }
+  function mediaPlaying(f) {
+    try {
+      var d = f.contentDocument; if (!d) return false;
+      if (d.body && d.body.classList.contains('playing')) return true;
+      var els = d.querySelectorAll('video,audio');
+      for (var i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return true;
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+  function leave(id) {
+    var t = byId[id], f = frames[id]; if (!f) return;
+    if (t && t.media && mediaPlaying(f)) { f.hidden = true; syncPlayback(); }
+    else { dropFrame(id); syncPlayback(); }
+  }
+  /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
+  function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaPlaying(frames[k]); }); }
+  function syncPlayback() {
+    var live = playingFrames();
+    Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].media && live.indexOf(k) === -1) dropFrame(k); });   // paused and out of sight: free the memory
+    var other = live.filter(function (k) { return k !== current; });
+    var bar = $('nowp');
+    if (other.length) { var t = byId[other[0]]; $('nowpName').textContent = t.name; $('nowpIco').textContent = t.icon; bar.setAttribute('data-id', t.id); bar.hidden = false; } else bar.hidden = true;
+    if (live.length && !svcOn) { svcOn = true; NATIVE.startPlayback && NATIVE.startPlayback(byId[live[0]].name); }
+    if (!live.length && svcOn) { svcOn = false; NATIVE.stopPlayback && NATIVE.stopPlayback(); }
+  }
+  setInterval(syncPlayback, 1500);
+  $('nowpOpen').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) location.hash = '#/' + id; });
+  $('nowpStop').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) dropFrame(id); syncPlayback(); });
+
+  /* ---------- opening tools ---------- */
   function loadTool(t) {
     loading.classList.remove('done');
-    frame.title = t.name; frame.src = toolPath(t); $('newTab').href = toolPath(t);
+    var f = makeFrame(t); showFrame(t.id);
+    f.src = toolPath(t); $('newTab').href = toolPath(t);
   }
   function setChrome() {
     var inTool = !!current;
@@ -481,19 +526,23 @@
     $('newTab').hidden = !!NATIVE.isNative;
   }
   function openTool(t) {
+    var prev = current; if (prev && prev !== t.id) leave(prev);
     current = t.id;
     $('home').hidden = true; $('frameWrap').hidden = false;
     $('title').textContent = t.name; document.title = t.name + ' | HeyTools';
     editing = false; document.body.classList.remove('editing');
-    recordRecent(t.id); setChrome(); renderNav();
-    frame.src = 'about:blank';
-    if (t.perm && !permDone(t.id)) showGate(t); else { hideGate(); loadTool(t); }
+    recordRecent(t.id); rememberLast(t.id); setChrome(); renderNav();
+    if (frames[t.id]) { hideGate(); showFrame(t.id); loading.classList.add('done'); }          // still running: just show it again
+    else { showFrame(null); if (t.perm && !permDone(t.id)) showGate(t); else { hideGate(); loadTool(t); } }
+    syncPlayback();
   }
   function showHome() {
-    current = null; frame.src = 'about:blank'; $('frameWrap').hidden = true; hideGate();
+    var prev = current; current = null;
+    if (prev) leave(prev);
+    showFrame(null); $('frameWrap').hidden = true; hideGate();
     $('home').hidden = false; $('title').textContent = 'HeyTools';
     document.title = 'HeyTools | All your private tools in one app';
-    setChrome(); render();
+    rememberLast(null); setChrome(); render(); syncPlayback();
   }
   function route() {
     var id = decodeURIComponent((location.hash || '').replace(/^#\/?/, '')).replace(/\/$/, '');
@@ -502,25 +551,25 @@
   }
 
   /* hide the page text (guides, FAQs, footers) so only the tool shows */
-  function applyHide(t) {
+  function applyHide(t, f) {
     try {
-      var d = frame.contentDocument; if (!d || !d.head || !t) return;
+      var d = f && f.contentDocument; if (!d || !d.head || !t) return;
       var old = d.getElementById('hey-hide'); if (old) old.remove();
       if (PREFS.text) return;
-      var css = (t.hide || 'footer').split(',').map(function (s) { return s.trim(); }).filter(Boolean).map(function (s) { return s + '{display:none!important}'; }).join('\n');
-      var s = d.createElement('style'); s.id = 'hey-hide'; s.textContent = css; d.head.appendChild(s);
+      var css = (t.hide || 'footer').split(',').map(function (x) { return x.trim(); }).filter(Boolean).map(function (x) { return x + '{display:none!important}'; }).join('\n');
+      var st = d.createElement('style'); st.id = 'hey-hide'; st.textContent = css; d.head.appendChild(st);
     } catch (e) { /* cross-origin */ }
   }
 
   /* hand phone media to the players (Android app) */
-  function pushNativeMedia(t) {
+  function pushNativeMedia(t, f) {
     if (!NATIVE.hasMedia || (t.perm !== 'video' && t.perm !== 'audio')) return;
     var kind = t.perm;
     NATIVE.has(kind).then(function (ok) {
       if (!ok) return;
       return NATIVE.scan(kind).then(function (items) {
-        var w = frame.contentWindow, msg = { type: 'heytools:native-' + kind, items: items };
-        var send = function () { try { if (current === t.id) w.postMessage(msg, location.origin); } catch (e) { /* ignore */ } };
+        var w = f.contentWindow, msg = { type: 'heytools:native-' + kind, items: items };
+        var send = function () { try { if (frames[t.id] === f) w.postMessage(msg, location.origin); } catch (e) { /* ignore */ } };
         send(); setTimeout(send, 1500); setTimeout(send, 4000);     // players finish loading their own library at different speeds; repeats are ignored
       });
     }).catch(function () {});
@@ -541,28 +590,57 @@
       else if (byId[seg] && !byId[seg].external) { e.preventDefault(); location.hash = '#/' + seg; }
     }, true);
   }
-  frame.addEventListener('load', function () {
-    if (frame.getAttribute('src') === 'about:blank' || !current) return;
-    if (!$('gate').hidden) return;
-    var t = byId[current];
-    applyHide(t);
-    loading.classList.add('done');
-    if (pendingFiles && pendingFiles.length && current === 'music-player') {
-      try { frame.contentWindow.postMessage({ type: 'heytools:files', files: pendingFiles }, location.origin); } catch (err) { /* ignore */ }
+  function onFrameLoad(t, f) {
+    if (f.getAttribute('src') === 'about:blank') return;
+    applyHide(t, f);
+    try { interceptLinks(f.contentDocument); } catch (err) { /* ignore */ }
+    if (NATIVE.hasSave) injectSaveBridge(f);
+    if (current === t.id && $('gate').hidden) loading.classList.add('done');
+    if (pendingFiles && pendingFiles.length && t.id === 'music-player') {
+      try { f.contentWindow.postMessage({ type: 'heytools:files', files: pendingFiles }, location.origin); } catch (err) { /* ignore */ }
       pendingFiles = null;
     }
-    pushNativeMedia(t);
-    try { interceptLinks(frame.contentDocument); } catch (err) { /* ignore */ }
+    pushNativeMedia(t, f);
+  }
+
+  /* ---------- "download" buttons inside tools -> real files on the phone (Android app) ----------
+     A web view cannot save blob downloads by itself. This script is added to each tool; it catches those downloads
+     and sends the file in small pieces to the app, which writes it to Downloads / Pictures / Movies / Music. */
+  var SAVE_SCRIPT = '(function(){if(window.__heySave)return;window.__heySave=1;var CH=1200000;' +
+    'function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onload=function(){r(String(fr.result).split(",")[1]||"")};fr.readAsDataURL(blob)})}' +
+    'function send(a){var href=a.href,name=a.getAttribute("download")||"file",id=String(Date.now())+Math.random();' +
+    'fetch(href).then(function(r){return r.blob()}).then(function(blob){var n=Math.max(1,Math.ceil(blob.size/CH)),i=0;' +
+    '(function next(){b64(blob.slice(i*CH,(i+1)*CH)).then(function(d){parent.postMessage({type:"heytools:save",id:id,name:name,mime:blob.type||"",seq:i,last:i===n-1,data:d},"*");i++;if(i<n)setTimeout(next,0)})})()}).catch(function(){})}' +
+    'function isFile(a){return a&&a.hasAttribute&&a.hasAttribute("download")&&/^(blob:|data:)/.test(a.href)}' +
+    'document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[download]");if(isFile(a)){e.preventDefault();e.stopPropagation();send(a)}},true);' +
+    'var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(isFile(this)){send(this);return}return oc.apply(this,arguments)};' +
+    'var od=HTMLAnchorElement.prototype.dispatchEvent;HTMLAnchorElement.prototype.dispatchEvent=function(ev){if(ev&&ev.type==="click"&&isFile(this)){send(this);return true}return od.apply(this,arguments)};})();';
+  function injectSaveBridge(f) {
+    try { var d = f.contentDocument, sc = d.createElement('script'); sc.textContent = SAVE_SCRIPT; (d.head || d.documentElement).appendChild(sc); } catch (e) { /* ignore */ }
+  }
+  var saves = {};
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.type !== 'heytools:save' || !NATIVE.hasSave) return;
+    var sv = saves[d.id] || (saves[d.id] = { chain: Promise.resolve(), nid: null });
+    sv.chain = sv.chain.then(function () {
+      if (d.seq === 0) return NATIVE.saveStart(d.name, d.mime).then(function (r) { sv.nid = r.id; });
+    }).then(function () {
+      if (d.data) return NATIVE.saveChunk(sv.nid, d.data);
+    }).then(function () {
+      if (d.last) return NATIVE.saveFinish(sv.nid).then(function (r) { toast('Saved to ' + ((r && r.where) || 'your phone')); delete saves[d.id]; });
+    }).catch(function () { toast('Could not save the file'); delete saves[d.id]; });
   });
 
   /* ---------- toolbar + Back button ---------- */
   $('reload').addEventListener('click', function () {
-    if (!current) return; loading.classList.remove('done');
-    try { frame.contentWindow.location.reload(); } catch (e) { frame.src = frame.src; }
+    var fr = activeFrame(); if (!fr) return; loading.classList.remove('done');
+    try { fr.contentWindow.location.reload(); } catch (e) { fr.src = fr.src; }
   });
   $('full').addEventListener('click', function () {
-    var f = frame.requestFullscreen || frame.webkitRequestFullscreen;
-    if (f) { try { f.call(frame); } catch (e) { /* ignore */ } } else if (!NATIVE.isNative) { window.open($('newTab').href, '_blank', 'noopener'); }
+    var fr = activeFrame(); if (!fr) return;
+    var f = fr.requestFullscreen || fr.webkitRequestFullscreen;
+    if (f) { try { f.call(fr); } catch (e) { /* ignore */ } } else if (!NATIVE.isNative) { window.open($('newTab').href, '_blank', 'noopener'); }
   });
   /* Back always steps back one screen: settings -> customize -> tool -> tool list. On the tool list a second press exits. */
   var lastBack = 0;
@@ -604,6 +682,60 @@
     window.addEventListener('load', function () { navigator.serviceWorker.register('../heytools-sw.js', { scope: '../' }).catch(function () {}); });
   }
 
+  /* ---------- remember where you stopped ---------- */
+  var LASTKEY = 'heytools.last.v1';
+  function rememberLast(id) { put(LASTKEY, { id: id, t: Date.now() }); }
+  function resumeLast() {
+    if (PREFS.resume === false || (location.hash || '').replace(/^#\/?/, '')) return;
+    var l = get(LASTKEY, null);
+    if (l && l.id && byId[l.id] && !byId[l.id].external) { try { history.replaceState(null, '', '#/' + l.id); } catch (e) { /* ignore */ } }
+  }
+
+  /* ---------- app version, updates, download button ---------- */
+  var APK_URL = window.HEY_APK_URL || 'https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk';
+  var REL_API = 'https://api.github.com/repos/Mithunsg08/heytools/releases/tags/android-latest';
+  var BUILD = { run: 0, built: 0 }, isAndroid = /android/i.test(navigator.userAgent);
+  function loadBuild() {
+    if (!NATIVE.isNative) return Promise.resolve();
+    return fetch('build.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) BUILD = j; }).catch(function () {});
+  }
+  function setVerInfo() {
+    $('verInfo').textContent = NATIVE.isNative ? 'HeyTools for Android' + (BUILD.run ? ' · build ' + BUILD.run : '') : 'HeyTools on the web.';
+    $('getAppBtn2').hidden = !(isAndroid && !NATIVE.isNative);
+    $('checkUpdate').hidden = !NATIVE.isNative;
+    if (!NATIVE.isNative && isAndroid && !standalone) $('getApp').hidden = false;
+  }
+  function showUpdate(latest, asset) {
+    var id = String(latest || asset.updated_at);
+    $('updateMsg').textContent = 'A new version of HeyTools is ready.';
+    $('updateBar').hidden = false;
+    $('updateGo').onclick = function () { if (window.HeyTrack) HeyTrack.event('update_click'); NATIVE.openUrl(APK_URL); };
+    $('updateLater').onclick = function () { $('updateBar').hidden = true; };
+    if (get('heytools.update.seen', '') !== id) {                   // tell the person once per new version
+      put('heytools.update.seen', id);
+      if (window.HeyNotify && HeyNotify.isNative) HeyNotify.requestPermission().then(function () {
+        HeyNotify.schedule([{ id: 99001, title: 'HeyTools update ready', body: 'Open HeyTools to download the new version.', at: Date.now() + 1500 }]);
+      });
+    }
+  }
+  function checkUpdate(manual) {
+    if (!NATIVE.isNative) return;
+    put('heytools.update.checked', Date.now());
+    fetch(REL_API, { headers: { Accept: 'application/vnd.github+json' } }).then(function (r) { return r.json(); }).then(function (rel) {
+      var asset = (rel.assets || []).filter(function (a) { return /\.apk$/i.test(a.name); })[0];
+      if (!asset) { if (manual) toast('No update found'); return; }
+      var m = (rel.body || '').match(/build\D{0,3}(\d+)/i), latest = m ? +m[1] : 0;
+      var newer = (latest && BUILD.run) ? latest > BUILD.run : (BUILD.built ? Date.parse(asset.updated_at) - BUILD.built > 20 * 60 * 1000 : false);
+      if (newer) showUpdate(latest, asset); else if (manual) toast('You have the latest version');
+    }).catch(function () { if (manual) toast('Could not check. Are you online?'); });
+  }
+  $('checkUpdate').addEventListener('click', function () { checkUpdate(true); });
+  function maybeCheckUpdate() { if (NATIVE.isNative && Date.now() - get('heytools.update.checked', 0) > 6 * 3600 * 1000) checkUpdate(false); }
+  NATIVE.onResume && NATIVE.onResume(function () { maybeCheckUpdate(); syncPlayback(); });
+
   window.addEventListener('hashchange', route);
-  applyPrefs(); syncFilterButtons(); checkSaved(); route();
+  applyPrefs(); syncFilterButtons(); checkSaved(); resumeLast(); route();
+  loadBuild().then(function () { setVerInfo(); maybeCheckUpdate(); });
+  setVerInfo();
+  if (window.HeyTrack && (NATIVE.isNative || standalone)) { try { if (!sessionStorage.getItem('hey.open')) { sessionStorage.setItem('hey.open', '1'); HeyTrack.event('app_open'); } } catch (e) { HeyTrack.event('app_open'); } }
 })();

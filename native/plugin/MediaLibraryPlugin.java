@@ -1,8 +1,13 @@
 package com.heytools.app;
 
+import android.content.ContentValues;
+import android.content.Intent;
+import android.media.MediaScannerConnection;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
+import android.util.Base64;
 import android.provider.MediaStore;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -13,6 +18,11 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.UUID;
 
 /** Lists every video and song on the phone (MediaStore) after the person allows access. */
 @CapacitorPlugin(
@@ -130,5 +140,133 @@ public class MediaLibraryPlugin extends Plugin {
         }
       }
     });
+  }
+
+  /** Start the foreground service so playback keeps going when the app is in the background. */
+  @PluginMethod
+  public void startPlayback(PluginCall call) {
+    try {
+      Intent i = new Intent(getContext(), PlaybackService.class);
+      i.putExtra("title", call.getString("title", "HeyTools"));
+      if (Build.VERSION.SDK_INT >= 26) {
+        getContext().startForegroundService(i);
+      } else {
+        getContext().startService(i);
+      }
+      call.resolve();
+    } catch (Exception e) {
+      call.reject("Could not start background playback: " + e.getMessage());
+    }
+  }
+
+  @PluginMethod
+  public void stopPlayback(PluginCall call) {
+    try {
+      getContext().stopService(new Intent(getContext(), PlaybackService.class));
+      call.resolve();
+    } catch (Exception e) {
+      call.reject("Could not stop background playback: " + e.getMessage());
+    }
+  }
+
+  /* ---- save a file so the phone can see it (used by every download button inside the tools) ---- */
+  private final HashMap<String, OutputStream> saveStreams = new HashMap<>();
+  private final HashMap<String, Uri> saveUris = new HashMap<>();
+  private final HashMap<String, File> saveFiles = new HashMap<>();
+  private final HashMap<String, String> saveWhere = new HashMap<>();
+
+  private String safeName(String n) {
+    if (n == null || n.trim().isEmpty()) return "file";
+    String s = n.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+    return s.isEmpty() ? "file" : s;
+  }
+
+  @PluginMethod
+  public void saveStart(PluginCall call) {
+    try {
+      String name = safeName(call.getString("name", "file"));
+      String mime = call.getString("mime", "application/octet-stream");
+      if (mime == null || mime.isEmpty()) mime = "application/octet-stream";
+      String dir;
+      Uri collection = null;
+      if (mime.startsWith("image/")) {
+        dir = Environment.DIRECTORY_PICTURES;
+        collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+      } else if (mime.startsWith("video/")) {
+        dir = Environment.DIRECTORY_MOVIES;
+        collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+      } else if (mime.startsWith("audio/")) {
+        dir = Environment.DIRECTORY_MUSIC;
+        collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+      } else {
+        dir = Environment.DIRECTORY_DOWNLOADS;
+      }
+      String id = UUID.randomUUID().toString();
+      OutputStream os;
+      if (Build.VERSION.SDK_INT >= 29) {
+        if (collection == null) collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI;
+        ContentValues v = new ContentValues();
+        v.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+        v.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+        v.put(MediaStore.MediaColumns.RELATIVE_PATH, dir + "/HeyTools");
+        v.put(MediaStore.MediaColumns.IS_PENDING, 1);
+        Uri uri = getContext().getContentResolver().insert(collection, v);
+        if (uri == null) throw new Exception("The phone would not create the file");
+        os = getContext().getContentResolver().openOutputStream(uri);
+        if (os == null) throw new Exception("The phone would not open the file");
+        saveUris.put(id, uri);
+      } else {
+        File base = new File(Environment.getExternalStoragePublicDirectory(dir), "HeyTools");
+        base.mkdirs();
+        File f = new File(base, name);
+        os = new FileOutputStream(f);
+        saveFiles.put(id, f);
+      }
+      saveStreams.put(id, os);
+      saveWhere.put(id, dir + "/HeyTools/" + name);
+      JSObject r = new JSObject();
+      r.put("id", id);
+      call.resolve(r);
+    } catch (Exception e) {
+      call.reject("Could not start saving: " + e.getMessage());
+    }
+  }
+
+  @PluginMethod
+  public void saveChunk(PluginCall call) {
+    try {
+      OutputStream os = saveStreams.get(call.getString("id", ""));
+      if (os == null) throw new Exception("unknown file");
+      String data = call.getString("data", "");
+      if (data != null && !data.isEmpty()) os.write(Base64.decode(data, Base64.DEFAULT));
+      call.resolve();
+    } catch (Exception e) {
+      call.reject("Could not write the file: " + e.getMessage());
+    }
+  }
+
+  @PluginMethod
+  public void saveFinish(PluginCall call) {
+    String id = call.getString("id", "");
+    try {
+      OutputStream os = saveStreams.remove(id);
+      if (os != null) {
+        os.flush();
+        os.close();
+      }
+      Uri uri = saveUris.remove(id);
+      if (uri != null) {
+        ContentValues v = new ContentValues();
+        v.put(MediaStore.MediaColumns.IS_PENDING, 0);
+        getContext().getContentResolver().update(uri, v, null, null);
+      }
+      File f = saveFiles.remove(id);
+      if (f != null) MediaScannerConnection.scanFile(getContext(), new String[] { f.getAbsolutePath() }, null, null);
+      JSObject r = new JSObject();
+      r.put("where", saveWhere.remove(id));
+      call.resolve(r);
+    } catch (Exception e) {
+      call.reject("Could not finish saving: " + e.getMessage());
+    }
   }
 }

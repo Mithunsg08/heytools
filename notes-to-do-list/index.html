@@ -601,6 +601,8 @@ main { padding-top: 4px; }
   <button type="button" class="link-btn" id="toast-undo" hidden>Undo</button>
 </div>
 
+<script src="../tones.js"></script>
+<script src="../heynotify.js"></script>
 <script>
 (function () {
   'use strict';
@@ -726,6 +728,24 @@ main { padding-top: 4px; }
     if (!storageOk) return;
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch (e) { storageOk = false; toast('Storage is full or blocked, so new changes may not be kept.'); }
+    syncPhoneReminders();
+  }
+  /* Phone reminders: in the HeyTools Android app every reminder is a real system notification, so it arrives even when the app is closed. */
+  function hashId(str) { var h = 7; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 9000000; return 100000 + h; }
+  var askedPerm = false;
+  function syncPhoneReminders() {
+    if (!window.HeyNotify) return;
+    var items = [], now = Date.now();
+    state.todos.forEach(function (t) {
+      if (t.done || !t.due || !t.remind || !t.remind.length) return;
+      t.remind.forEach(function (off) {
+        var d = new Date(t.due + 'T00:00:00'); d.setDate(d.getDate() - off);
+        var p = (t.rtime || '09:00').split(':'); d.setHours(+p[0], +p[1] || 0, 0, 0);
+        if (+d > now) items.push({ id: hashId(t.id + '-' + off), title: alertTitle(off), body: t.text, at: +d });
+      });
+    });
+    if (window.HeyNotify.isNative && items.length && !askedPerm) { askedPerm = true; window.HeyNotify.requestPermission(); }
+    window.HeyNotify.syncGroup('todo', items);
   }
 
   /* ---------- toast and confetti ---------- */
@@ -1222,7 +1242,7 @@ main { padding-top: 4px; }
   el.todayLabel.textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
   renderNotes(); renderTodos(); renderTabs(); renderPerm(); syncCompRem();
   save();
-  checkReminders();
+  checkReminders(); syncPhoneReminders();
   setInterval(function () { checkReminders(); renderAlerts(); renderHello(); }, 30000);
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) { checkReminders(); renderAlerts(); renderTodos(); }

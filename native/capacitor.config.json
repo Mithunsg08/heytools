@@ -2,6 +2,17 @@
   "appId": "com.heytools.app",
   "appName": "HeyTools",
   "webDir": "www",
-  "server": { "androidScheme": "https" },
-  "android": { "allowMixedContent": false, "backgroundColor": "#0F172A" }
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#0F172A"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_hey",
+      "iconColor": "#0071E3"
+    }
+  }
 }

@@ -12,8 +12,8 @@ window.HEY_CATS = [
   { id: 'business', label: 'Business' }
 ];
 window.HEY_TOOLS = [
-  { id: 'video-player', name: 'Video Player', cat: 'media', icon: '▶️', net: 'partial', perm: 'video', netNote: 'Videos on your phone work offline. Live TV and streaming need internet.', desc: 'Plays every video on your phone, live TV and streaming links.', hide: '.seo,footer' },
-  { id: 'music-player', name: 'Music Player', cat: 'media', icon: '🎵', net: 'partial', perm: 'audio', netNote: 'Music on your phone works offline. Streaming needs internet.', desc: '3D player for all the music on your phone, plus streaming.', hide: '#about,footer' },
+  { id: 'video-player', name: 'Video Player', cat: 'media', media: true, icon: '▶️', net: 'partial', perm: 'video', netNote: 'Videos on your phone work offline. Live TV and streaming need internet.', desc: 'Plays every video on your phone, live TV and streaming links.', hide: '.seo,footer' },
+  { id: 'music-player', name: 'Music Player', cat: 'media', media: true, icon: '🎵', net: 'partial', perm: 'audio', netNote: 'Music on your phone works offline. Streaming needs internet.', desc: '3D player for all the music on your phone, plus streaming.', hide: '#about,footer' },
   { id: 'recorder', name: 'Recorder', cat: 'media', icon: '🎙️', net: 'offline', perm: 'mic', desc: 'Record voice, video or your screen. Saved on your device.', hide: 'article.seo,footer' },
   { id: 'geo-camera', name: 'Geo Camera', cat: 'media', icon: '📍', net: 'partial', perm: 'geo', netNote: 'The camera works offline. Address, weather and map need internet.', desc: 'Photos stamped with place, time, weather and a map.', hide: 'header h1,footer' },
   { id: 'emulsion', name: 'Emulsion', cat: 'media', icon: '🎞️', net: 'offline', desc: 'Image and video editor with layers and a timeline.', hide: '.hero,#features,#compare,#guides,#shortcuts,#faq,footer' },
@@ -28,6 +28,7 @@ window.HEY_TOOLS = [
   { id: 'expense-tracker', name: 'Expense Tracker', cat: 'daily', icon: '💸', net: 'offline', isNew: true, desc: 'Log spending, see it by category, track a monthly budget.', hide: '.seo,footer,.lead' },
   { id: 'habit-tracker', name: 'Habit Tracker', cat: 'daily', icon: '✅', net: 'offline', isNew: true, desc: 'One-tap daily check-ins with streaks.', hide: '.seo,footer,.lead' },
   { id: 'focus-timer', name: 'Focus Timer', cat: 'daily', icon: '⏱️', net: 'offline', isNew: true, desc: 'Pomodoro work and break sessions with a chime.', hide: '.seo,footer,.lead' },
+  { id: 'alarm-clock', name: 'Alarm Clock', cat: 'daily', icon: '⏰', net: 'offline', isNew: true, desc: '14 alarm tones, repeat days and snooze. Rings even when the app is closed.', hide: '.seo,footer' },
   { id: 'notes-to-do-list', name: 'Notes & To Do', cat: 'daily', icon: '📝', net: 'offline', desc: 'Pinned notes and daily tasks with reminders.', hide: '.about' },
   { id: 'world-clock', name: 'World Clock & Stopwatch', cat: 'daily', icon: '🌐', net: 'offline', desc: 'Times in 400+ zones and a lap stopwatch.', hide: 'main>section:not(#pw):not(#ps),footer' },
 

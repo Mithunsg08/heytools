@@ -1,3 +1,4 @@
+@font-face{font-family:"Inter";src:url("fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
 /* HeyTools app. Colors come from the active theme (set in app.js). Default is white and black. */
 :root{
   --bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;
@@ -191,3 +192,31 @@ iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
 
 /* cleaner cards: the status line already says offline/online, so the extra note is not repeated */
 .note-line{display:none}
+
+/* typography: Inter, bundled with the app so it looks the same offline */
+body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-feature-settings:"cv11","ss03";letter-spacing:-.006em}
+.home-title{font-weight:750;letter-spacing:-.045em}
+.name{font-weight:650;letter-spacing:-.012em}
+.desc,.home-sub{letter-spacing:-.004em}
+
+/* frames: one per tool so music and video keep playing when you leave the screen */
+.frames{position:absolute;inset:0}
+.tool-frame{position:absolute;inset:0}
+.tool-frame[hidden]{display:none}
+/* now playing bar */
+.nowp{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;max-width:560px;margin:0 auto;padding:10px 12px;border-radius:18px;background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px -10px rgba(0,0,0,.35)}
+.nowp[hidden]{display:none}
+.nowp-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--panel2);font-size:1.2rem;flex:none}
+.nowp-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.nowp-t b{font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nowp-t small{color:var(--muted);font-size:.76rem}
+/* update + get-app banners */
+.updatebar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:560px;margin:0 auto;padding:12px 14px;border-radius:16px;background:var(--ink);color:var(--bg);box-shadow:0 12px 32px -10px rgba(0,0,0,.45);font-size:.9rem;font-weight:600}
+.updatebar[hidden]{display:none}
+.updatebar span{flex:1;min-width:150px}
+.updatebar .btn{padding:7px 12px}
+.getapp{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0 0;padding:14px 16px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.getapp[hidden]{display:none}
+.getapp div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px}
+.getapp span{color:var(--muted);font-size:.84rem}
+.updatebar .btn:not(.primary){background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 40%,transparent)}

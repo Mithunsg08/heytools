@@ -80,6 +80,10 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
             <button class="chip-btn" data-net="online" type="button">Needs internet</button>
           </div>
 
+          <div class="getapp" id="getApp" hidden>
+            <div><strong>Get the Android app</strong><span>Reads all the videos and music on your phone, keeps playing in the background and sends reminders.</span></div>
+            <a class="btn primary" id="getAppBtn" data-apk data-where="app-home" href="https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk" download>Download</a>
+          </div>
           <p class="note" id="firstNote"><strong>First time needs internet.</strong> Open the app online once so each tool saves itself to your device. After that, tools marked <em>Works offline</em> run without a connection.</p>
 
           <div class="edit-bar" id="editBar" hidden>
@@ -104,9 +108,7 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
       </section>
 
       <div class="frame-wrap" id="frameWrap" hidden>
-        <iframe id="frame" title="Tool"
-          allow="camera; microphone; geolocation; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay; picture-in-picture; accelerometer; gyroscope; magnetometer; screen-wake-lock; encrypted-media"
-          allowfullscreen></iframe>
+        <div class="frames" id="frames" data-allow="camera; microphone; geolocation; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay; picture-in-picture; accelerometer; gyroscope; magnetometer; screen-wake-lock; encrypted-media"></div>
         <div class="gate" id="gate" hidden></div>
         <div class="loading" id="loading" role="status"><div><div class="spin"></div>Loading&hellip;</div></div>
       </div>
@@ -114,6 +116,8 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
   </main>
 </div>
 
+<div class="nowp" id="nowp" hidden role="region" aria-label="Now playing"><span class="nowp-ico" id="nowpIco" aria-hidden="true">🎵</span><span class="nowp-t"><b id="nowpName">Playing</b><small>Still playing in the background</small></span><button class="btn" id="nowpOpen" type="button">Open</button><button class="btn primary" id="nowpStop" type="button">Stop</button></div>
+<div class="updatebar" id="updateBar" hidden role="status"><span id="updateMsg">A new version is ready.</span><button class="btn primary" id="updateGo" type="button">Update</button><button class="btn" id="updateLater" type="button">Later</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <div class="sheet-wrap" id="sheetWrap" hidden>
@@ -125,6 +129,10 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
         <span class="set-l">Theme</span>
         <p class="set-s">White and black by default. Pick any theme you like, including dark.</p>
         <div class="themes" id="themes" role="radiogroup" aria-label="Theme"></div>
+      </div>
+      <div class="set row">
+        <div><label class="set-l" for="optResume">Reopen where I left off</label><p class="set-s">Open the last tool you used next time.</p></div>
+        <input class="switch" type="checkbox" id="optResume">
       </div>
       <div class="set">
         <span class="set-l">Layout</span>
@@ -147,6 +155,14 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
         <p class="set-s" id="layoutInfo"></p>
         <div class="row-btns"><button class="btn primary" id="sheetCustomize" type="button"><svg class="i"><use href="#i-edit"/></svg>Reorder &amp; hide tools</button><button class="btn" id="sheetReset" type="button">Reset layout</button><button class="btn" id="sheetClearRecent" type="button">Clear history</button></div>
       </div>
+      <div class="set" id="appSet">
+        <span class="set-l">App</span>
+        <p class="set-s" id="verInfo">HeyTools on the web.</p>
+        <div class="row-btns">
+          <a class="btn primary" id="getAppBtn2" data-apk data-where="settings" href="https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk" download hidden>Download Android app</a>
+          <button class="btn" id="checkUpdate" type="button" hidden>Check for updates</button>
+        </div>
+      </div>
       <div class="set">
         <button class="btn primary block install-btn" type="button" hidden>Install HeyTools app</button>
         <p class="hint ios-hint" hidden>On iPhone: tap Share, then Add to Home Screen.</p>
@@ -156,6 +172,10 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
   </div>
 </div>
 
+<script src="../tones.js"></script>
+<script src="../heynotify.js"></script>
+<script src="../track-config.js"></script>
+<script src="../heytrack.js"></script>
 <script src="tools.js"></script>
 <script src="native.js"></script>
 <script src="app.js"></script>
