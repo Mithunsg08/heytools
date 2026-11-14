@@ -4,53 +4,114 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths-ignore: ['**.md']
+    paths-ignore: ['**.md', 'dashboard/**']
 
 permissions:
   contents: write
 
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      HEY_KEY_ALIAS: heytools
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+
+      # One signing key for every build, so a new version installs over the old one.
+      # Best: add the repository secrets ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD.
+      # Without them the key is created once and kept in the Actions cache (outside the app files).
+      - name: Restore the signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/heytools-signing
+          key: heytools-signing-v1
+
+      - name: Prepare the signing key
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          DIR="$HOME/heytools-signing"
+          mkdir -p "$DIR"
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > "$DIR/heytools.p12"
+            PASS="$KS_PASS"
+          elif [ -f "$DIR/heytools.p12" ] && [ -f "$DIR/pass.txt" ]; then
+            PASS="$(cat "$DIR/pass.txt")"
+          else
+            PASS="$(openssl rand -hex 20)"
+            keytool -genkeypair -keystore "$DIR/heytools.p12" -storetype PKCS12 -alias "$HEY_KEY_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 36500 -storepass "$PASS" -keypass "$PASS" \
+              -dname "CN=HeyTools, O=HeyTools, C=IN"
+            printf '%s' "$PASS" > "$DIR/pass.txt"
+          fi
+          echo "::add-mask::$PASS"
+          echo "HEY_KEYSTORE=$DIR/heytools.p12" >> "$GITHUB_ENV"
+          echo "HEY_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+
       - name: Install Capacitor
         working-directory: native
         run: npm install
+
       - name: Copy the website into the app
         working-directory: native
         run: node scripts/prepare-web.js
+
       - name: Create the Android project
         working-directory: native
         run: npx cap add android
-      - name: Add media access, permissions and icon
+
+      - name: Add media access, notifications, alarm tones, version and signing
         working-directory: native
         run: node scripts/patch-android.js
+
       - name: Sync
         working-directory: native
         run: npx cap sync android
-      - name: Build the APK
+
+      - name: Build the signed APK
         working-directory: native/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-      - name: Name the APK
-        run: cp native/android/app/build/outputs/apk/debug/app-debug.apk HeyTools.apk
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Name the APK and fingerprint it
+        id: apk
+        run: |
+          cp native/android/app/build/outputs/apk/release/app-release.apk HeyTools.apk
+          echo "sha=$(sha256sum HeyTools.apk | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          TOOL="$(ls -d "$ANDROID_HOME"/build-tools/* 2>/dev/null | sort -V | tail -1)/apksigner"
+          if [ -x "$TOOL" ]; then "$TOOL" verify --print-certs HeyTools.apk || true; fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: HeyTools-apk
           path: HeyTools.apk
+
       - name: Publish the latest APK as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
           name: HeyTools for Android (latest)
-          body: Download HeyTools.apk, open it on your phone and allow "Install unknown apps" when asked.
+          body: |
+            Build ${{ github.run_number }}
+
+            Download HeyTools.apk on your phone and open it.
+            Android asks once to allow installs from your browser. If Google Play Protect asks, tap Scan or Install anyway.
+            The app tells you when a newer version is ready.
+
+            SHA-256: ${{ steps.apk.outputs.sha }}
           files: HeyTools.apk
