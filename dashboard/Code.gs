@@ -1,3 +1,4 @@
+var REPO = 'Mithunsg08/heytools';
 /**
  * HeyTools private dashboard (Google Apps Script).
  *
@@ -14,7 +15,6 @@
  *
  * DEPLOY: Deploy > New deployment > Web app > Execute as: Me > Who has access: Anyone.
  */
-var REPO = 'Mithunsg08/heytools';
 var MAX_FAILS = 5;          // wrong passwords allowed...
 var LOCK_SECONDS = 900;     // ...before logins pause for 15 minutes
 var SESSION_SECONDS = 1800; // a login lasts 30 minutes
