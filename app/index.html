@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HeyTools | All your private tools in one app</title>
-<meta name="description" content="HeyTools is one app with 31 private tools: media players, editors, calculators, trackers and utilities. Everything runs on your device and your files never leave it.">
+<meta name="description" content="HeyTools is one app with 46 private tools: media players, editors, calculators, trackers and utilities. Everything runs on your device and your files never leave it.">
 <meta name="theme-color" content="#F5F5F7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -161,6 +161,13 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
         <div class="row-btns">
           <a class="btn primary" id="getAppBtn2" data-apk data-where="settings" href="https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk" download hidden>Download Android app</a>
           <button class="btn" id="checkUpdate" type="button" hidden>Check for updates</button>
+        </div>
+        <span class="set-l" style="margin-top:14px">Your data</span>
+        <p class="set-s">Back up your notes, to-dos, habits, expenses, alarms and settings to a file, and restore them on a new install or phone. Videos and music are read from your phone each time.</p>
+        <div class="row-btns">
+          <button class="btn" id="backupBtn" type="button">Back up my data</button>
+          <button class="btn" id="restoreBtn" type="button">Restore from backup</button>
+          <input id="restoreFile" type="file" accept="application/json,.json" hidden>
         </div>
       </div>
       <div class="set">

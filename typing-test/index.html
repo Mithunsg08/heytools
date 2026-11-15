@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Typing Speed Test – Check Your WPM and Accuracy</title>
+<meta name="description" content="Test your typing speed in 30, 60 or 120 seconds. See words per minute, accuracy and your best score. Free and offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/typing-test/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Typing Speed Test – Check Your WPM and Accuracy">
+<meta property="og:description" content="Test your typing speed in 30, 60 or 120 seconds. See words per minute, accuracy and your best score. Free and offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231D1D1F'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E⌨️%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Typing Test","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Test your typing speed in 30, 60 or 120 seconds. See words per minute, accuracy and your best score. Free and offline."}</script>
+<style>
+@font-face{font-family:"Inter";src:url("../app/fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;--accent:#0071E3;--accent-ink:#FFFFFF;--ok:#1F9D55;--bad:#D93025;--warn:#B7791F;--r:18px;--blue:var(--accent);--signal:#FFC93C}
+@media (prefers-color-scheme:dark){:root:not([style*="--bg"]){--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--muted:#98989D;--line:#2C2C2E;--accent:#0A84FF;--ok:#32D74B;--bad:#FF453A;--warn:#FFD60A}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;letter-spacing:-.03em;margin:.3em 0 .25em;font-weight:760}
+h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -16px rgba(0,0,0,.2)}
+label,.lbl{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin:12px 0 6px;letter-spacing:.01em}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;outline:none}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+input[type=range]{padding:0;accent-color:var(--accent);background:transparent;border:0;height:28px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+button,.b{font:inherit;font-weight:650;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,filter .15s,background .15s}
+button:hover,.b:hover{filter:brightness(1.06)}
+button:active,.b:active{transform:scale(.97)}
+button.g,.b.g,button.alt{background:var(--panel2);color:var(--ink)}
+button.d{background:transparent;color:var(--bad)}
+button.x{padding:6px 11px;font-size:.85rem}
+button.sig{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:99px;background:var(--panel2);color:var(--ink);font-size:.88rem;font-weight:600}
+.chip[aria-pressed=true],.chip.on{background:var(--accent);color:var(--accent-ink)}
+.stat{background:var(--panel2);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:1.45rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted)}
+.big{font-size:clamp(2.4rem,11vw,3.6rem);font-weight:760;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.05}
+.muted{color:var(--muted)}.sub{color:var(--muted);font-size:.86rem}
+.msg{min-height:1.3em;color:var(--muted);margin:8px 0 0;font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hide{display:none!important}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.seo{margin-top:28px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inherit}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.pass{font-size:1.2rem;line-height:1.85;letter-spacing:.01em;max-height:210px;overflow:hidden;position:relative;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.pass span{border-radius:3px}.pass .ok{color:var(--ink);opacity:.45}.pass .no{color:#fff;background:var(--bad)}.pass .cur{background:color-mix(in srgb,var(--accent) 30%,transparent);box-shadow:0 2px 0 var(--accent)}
+#ty{position:absolute;opacity:0;pointer-events:none;height:1px;width:1px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Typing Test</h1>
+<p class="lead">Type the text as fast and as accurately as you can.</p>
+<div class="chips" id="dur"><button class="chip" data-s="30" aria-pressed="false" type="button">30 s</button><button class="chip" data-s="60" aria-pressed="true" type="button">60 s</button><button class="chip" data-s="120" aria-pressed="false" type="button">2 min</button></div>
+<div class="card" style="margin-top:14px"><div class="stats"><div class="stat"><b id="tl">60</b><span>seconds left</span></div><div class="stat"><b id="wpm">0</b><span>words / min</span></div><div class="stat"><b id="acc">100%</b><span>accuracy</span></div></div>
+<div class="pass" id="pass" tabindex="0" aria-label="Typing text. Tap and start typing."></div><textarea id="ty" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Type here"></textarea>
+<p class="msg" id="msg" role="status" aria-live="polite">Tap the text and start typing. The timer starts with your first key.</p><div class="row"><button id="again" class="g" type="button">New test</button></div></div>
+<div class="card hide" id="rs"><h2>Your result</h2><div class="stats"><div class="stat"><b id="r1">0</b><span>WPM</span></div><div class="stat"><b id="r2">0%</b><span>accuracy</span></div><div class="stat"><b id="r3">0</b><span>mistakes</span></div></div><p class="sub" id="best"></p></div>
+<section class="seo">
+<h2>Typing speed test</h2><p>Measure how many words per minute you can type and how accurate you are. Choose 30 seconds, 60 seconds or 2 minutes, practise with new passages and beat your best score.</p>
+</section>
+<footer>Part of <a href="../">HeyTools</a>. Everything runs on your device.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id),K='heytools.typing.v1';
+const P=['The quick brown fox jumps over the lazy dog while the morning sun climbs slowly above the quiet hills.','A good habit is built one small step at a time, and each day you practise makes the next day a little easier.','Clear writing comes from clear thinking, so take a breath, choose simple words and say exactly what you mean.','Rain tapped on the window as she poured a warm cup of tea and opened the book she had been saving all week.','Technology works best when it stays out of the way and lets people focus on the things that really matter to them.','Travelling teaches you to pack light, ask for help, and enjoy the unexpected turns that make every journey a story.','Patience is not the ability to wait but the ability to keep a good attitude while you work towards your goal.','Fresh bread, a crowded market and the sound of friendly voices made the small town feel like home on Sunday.'];
+let dur=60,text='',pos=0,errs=0,typed=0,t0=0,tick=0,over=false,best={};
+try{best=JSON.parse(localStorage.getItem(K))||{}}catch(e){}
+function build(){const a=P.slice().sort(()=>Math.random()-.5);text=a.concat(a).slice(0,7).join(' ');pos=0;errs=0;typed=0;over=false;t0=0;clearInterval(tick);$('ty').value='';$('tl').textContent=dur;$('wpm').textContent=0;$('acc').textContent='100%';$('rs').classList.add('hide');$('msg').textContent='Tap the text and start typing. The timer starts with your first key.';
+ $('pass').innerHTML=[...text].map((ch,i)=>'<span data-i="'+i+'">'+(ch===' '?'&nbsp;':ch.replace('<','&lt;'))+'</span>').join('');mark();$('ty').focus()}
+function mark(){const s=$('pass').children;for(let i=0;i<s.length;i++){if(i===pos)s[i].className='cur'}if(s[pos]){const top=s[pos].offsetTop,p=$('pass');p.scrollTop=Math.max(0,top-60)}}
+function stats(){const el=Math.max(4,(Date.now()-t0)/1000)/60,correct=pos-0,gross=pos/5,acc=typed?Math.max(0,Math.round((typed-errs)/typed*100)):100;return{wpm:Math.round(Math.max(0,(typed-errs)/5/el)),acc}}
+function finish(){if(over)return;over=true;clearInterval(tick);const s=stats();$('r1').textContent=s.wpm;$('r2').textContent=s.acc+'%';$('r3').textContent=errs;$('rs').classList.remove('hide');const k=String(dur);if(!best[k]||s.wpm>best[k]){best[k]=s.wpm;try{localStorage.setItem(K,JSON.stringify(best))}catch(e){}$('best').textContent='New best for '+dur+' seconds!'}else $('best').textContent='Your best for '+dur+' seconds: '+best[k]+' WPM';$('msg').textContent='Time is up.'}
+function key(){const v=$('ty').value;if(over){$('ty').value='';return}
+ for(const ch of v){if(!t0){t0=Date.now();tick=setInterval(()=>{const left=Math.max(0,dur-Math.floor((Date.now()-t0)/1000));$('tl').textContent=left;const s=stats();$('wpm').textContent=s.wpm;$('acc').textContent=s.acc+'%';if(left<=0)finish()},250)}
+  const sp=$('pass').children[pos];if(!sp)break;typed++;if(ch===text[pos]){sp.className='ok'}else{sp.className='no';errs++}pos++}
+ $('ty').value='';if(pos>=text.length)finish();else mark()}
+$('ty').addEventListener('input',key);$('pass').onclick=()=>$('ty').focus();$('again').onclick=build;
+$('dur').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;dur=+b.dataset.s;document.querySelectorAll('#dur .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));build()};
+build();
+})();
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@
   CATS.forEach(function (c) { catLabel[c.id] = c.label; });
 
   var NET = { offline: 'Works offline', partial: 'Partly offline', online: 'Needs internet' };
-  var PERM_LABEL = { video: 'Asks for your videos', audio: 'Asks for your music', camera: 'Asks for the camera', mic: 'Asks for mic + camera', motion: 'Asks for the motion sensor', geo: 'Asks for camera + location' };
+  var PERM_LABEL = { video: 'Asks for your videos', audio: 'Asks for your music', camera: 'Asks for the camera', mic: 'Asks for mic + camera', motion: 'Asks for the motion sensor', geo: 'Asks for camera + location', torch: 'Asks for the camera (torch)' };
 
   /* ---------- themes (white and black by default) ---------- */
   var THEMES = [
@@ -84,6 +84,7 @@
     s.setProperty('--ink', t.ink); s.setProperty('--muted', t.muted); s.setProperty('--line', t.line);
     s.setProperty('--accent', t.accent); s.setProperty('--accent-ink', t.accentInk); s.setProperty('--glass', rgba(t.bg, 0.78));
     document.documentElement.setAttribute('data-theme', PREFS.theme);
+    try { Object.keys(frames).forEach(function (k) { pushTheme(byId[k], frames[k]); }); } catch (e) { /* frames not ready yet */ }
     document.documentElement.setAttribute('data-tone', t.tone);
     var m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', t.bg);
   }
@@ -370,6 +371,7 @@
     audio:  { title: 'Allow access to your music', web: 'Pick your Music folder. HeyTools adds every song inside it to the player. Files are never uploaded.', nat: 'HeyTools will find every song on this phone so you can play them. Files are never uploaded.', ok: 'Allow access' },
     camera: { title: 'Allow the camera', web: 'The scanner reads codes from your camera on this device. Nothing is recorded or uploaded.', nat: 'The scanner reads codes from your camera on this device. Nothing is recorded or uploaded.', ok: 'Allow camera' },
     mic:    { title: 'Allow microphone and camera', web: 'The recorder needs these to capture voice and video. Recordings stay on your device.', nat: 'The recorder needs these to capture voice and video. Recordings stay on your device.', ok: 'Allow access' },
+    torch:  { title: 'Allow the camera for the torch', web: 'Phones switch the flashlight through the camera. Nothing is recorded or saved.', nat: 'Phones switch the flashlight through the camera. Nothing is recorded or saved.', ok: 'Allow camera' },
     geo:    { title: 'Allow camera and location', web: 'Geo Camera puts the place, time and weather on each photo. It needs the camera and your location. Photos stay on your device.', nat: 'Geo Camera puts the place, time and weather on each photo. It needs the camera and your location. Photos stay on your device.', ok: 'Allow access' },
     motion: { title: 'Allow motion sensors', web: 'This tool reads your phone sensors to find direction and tilt. Nothing leaves your device.', nat: 'This tool reads your phone sensors to find direction and tilt. Nothing leaves your device.', ok: 'Allow sensors' }
   };
@@ -425,7 +427,7 @@
       }
       return pickFilesFallback('audio/*').then(function (f) { pendingFiles = f; });
     }
-    if (kind === 'camera' || kind === 'mic') {
+    if (kind === 'camera' || kind === 'mic' || kind === 'torch') {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve();
       return navigator.mediaDevices.getUserMedia(kind === 'mic' ? { audio: true, video: true } : { video: { facingMode: 'environment' } })
         .then(stopTracks)
@@ -551,6 +553,17 @@
   }
 
   /* hide the page text (guides, FAQs, footers) so only the tool shows */
+  /* tools that share the HeyTools design follow the theme chosen in the app */
+  function pushTheme(t, f) {
+    try {
+      if (!t || !t.themed || !f) return;
+      var d = f.contentDocument; if (!d || !d.documentElement) return;
+      var th = resolveTheme(), r = d.documentElement.style;
+      r.setProperty('--bg', th.bg); r.setProperty('--panel', th.panel); r.setProperty('--panel2', th.panel2);
+      r.setProperty('--ink', th.ink); r.setProperty('--muted', th.muted); r.setProperty('--line', th.line);
+      r.setProperty('--accent', th.accent); r.setProperty('--accent-ink', th.accentInk); r.setProperty('color-scheme', th.tone);
+    } catch (e) { /* ignore */ }
+  }
   function applyHide(t, f) {
     try {
       var d = f && f.contentDocument; if (!d || !d.head || !t) return;
@@ -592,7 +605,7 @@
   }
   function onFrameLoad(t, f) {
     if (f.getAttribute('src') === 'about:blank') return;
-    applyHide(t, f);
+    applyHide(t, f); pushTheme(t, f);
     try { interceptLinks(f.contentDocument); } catch (err) { /* ignore */ }
     if (NATIVE.hasSave) injectSaveBridge(f);
     if (current === t.id && $('gate').hidden) loading.classList.add('done');
@@ -682,6 +695,43 @@
     window.addEventListener('load', function () { navigator.serviceWorker.register('../heytools-sw.js', { scope: '../' }).catch(function () {}); });
   }
 
+  /* ---------- back up and restore ----------
+     Saves the things you made (notes, to-dos, habits, expenses, alarms, settings) to a file, so a new install or a new phone can pick up where you stopped. */
+  var SKIP = /^(heytools\.(update|notif|perm|iid|last))/;
+  function collectBackup() {
+    var data = {};
+    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (!SKIP.test(k)) data[k] = localStorage.getItem(k); }
+    return { app: 'heytools', v: 1, saved: new Date().toISOString(), data: data };
+  }
+  function saveTextFile(name, text) {
+    var b64 = btoa(unescape(encodeURIComponent(text)));
+    if (NATIVE.hasSave) {
+      NATIVE.saveStart(name, 'application/json').then(function (r) { return NATIVE.saveChunk(r.id, b64).then(function () { return NATIVE.saveFinish(r.id); }); })
+        .then(function (r) { toast('Saved to ' + ((r && r.where) || 'your phone')); }).catch(function () { toast('Could not save the backup'); });
+      return;
+    }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); toast('Saving ' + name);
+  }
+  $('backupBtn').addEventListener('click', function () {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    saveTextFile('heytools-backup-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.json', JSON.stringify(collectBackup()));
+  });
+  $('restoreBtn').addEventListener('click', function () { $('restoreFile').click(); });
+  $('restoreFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var j; try { j = JSON.parse(fr.result); } catch (err) { toast('That is not a HeyTools backup'); return; }
+      if (!j || j.app !== 'heytools' || !j.data) { toast('That is not a HeyTools backup'); return; }
+      var n = Object.keys(j.data).length;
+      if (!confirm('Restore ' + n + ' saved items from the backup of ' + (j.saved ? j.saved.slice(0, 10) : 'an earlier day') + '? This replaces the matching data in this app.')) return;
+      Object.keys(j.data).forEach(function (k) { if (!SKIP.test(k)) { try { localStorage.setItem(k, j.data[k]); } catch (err) { /* full */ } } });
+      toast('Backup restored'); setTimeout(function () { location.reload(); }, 700);
+    };
+    fr.readAsText(f);
+  });
+
   /* ---------- remember where you stopped ---------- */
   var LASTKEY = 'heytools.last.v1';
   function rememberLast(id) { put(LASTKEY, { id: id, t: Date.now() }); }
@@ -700,7 +750,7 @@
     return fetch('build.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) BUILD = j; }).catch(function () {});
   }
   function setVerInfo() {
-    $('verInfo').textContent = NATIVE.isNative ? 'HeyTools for Android' + (BUILD.run ? ' · build ' + BUILD.run : '') : 'HeyTools on the web.';
+    $('verInfo').textContent = NATIVE.isNative ? 'HeyTools 1.0 for Android' + (BUILD.run ? ' · build ' + BUILD.run : '') : 'HeyTools 1.0 on the web.';
     $('getAppBtn2').hidden = !(isAndroid && !NATIVE.isNative);
     $('checkUpdate').hidden = !NATIVE.isNative;
     if (!NATIVE.isNative && isAndroid && !standalone) $('getApp').hidden = false;

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Spin the Wheel – Random Picker for Decisions, Games & Raffles</title>
+<meta name="description" content="Add your options and spin a colourful wheel to pick a random winner. Free, fair and works offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/spin-wheel/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Spin the Wheel – Random Picker for Decisions, Games & Raffles">
+<meta property="og:description" content="Add your options and spin a colourful wheel to pick a random winner. Free, fair and works offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231D1D1F'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E🎡%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Spin Wheel","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Add your options and spin a colourful wheel to pick a random winner. Free, fair and works offline."}</script>
+<style>
+@font-face{font-family:"Inter";src:url("../app/fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;--accent:#0071E3;--accent-ink:#FFFFFF;--ok:#1F9D55;--bad:#D93025;--warn:#B7791F;--r:18px;--blue:var(--accent);--signal:#FFC93C}
+@media (prefers-color-scheme:dark){:root:not([style*="--bg"]){--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--muted:#98989D;--line:#2C2C2E;--accent:#0A84FF;--ok:#32D74B;--bad:#FF453A;--warn:#FFD60A}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;letter-spacing:-.03em;margin:.3em 0 .25em;font-weight:760}
+h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -16px rgba(0,0,0,.2)}
+label,.lbl{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin:12px 0 6px;letter-spacing:.01em}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;outline:none}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+input[type=range]{padding:0;accent-color:var(--accent);background:transparent;border:0;height:28px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+button,.b{font:inherit;font-weight:650;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,filter .15s,background .15s}
+button:hover,.b:hover{filter:brightness(1.06)}
+button:active,.b:active{transform:scale(.97)}
+button.g,.b.g,button.alt{background:var(--panel2);color:var(--ink)}
+button.d{background:transparent;color:var(--bad)}
+button.x{padding:6px 11px;font-size:.85rem}
+button.sig{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:99px;background:var(--panel2);color:var(--ink);font-size:.88rem;font-weight:600}
+.chip[aria-pressed=true],.chip.on{background:var(--accent);color:var(--accent-ink)}
+.stat{background:var(--panel2);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:1.45rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted)}
+.big{font-size:clamp(2.4rem,11vw,3.6rem);font-weight:760;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.05}
+.muted{color:var(--muted)}.sub{color:var(--muted);font-size:.86rem}
+.msg{min-height:1.3em;color:var(--muted);margin:8px 0 0;font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hide{display:none!important}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.seo{margin-top:28px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inherit}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.wheelw{position:relative;width:min(88vw,340px);margin:6px auto}.wheelw canvas{width:100%;height:auto;display:block;border-radius:50%;box-shadow:0 12px 36px -12px rgba(0,0,0,.35)}
+.ptr{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:26px solid var(--ink);filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));z-index:2}
+.win{font-size:1.6rem;font-weight:760;letter-spacing:-.02em;margin:10px 0 2px}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Spin Wheel</h1>
+<p class="lead">Add your choices, spin, and let the wheel decide.</p>
+<div class="card" style="text-align:center"><div class="wheelw"><div class="ptr"></div><canvas id="cv" width="680" height="680" aria-label="Spinning wheel"></canvas></div>
+<div class="win" id="win" aria-live="polite">Ready to spin</div><div class="sub" id="sub">Tap spin to pick a winner.</div>
+<div class="row" style="justify-content:center"><button id="spin" type="button" style="min-width:150px;padding:14px 26px;font-size:1.05rem">Spin</button><button id="rm" class="g hide" type="button">Remove winner</button></div></div>
+<div class="card"><h2>Options</h2><label for="ops" style="margin-top:0">One per line (up to 30)</label><textarea id="ops" spellcheck="false"></textarea>
+<div class="chips" id="pre" style="margin-top:12px"></div></div>
+<div class="card"><h2>Recent results</h2><ul class="list" id="hist"><li class="muted">No spins yet.</li></ul></div>
+<section class="seo">
+<h2>Spin the wheel</h2><p>Type your options, spin the wheel and get a fair random pick. Use it to choose what to eat, who goes first, a raffle winner or a team name. Presets give you a quick start.</p>
+</section>
+<footer>Part of <a href="../">HeyTools</a>. Everything runs on your device.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id),cv=$('cv'),c=cv.getContext('2d'),K='heytools.wheel.v1';
+const PRE={'Yes / No':'Yes\nNo','Dinner':'Pizza\nBurger\nSushi\nPasta\nSalad\nTacos\nBiryani\nNoodles','Truth or dare':'Truth\nDare','1 to 10':'1\n2\n3\n4\n5\n6\n7\n8\n9\n10','Coin flip':'Heads\nTails'};
+$('pre').innerHTML=Object.keys(PRE).map(k=>'<button class="chip" type="button" data-k="'+k+'">'+k+'</button>').join('');
+let ops=[],rot=0,spinning=false,hist=[];
+try{const s=JSON.parse(localStorage.getItem(K));if(s){$('ops').value=s.ops||'';hist=s.hist||[]}}catch(e){}
+if(!$('ops').value)$('ops').value=PRE['Dinner'];
+const read=()=>{ops=$('ops').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,30)};
+const save=()=>{try{localStorage.setItem(K,JSON.stringify({ops:$('ops').value,hist:hist.slice(0,8)}))}catch(e){}};
+function draw(){const W=cv.width,R=W/2-8,n=Math.max(ops.length,1),seg=Math.PI*2/n;c.clearRect(0,0,W,W);c.save();c.translate(W/2,W/2);c.rotate(rot);
+ for(let i=0;i<n;i++){const a0=i*seg-Math.PI/2,a1=a0+seg;c.beginPath();c.moveTo(0,0);c.arc(0,0,R,a0,a1);c.closePath();c.fillStyle=ops.length?'hsl('+((i*360/n+ (i%2?0:12))%360)+',78%,'+(i%2?56:62)+'%)':'#ccc';c.fill();c.strokeStyle='rgba(255,255,255,.9)';c.lineWidth=3;c.stroke();
+  if(ops.length){c.save();c.rotate(a0+seg/2);c.fillStyle='#fff';c.shadowColor='rgba(0,0,0,.35)';c.shadowBlur=4;c.textAlign='right';c.textBaseline='middle';const fs=Math.max(22,Math.min(46,R*0.9*seg*0.5,520/Math.max(n,6)*2));c.font='700 '+fs+'px Inter,system-ui,sans-serif';let t=ops[i];while(c.measureText(t).width>R*0.72&&t.length>3)t=t.slice(0,-2);if(t!==ops[i])t+='…';c.fillText(t,R-26,0);c.restore()}}
+ c.beginPath();c.arc(0,0,38,0,Math.PI*2);c.fillStyle='#fff';c.fill();c.restore()}
+function winner(){const n=ops.length,seg=Math.PI*2/n,a=((-rot)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);return Math.min(n-1,Math.floor(a/seg))}
+function spin(){read();if(ops.length<2){$('win').textContent='Add at least 2 options';return}if(spinning)return;spinning=true;$('spin').disabled=true;$('rm').classList.add('hide');$('win').textContent='Spinning…';$('sub').textContent='';
+ const start=rot,extra=(Math.PI*2)*(5+Math.random()*3)+Math.random()*Math.PI*2,dur=matchMedia('(prefers-reduced-motion:reduce)').matches?900:4600,t0=performance.now();let last=-1;
+ (function frame(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3.4);rot=start+extra*e;draw();const w=winner();if(w!==last){last=w;if(p<1&&navigator.vibrate)navigator.vibrate(8)}
+  if(p<1)requestAnimationFrame(frame);else{spinning=false;$('spin').disabled=false;const win=ops[winner()];$('win').textContent=win;$('sub').textContent='The wheel has spoken.';$('rm').classList.remove('hide');hist.unshift(win);save();showHist();if(navigator.vibrate)navigator.vibrate([60,40,60])}})(t0)}
+function showHist(){$('hist').innerHTML=hist.length?hist.slice(0,8).map((h,i)=>'<li><b style="flex:1">'+h.replace(/[&<>]/g,'')+'</b><span class="muted">#'+(hist.length-i)+'</span></li>').join(''):'<li class="muted">No spins yet.</li>'}
+$('spin').onclick=spin;$('rm').onclick=()=>{const w=winner();ops.splice(w,1);$('ops').value=ops.join('\n');$('rm').classList.add('hide');$('win').textContent='Removed';save();draw()};
+$('ops').addEventListener('input',()=>{read();if(!spinning)draw();save()});
+$('pre').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;$('ops').value=PRE[b.dataset.k];read();draw();save()};
+read();draw();showHist();
+})();
+</script>
+</body>
+</html>

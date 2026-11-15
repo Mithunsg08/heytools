@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Countdown Timers – Multiple Timers with Alerts</title>
+<meta name="description" content="Run several countdown timers at once with labels, presets and an alert sound. Free, private and works offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/countdown-timers/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Countdown Timers – Multiple Timers with Alerts">
+<meta property="og:description" content="Run several countdown timers at once with labels, presets and an alert sound. Free, private and works offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231D1D1F'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E⏲️%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Timers","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Run several countdown timers at once with labels, presets and an alert sound. Free, private and works offline."}</script>
+<style>
+@font-face{font-family:"Inter";src:url("../app/fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;--accent:#0071E3;--accent-ink:#FFFFFF;--ok:#1F9D55;--bad:#D93025;--warn:#B7791F;--r:18px;--blue:var(--accent);--signal:#FFC93C}
+@media (prefers-color-scheme:dark){:root:not([style*="--bg"]){--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--muted:#98989D;--line:#2C2C2E;--accent:#0A84FF;--ok:#32D74B;--bad:#FF453A;--warn:#FFD60A}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;letter-spacing:-.03em;margin:.3em 0 .25em;font-weight:760}
+h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -16px rgba(0,0,0,.2)}
+label,.lbl{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin:12px 0 6px;letter-spacing:.01em}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;outline:none}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+input[type=range]{padding:0;accent-color:var(--accent);background:transparent;border:0;height:28px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+button,.b{font:inherit;font-weight:650;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,filter .15s,background .15s}
+button:hover,.b:hover{filter:brightness(1.06)}
+button:active,.b:active{transform:scale(.97)}
+button.g,.b.g,button.alt{background:var(--panel2);color:var(--ink)}
+button.d{background:transparent;color:var(--bad)}
+button.x{padding:6px 11px;font-size:.85rem}
+button.sig{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:99px;background:var(--panel2);color:var(--ink);font-size:.88rem;font-weight:600}
+.chip[aria-pressed=true],.chip.on{background:var(--accent);color:var(--accent-ink)}
+.stat{background:var(--panel2);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:1.45rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted)}
+.big{font-size:clamp(2.4rem,11vw,3.6rem);font-weight:760;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.05}
+.muted{color:var(--muted)}.sub{color:var(--muted);font-size:.86rem}
+.msg{min-height:1.3em;color:var(--muted);margin:8px 0 0;font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hide{display:none!important}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.seo{margin-top:28px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inherit}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.tm{padding:14px 0;border-bottom:1px solid var(--line)}.tm:last-child{border:0}
+.tm .top{display:flex;justify-content:space-between;align-items:center;gap:10px}.tm .t{font-size:2rem;font-weight:740;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pb{height:6px;border-radius:99px;background:var(--panel2);overflow:hidden;margin:8px 0 10px}.pb i{display:block;height:100%;background:var(--accent);transition:width .25s linear}
+.tm.done .t{color:var(--bad)}.tm.done .pb i{background:var(--bad)}.in3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Timers</h1>
+<p class="lead">Run as many timers as you need. You get an alert when each one ends.</p>
+<div class="card"><h2>New timer</h2>
+<label for="lb">Name (optional)</label><input id="lb" maxlength="30" placeholder="Tea, Laundry, Break…">
+<div class="in3"><div><label for="hh">Hours</label><input id="hh" type="number" min="0" max="99" value="0" inputmode="numeric"></div><div><label for="mm">Minutes</label><input id="mm" type="number" min="0" max="999" value="5" inputmode="numeric"></div><div><label for="ss">Seconds</label><input id="ss" type="number" min="0" max="59" value="0" inputmode="numeric"></div></div>
+<div class="chips" style="margin-top:12px" id="pre"></div>
+<div class="row"><button id="add" type="button">Start timer</button></div><p class="msg" id="msg" role="status" aria-live="polite"></p></div>
+<div class="card"><h2>Your timers</h2><div id="list"></div></div>
+<section class="seo">
+<h2>Countdown timers</h2><p>Start several timers at once, give each a name, and get an alert sound and a phone notification when one finishes. Running timers keep their time even if you close the page.</p>
+</section>
+<footer>Part of <a href="../">HeyTools</a>. Everything runs on your device.</footer>
+</div>
+<script src="../tones.js"></script>
+<script src="../heynotify.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id),K='heytools.timers.v1';
+let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.t=st.t||[];st.n=st.n||1;
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=s=>{s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60,p=n=>String(n).padStart(2,'0');return (h?h+':':'')+p(m)+':'+p(r)};
+const PRE=[['1 min',60],['5 min',300],['10 min',600],['15 min',900],['30 min',1800],['1 hour',3600]];
+$('pre').innerHTML=PRE.map(p=>'<button class="chip" type="button" data-s="'+p[1]+'">'+p[0]+'</button>').join('');
+$('pre').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const s=+b.dataset.s;$('hh').value=Math.floor(s/3600);$('mm').value=Math.floor(s%3600/60);$('ss').value=s%60};
+const left=t=>t.running?(t.end-Date.now())/1000:t.left;
+const nid=t=>70000+t.nid;
+function notify(t){if(window.HeyNotify)HeyNotify.schedule([{id:nid(t),title:(t.label||'Timer')+' is done',body:'Your countdown has finished.',at:t.end,group:'timers'}])}
+function unnotify(t){if(window.HeyNotify)HeyNotify.cancelIds([nid(t)])}
+function chime(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[784,988,1175,1568].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(c.destination);const t=c.currentTime+i*.2;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+.28);o.start(t);o.stop(t+.3)})}catch(e){}if(navigator.vibrate)navigator.vibrate([250,120,250,120,250])}
+function draw(){
+ $('list').innerHTML=st.t.length?st.t.map(t=>{const l=left(t),pct=t.total?Math.max(0,Math.min(100,l/t.total*100)):0,done=t.running===false&&t.left<=0;
+  return '<div class="tm '+(done?'done':'')+'" data-id="'+t.id+'"><div class="top"><div><div class="sub">'+esc(t.label||'Timer')+'</div><div class="t" data-t>'+(done?'Done':fmt(l))+'</div></div><div class="row" style="margin:0">'+
+   (done?'<button class="g x" data-a="reset" type="button">Restart</button>':'<button class="x" data-a="toggle" type="button">'+(t.running?'Pause':'Start')+'</button><button class="g x" data-a="reset" type="button">Reset</button>')+'<button class="d x" data-a="del" type="button" aria-label="Delete timer">✕</button></div></div><div class="pb"><i data-p style="width:'+pct+'%"></i></div></div>'}).join(''):'<p class="muted">No timers yet. Add one above.</p>'}
+function tick(){let ch=false;
+ st.t.forEach(t=>{if(t.running){const l=left(t);if(l<=0){t.running=false;t.left=0;ch=true;chime();$('msg').textContent=(t.label||'Timer')+' is done.'}}});
+ if(ch){save();draw();return}
+ document.querySelectorAll('.tm').forEach(n=>{const t=st.t.find(x=>x.id==n.dataset.id);if(!t||!t.running)return;const l=left(t);n.querySelector('[data-t]').textContent=fmt(l);n.querySelector('[data-p]').style.width=Math.max(0,l/t.total*100)+'%'})}
+$('add').onclick=()=>{const s=(+$('hh').value||0)*3600+(+$('mm').value||0)*60+(+$('ss').value||0);if(s<=0){$('msg').textContent='Set a time above zero.';return}
+ const t={id:Date.now(),nid:st.n++%9000,label:$('lb').value.trim(),total:s,left:s,end:Date.now()+s*1000,running:true};st.t.unshift(t);save();notify(t);if(window.HeyNotify)HeyNotify.requestPermission();$('msg').textContent='Timer started.';$('lb').value='';draw()};
+$('list').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const n=b.closest('.tm'),t=st.t.find(x=>x.id==n.dataset.id);if(!t)return;
+ if(b.dataset.a==='toggle'){if(t.running){t.left=Math.max(0,(t.end-Date.now())/1000);t.running=false;unnotify(t)}else{t.end=Date.now()+t.left*1000;t.running=true;notify(t)}}
+ if(b.dataset.a==='reset'){t.left=t.total;t.running=false;unnotify(t)}
+ if(b.dataset.a==='del'){unnotify(t);st.t=st.t.filter(x=>x!==t)}
+ save();draw()};
+setInterval(tick,250);document.addEventListener('visibilitychange',tick);draw();
+})();
+</script>
+</body>
+</html>

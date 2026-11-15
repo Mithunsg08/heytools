@@ -101,7 +101,7 @@ fs.writeFileSync(mp, m);
   const gp = path.join(root, 'app/build.gradle');
   let g = fs.readFileSync(gp, 'utf8');
   const run = Number(process.env.GITHUB_RUN_NUMBER || 1);
-  g = g.replace(/versionCode \d+/, 'versionCode ' + run).replace(/versionName "[^"]*"/, 'versionName "1.0.' + run + '"');
+  g = g.replace(/versionCode \d+/, 'versionCode ' + run).replace(/versionName "[^"]*"/, 'versionName "1.0"');
   if (process.env.HEY_KEYSTORE && !g.includes('signingConfigs')) {
     g = g.replace('    buildTypes {', [
       '    signingConfigs {',

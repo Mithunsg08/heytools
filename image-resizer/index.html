@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Image Resizer – Resize, Rotate, Flip and Convert JPG, PNG, WebP</title>
+<meta name="description" content="Resize images to exact sizes or percentages, rotate, flip and convert between JPG, PNG and WebP. Private: images never leave your device.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/image-resizer/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Image Resizer – Resize, Rotate, Flip and Convert JPG, PNG, WebP">
+<meta property="og:description" content="Resize images to exact sizes or percentages, rotate, flip and convert between JPG, PNG and WebP. Private: images never leave your device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231D1D1F'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E🖼️%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Image Resizer","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Resize images to exact sizes or percentages, rotate, flip and convert between JPG, PNG and WebP. Private: images never leave your device."}</script>
+<style>
+@font-face{font-family:"Inter";src:url("../app/fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;--accent:#0071E3;--accent-ink:#FFFFFF;--ok:#1F9D55;--bad:#D93025;--warn:#B7791F;--r:18px;--blue:var(--accent);--signal:#FFC93C}
+@media (prefers-color-scheme:dark){:root:not([style*="--bg"]){--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--muted:#98989D;--line:#2C2C2E;--accent:#0A84FF;--ok:#32D74B;--bad:#FF453A;--warn:#FFD60A}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;letter-spacing:-.03em;margin:.3em 0 .25em;font-weight:760}
+h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -16px rgba(0,0,0,.2)}
+label,.lbl{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin:12px 0 6px;letter-spacing:.01em}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;outline:none}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+input[type=range]{padding:0;accent-color:var(--accent);background:transparent;border:0;height:28px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+button,.b{font:inherit;font-weight:650;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,filter .15s,background .15s}
+button:hover,.b:hover{filter:brightness(1.06)}
+button:active,.b:active{transform:scale(.97)}
+button.g,.b.g,button.alt{background:var(--panel2);color:var(--ink)}
+button.d{background:transparent;color:var(--bad)}
+button.x{padding:6px 11px;font-size:.85rem}
+button.sig{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:99px;background:var(--panel2);color:var(--ink);font-size:.88rem;font-weight:600}
+.chip[aria-pressed=true],.chip.on{background:var(--accent);color:var(--accent-ink)}
+.stat{background:var(--panel2);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:1.45rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted)}
+.big{font-size:clamp(2.4rem,11vw,3.6rem);font-weight:760;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.05}
+.muted{color:var(--muted)}.sub{color:var(--muted);font-size:.86rem}
+.msg{min-height:1.3em;color:var(--muted);margin:8px 0 0;font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hide{display:none!important}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.seo{margin-top:28px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inherit}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:30px 16px;text-align:center;cursor:pointer;background:var(--panel2)}.drop:hover,.drop.on{border-color:var(--accent)}
+#pv{max-width:100%;max-height:340px;border-radius:12px;display:block;margin:0 auto;background:repeating-conic-gradient(var(--panel2) 0 25%,var(--panel) 0 50%) 0 0/16px 16px}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Image Resizer</h1>
+<p class="lead">Resize, rotate, flip and convert photos. Nothing is uploaded.</p>
+<div class="card"><div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an image"><b>Choose an image</b><div class="sub">or drop it here · JPG, PNG, WebP, GIF</div></div><input id="file" type="file" accept="image/*" hidden></div>
+<div id="ed" class="hide"><div class="card"><img id="pv" alt="Preview of the resized image"><p class="sub" id="info" style="text-align:center;margin-top:10px"></p></div>
+<div class="card"><h2>Size</h2><div class="chips" id="pc"></div><div class="grid2" style="margin-top:6px"><div><label for="w">Width (px)</label><input id="w" type="number" min="1" max="12000" inputmode="numeric"></div><div><label for="h">Height (px)</label><input id="h" type="number" min="1" max="12000" inputmode="numeric"></div></div>
+<label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input id="lock" type="checkbox" checked> Keep the proportions</label>
+<div class="row"><button id="rl" class="g" type="button">⟲ Rotate left</button><button id="rr" class="g" type="button">⟳ Rotate right</button><button id="fl" class="g" type="button">⇋ Flip</button></div></div>
+<div class="card"><h2>Format</h2><div class="chips" id="fm"><button class="chip" data-f="image/jpeg" aria-pressed="true" type="button">JPG</button><button class="chip" data-f="image/png" aria-pressed="false" type="button">PNG</button><button class="chip" data-f="image/webp" aria-pressed="false" type="button">WebP</button></div>
+<div id="qb"><label for="q">Quality <span id="qv">85</span>%</label><input id="q" type="range" min="30" max="100" value="85"></div>
+<div class="row"><button id="dl" type="button">Download</button><button id="nw" class="g" type="button">Choose another</button></div><p class="msg" id="msg" role="status" aria-live="polite"></p></div></div>
+<section class="seo">
+<h2>Resize images privately</h2><p>Change the width and height of a photo, scale it by percent, rotate, flip and save it as JPG, PNG or WebP. The image is processed in your browser and is never uploaded.</p>
+</section>
+<footer>Part of <a href="../">HeyTools</a>. Everything runs on your device.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+let bmp=null,name='image',rot=0,flip=false,fmt='image/jpeg',W=0,H=0,blob=null,t=0;
+const kb=n=>n>1048576?(n/1048576).toFixed(2)+' MB':Math.round(n/1024)+' KB';
+const sw=()=>rot%2?bmp.height:bmp.width,sh=()=>rot%2?bmp.width:bmp.height;
+const PC=[['25%',.25],['50%',.5],['75%',.75],['Full HD',1920],['HD',1280],['Square 1080',-1080],['Icon 512',-512]];
+$('pc').innerHTML=PC.map((p,i)=>'<button class="chip" type="button" data-i="'+i+'">'+p[0]+'</button>').join('');
+async function load(f){if(!f||!/^image\//.test(f.type)){$('msg').textContent='Please choose an image file.';return}
+ try{bmp=await createImageBitmap(f,{imageOrientation:'from-image'})}catch(e){try{bmp=await createImageBitmap(f)}catch(x){$('msg').textContent='That image could not be opened.';return}}
+ name=f.name.replace(/\.[^.]+$/,'')||'image';rot=0;flip=false;W=bmp.width;H=bmp.height;$('w').value=W;$('h').value=H;$('ed').classList.remove('hide');$('drop').parentNode.classList.add('hide');$('info').dataset.o=bmp.width+' × '+bmp.height+' px · '+kb(f.size);render()}
+function render(){clearTimeout(t);t=setTimeout(()=>{if(!bmp)return;W=Math.max(1,Math.min(12000,+$('w').value||sw()));H=Math.max(1,Math.min(12000,+$('h').value||sh()));
+ const cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');if(fmt==='image/jpeg'){c.fillStyle='#fff';c.fillRect(0,0,W,H)}
+ c.imageSmoothingQuality='high';c.save();c.translate(W/2,H/2);if(flip)c.scale(-1,1);c.rotate(rot*Math.PI/2);const dw=rot%2?H:W,dh=rot%2?W:H;c.drawImage(bmp,-dw/2,-dh/2,dw,dh);c.restore();
+ cv.toBlob(b=>{if(!b){$('msg').textContent='This browser cannot save that format.';return}blob=b;$('pv').src=URL.createObjectURL(b);$('info').textContent='Original '+$('info').dataset.o+'  →  '+W+' × '+H+' px · '+kb(b.size)},fmt,+$('q').value/100)},120)}
+function setW(w,fromH){const lock=$('lock').checked;if(fromH){$('h').value=w;if(lock)$('w').value=Math.round(w*sw()/sh())}else{$('w').value=w;if(lock)$('h').value=Math.round(w*sh()/sw())}render()}
+$('w').oninput=()=>{if($('lock').checked&&bmp)$('h').value=Math.max(1,Math.round(+$('w').value*sh()/sw()));render()};
+$('h').oninput=()=>{if($('lock').checked&&bmp)$('w').value=Math.max(1,Math.round(+$('h').value*sw()/sh()));render()};
+$('pc').onclick=e=>{const b=e.target.closest('[data-i]');if(!b||!bmp)return;const v=PC[+b.dataset.i][1];if(v>0&&v<=1)setW(Math.max(1,Math.round(sw()*v)));else if(v>1)setW(Math.min(v,sw()));else{$('lock').checked=true;setW(-v)}};
+const rotate=d=>{if(!bmp)return;const a=+$('w').value,b=+$('h').value;rot=(rot+d+4)%4;$('w').value=b;$('h').value=a;render()};
+$('rl').onclick=()=>rotate(-1);$('rr').onclick=()=>rotate(1);$('fl').onclick=()=>{flip=!flip;render()};
+$('fm').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;fmt=b.dataset.f;document.querySelectorAll('#fm .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));$('qb').classList.toggle('hide',fmt==='image/png');render()};
+$('q').oninput=()=>{$('qv').textContent=$('q').value;render()};
+$('dl').onclick=()=>{if(!blob)return;const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[fmt],a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'-'+W+'x'+H+'.'+ext;document.body.appendChild(a);a.click();a.remove();$('msg').textContent='Saving '+a.download;setTimeout(()=>URL.revokeObjectURL(a.href),4000)};
+$('nw').onclick=()=>{$('ed').classList.add('hide');$('drop').parentNode.classList.remove('hide');$('file').value='';bmp=null};
+$('drop').onclick=()=>$('file').click();$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' ')$('file').click()};
+$('file').onchange=e=>load(e.target.files[0]);
+['dragover','dragenter'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('on')}));
+['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('on')}));
+$('drop').addEventListener('drop',e=>load(e.dataTransfer.files[0]));
+})();
+</script>
+</body>
+</html>

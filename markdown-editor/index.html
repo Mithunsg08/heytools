@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Markdown Editor – Live Preview, Copy HTML, Download</title>
+<meta name="description" content="Write Markdown with a live preview, copy the HTML or download your file. Autosaves on your device. Free and offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/markdown-editor/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Markdown Editor – Live Preview, Copy HTML, Download">
+<meta property="og:description" content="Write Markdown with a live preview, copy the HTML or download your file. Autosaves on your device. Free and offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231D1D1F'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E📝%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Markdown Editor","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Write Markdown with a live preview, copy the HTML or download your file. Autosaves on your device. Free and offline."}</script>
+<style>
+@font-face{font-family:"Inter";src:url("../app/fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;--accent:#0071E3;--accent-ink:#FFFFFF;--ok:#1F9D55;--bad:#D93025;--warn:#B7791F;--r:18px;--blue:var(--accent);--signal:#FFC93C}
+@media (prefers-color-scheme:dark){:root:not([style*="--bg"]){--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--muted:#98989D;--line:#2C2C2E;--accent:#0A84FF;--ok:#32D74B;--bad:#FF453A;--warn:#FFD60A}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;letter-spacing:-.03em;margin:.3em 0 .25em;font-weight:760}
+h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -16px rgba(0,0,0,.2)}
+label,.lbl{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin:12px 0 6px;letter-spacing:.01em}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;outline:none}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+input[type=range]{padding:0;accent-color:var(--accent);background:transparent;border:0;height:28px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+button,.b{font:inherit;font-weight:650;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,filter .15s,background .15s}
+button:hover,.b:hover{filter:brightness(1.06)}
+button:active,.b:active{transform:scale(.97)}
+button.g,.b.g,button.alt{background:var(--panel2);color:var(--ink)}
+button.d{background:transparent;color:var(--bad)}
+button.x{padding:6px 11px;font-size:.85rem}
+button.sig{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:99px;background:var(--panel2);color:var(--ink);font-size:.88rem;font-weight:600}
+.chip[aria-pressed=true],.chip.on{background:var(--accent);color:var(--accent-ink)}
+.stat{background:var(--panel2);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:1.45rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted)}
+.big{font-size:clamp(2.4rem,11vw,3.6rem);font-weight:760;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.05}
+.muted{color:var(--muted)}.sub{color:var(--muted);font-size:.86rem}
+.msg{min-height:1.3em;color:var(--muted);margin:8px 0 0;font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hide{display:none!important}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.seo{margin-top:28px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inherit}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.ed{display:grid;grid-template-columns:1fr;gap:14px}@media(min-width:780px){.wrap{max-width:1100px}.ed{grid-template-columns:1fr 1fr}.tabs{display:none}}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.tools button{padding:7px 11px;font-size:.84rem}
+#src{min-height:380px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92rem}
+#pv{min-height:380px;overflow:auto;line-height:1.65}#pv h1,#pv h2,#pv h3{letter-spacing:-.02em;margin:1em 0 .4em}#pv h1{font-size:1.7rem}#pv h2{font-size:1.35rem}#pv p{margin:.6em 0}
+#pv code{background:var(--panel2);padding:2px 6px;border-radius:6px;font-size:.9em}#pv pre{background:var(--panel2);padding:12px;border-radius:12px;overflow:auto}#pv pre code{padding:0;background:none}
+#pv blockquote{margin:.8em 0;padding:.2em 14px;border-left:4px solid var(--accent);color:var(--muted)}#pv a{color:var(--accent)}#pv hr{border:0;border-top:1px solid var(--line);margin:1.2em 0}#pv ul,#pv ol{padding-left:1.4em}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Markdown Editor</h1>
+<p class="lead">Write on one side, see the result on the other. Saved automatically.</p>
+<div class="chips tabs" id="tabs" style="margin-bottom:12px"><button class="chip" data-v="w" aria-pressed="true" type="button">Write</button><button class="chip" data-v="p" aria-pressed="false" type="button">Preview</button></div>
+<div class="ed"><div class="card" id="cw"><div class="tools" id="tb"></div><textarea id="src" spellcheck="false" placeholder="# Your title&#10;&#10;Write **bold**, *italic*, lists, links and code."></textarea><div class="sub" id="wc" style="margin-top:8px"></div></div>
+<div class="card hide-m" id="cp"><div id="pv"></div></div></div>
+<div class="row"><button id="cph" type="button">Copy HTML</button><button id="dmd" class="g" type="button">Download .md</button><button id="dht" class="g" type="button">Download .html</button><button id="clr" class="d" type="button">Clear</button></div><p class="msg" id="msg" role="status" aria-live="polite"></p>
+<section class="seo">
+<h2>Markdown editor with live preview</h2><p>Type Markdown and watch it turn into formatted text instantly. Copy the HTML, or download your work as a Markdown or HTML file. Your document is saved on your device as you type.</p>
+</section>
+<footer>Part of <a href="../">HeyTools</a>. Everything runs on your device.</footer>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id),K='heytools.markdown.v1';
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function inline(s){s=esc(s);const codes=[];s=s.replace(/`([^`]+)`/g,(m,c)=>{codes.push(c);return '\u0000'+(codes.length-1)+'\u0000'});
+ s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/__([^_]+)__/g,'<b>$1</b>').replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\*)/g,'$1<i>$2</i>').replace(/~~([^~]+)~~/g,'<s>$1</s>');
+ s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+ return s.replace(/\u0000(\d+)\u0000/g,(m,i)=>'<code>'+codes[+i]+'</code>')}
+function md(src){const L=src.replace(/\r/g,'').split('\n');let out=[],i=0,para=[];
+ const flush=()=>{if(para.length){out.push('<p>'+para.map(inline).join('<br>')+'</p>');para=[]}};
+ while(i<L.length){const l=L[i];
+  if(/^```/.test(l)){flush();const buf=[];i++;while(i<L.length&&!/^```/.test(L[i]))buf.push(L[i++]);i++;out.push('<pre><code>'+esc(buf.join('\n'))+'</code></pre>');continue}
+  let m;if(m=l.match(/^(#{1,6})\s+(.*)$/)){flush();out.push('<h'+m[1].length+'>'+inline(m[2])+'</h'+m[1].length+'>');i++;continue}
+  if(/^(-{3,}|\*{3,}|_{3,})\s*$/.test(l)){flush();out.push('<hr>');i++;continue}
+  if(/^>\s?/.test(l)){flush();const buf=[];while(i<L.length&&/^>\s?/.test(L[i]))buf.push(L[i++].replace(/^>\s?/,''));out.push('<blockquote>'+md(buf.join('\n'))+'</blockquote>');continue}
+  if(/^\s*([-*+])\s+/.test(l)){flush();const buf=[];while(i<L.length&&/^\s*([-*+])\s+/.test(L[i]))buf.push('<li>'+inline(L[i++].replace(/^\s*[-*+]\s+/,'').replace(/^\[( |x)\]\s/,(a,c)=>c==='x'?'☑ ':'☐ '))+'</li>');out.push('<ul>'+buf.join('')+'</ul>');continue}
+  if(/^\s*\d+[.)]\s+/.test(l)){flush();const buf=[];while(i<L.length&&/^\s*\d+[.)]\s+/.test(L[i]))buf.push('<li>'+inline(L[i++].replace(/^\s*\d+[.)]\s+/,''))+'</li>');out.push('<ol>'+buf.join('')+'</ol>');continue}
+  if(!l.trim()){flush();i++;continue}
+  para.push(l);i++}
+ flush();return out.join('\n')}
+const TB=[['B','**','**','bold'],['I','*','*','italic'],['H','## ','','heading'],['• List','- ','','item'],['1. List','1. ','','item'],['Quote','> ','','quote'],['Code','`','`','code'],['Link','[','](https://)','text']];
+$('tb').innerHTML=TB.map((t,i)=>'<button class="g" type="button" data-i="'+i+'">'+t[0]+'</button>').join('');
+$('tb').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const t=TB[+b.dataset.i],s=$('src'),a=s.selectionStart,z=s.selectionEnd,sel=s.value.slice(a,z)||t[3];s.setRangeText(t[1]+sel+t[2],a,z,'select');s.focus();upd()};
+function upd(){const v=$('src').value;$('pv').innerHTML=md(v);const w=(v.trim()?v.trim().split(/\s+/).length:0);$('wc').textContent=w+' words · '+v.length+' characters';try{localStorage.setItem(K,v)}catch(e){}}
+let v0='';try{v0=localStorage.getItem(K)||''}catch(e){}
+$('src').value=v0||'# Welcome\n\nThis is **HeyTools Markdown**. Edit this text and the preview updates.\n\n- Make lists\n- Add *emphasis* and `code`\n- Share the HTML\n\n> Your notes stay on this device.\n';
+$('src').addEventListener('input',upd);
+const file=(name,mime,text)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)};
+const say=t=>$('msg').textContent=t;
+$('cph').onclick=()=>navigator.clipboard.writeText(md($('src').value)).then(()=>say('HTML copied.'),()=>say('Copy failed.'));
+$('dmd').onclick=()=>{file('document.md','text/markdown',$('src').value);say('Saving document.md')};
+$('dht').onclick=()=>{file('document.html','text/html','<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Document</title><body style="font:16px/1.6 system-ui;max-width:720px;margin:24px auto;padding:0 16px">'+md($('src').value)+'</body>');say('Saving document.html')};
+$('clr').onclick=()=>{if(confirm('Clear the whole document?')){$('src').value='';upd()}};
+function tab(v){const m=matchMedia('(min-width:780px)').matches;$('cw').classList.toggle('hide',!m&&v!=='w');$('cp').classList.toggle('hide',!m&&v!=='p');document.querySelectorAll('#tabs .chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===v))}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-v]');if(b)tab(b.dataset.v)};addEventListener('resize',()=>tab(document.querySelector('#tabs [aria-pressed=true]').dataset.v));
+upd();tab('w');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Water Tracker – Daily Intake Goal & Drink Reminders</title>
+<meta name="description" content="Track your daily water intake, set a goal and get drink reminders. Free, private and works offline.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/water-tracker/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Water Tracker – Daily Intake Goal & Drink Reminders">
+<meta property="og:description" content="Track your daily water intake, set a goal and get drink reminders. Free, private and works offline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231D1D1F'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E💧%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Water Tracker","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Track your daily water intake, set a goal and get drink reminders. Free, private and works offline."}</script>
+<style>
+@font-face{font-family:"Inter";src:url("../app/fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#F2F2F4;--ink:#1D1D1F;--muted:#6E6E73;--line:#E5E5EA;--accent:#0071E3;--accent-ink:#FFFFFF;--ok:#1F9D55;--bad:#D93025;--warn:#B7791F;--r:18px;--blue:var(--accent);--signal:#FFC93C}
+@media (prefers-color-scheme:dark){:root:not([style*="--bg"]){--bg:#000;--panel:#1C1C1E;--panel2:#2C2C2E;--ink:#F5F5F7;--muted:#98989D;--line:#2C2C2E;--accent:#0A84FF;--ok:#32D74B;--bad:#FF453A;--warn:#FFD60A}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;letter-spacing:-.03em;margin:.3em 0 .25em;font-weight:760}
+h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -16px rgba(0,0,0,.2)}
+label,.lbl{display:block;font-size:.8rem;font-weight:650;color:var(--muted);margin:12px 0 6px;letter-spacing:.01em}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;outline:none}
+textarea{min-height:130px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+input[type=range]{padding:0;accent-color:var(--accent);background:transparent;border:0;height:28px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+button,.b{font:inherit;font-weight:650;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,filter .15s,background .15s}
+button:hover,.b:hover{filter:brightness(1.06)}
+button:active,.b:active{transform:scale(.97)}
+button.g,.b.g,button.alt{background:var(--panel2);color:var(--ink)}
+button.d{background:transparent;color:var(--bad)}
+button.x{padding:6px 11px;font-size:.85rem}
+button.sig{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:99px;background:var(--panel2);color:var(--ink);font-size:.88rem;font-weight:600}
+.chip[aria-pressed=true],.chip.on{background:var(--accent);color:var(--accent-ink)}
+.stat{background:var(--panel2);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:1.45rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted)}
+.big{font-size:clamp(2.4rem,11vw,3.6rem);font-weight:760;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.05}
+.muted{color:var(--muted)}.sub{color:var(--muted);font-size:.86rem}
+.msg{min-height:1.3em;color:var(--muted);margin:8px 0 0;font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.hide{display:none!important}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.seo{margin-top:28px;color:var(--muted)}.seo h2{color:var(--ink)}
+footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inherit}
+@media (display-mode:standalone){.seo,footer,.lead{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.ringw{position:relative;width:220px;height:220px;margin:6px auto}.ringw svg{width:100%;height:100%;transform:rotate(-90deg)}.ringw .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.glass{flex:1;min-width:74px;padding:14px 8px;border-radius:16px;background:var(--panel2);color:var(--ink);flex-direction:column;gap:2px}.glass b{font-size:1.05rem}.glass span{font-size:.72rem;color:var(--muted);font-weight:600}
+.days{display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:10px}.days div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:.7rem;color:var(--muted)}.days i{display:block;width:100%;border-radius:8px 8px 3px 3px;background:var(--accent);min-height:3px;opacity:.85}
+</style>
+<script src="../install-prompt.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>Water Tracker</h1>
+<p class="lead">Tap to log a glass, watch your ring fill and get gentle reminders.</p>
+<div class="card" style="text-align:center"><div class="ringw"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--panel2)" stroke-width="10"/><circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset .5s"/></svg><div class="c"><div><div class="big" id="cur" style="font-size:2.4rem">0</div><div class="sub" id="of">of 2500 ml</div></div></div></div>
+<p class="msg" id="msg" role="status" aria-live="polite" style="text-align:center"></p>
+<div class="row" id="gl" style="justify-content:center"></div><div class="row" style="justify-content:center"><button id="undo" class="g" type="button">Undo last</button></div></div>
+<div class="card"><h2>Last 7 days</h2><div class="days" id="wk"></div></div>
+<div class="card"><h2>Settings</h2><div class="grid2"><div><label for="goal">Daily goal (ml)</label><input id="goal" type="number" min="500" max="8000" step="50" inputmode="numeric"></div><div><label for="ev">Remind me every</label><select id="ev"><option value="0">Never</option><option value="1">1 hour</option><option value="2">2 hours</option><option value="3">3 hours</option></select></div><div><label for="st">From</label><input id="st" type="time" value="08:00"></div><div><label for="en">Until</label><input id="en" type="time" value="21:00"></div></div><p class="sub" id="rmsg" style="margin-top:10px"></p></div>
+<div class="card"><h2>Today</h2><ul class="list" id="log"></ul></div>
+<section class="seo">
+<h2>Water intake tracker</h2><p>Log each glass of water, set a daily goal and see your last seven days. Reminders can nudge you through the day. Everything is saved on your device.</p>
+</section>
+<footer>Part of <a href="../">HeyTools</a>. Everything runs on your device.</footer>
+</div>
+<script src="../tones.js"></script>
+<script src="../heynotify.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id),K='heytools.water.v1';
+let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}
+st.goal=st.goal||2500;st.days=st.days||{};st.ev=st.ev==null?2:st.ev;st.st=st.st||'08:00';st.en=st.en||'21:00';
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+const key=d=>{const t=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return t.toISOString().slice(0,10)};
+const today=()=>key(new Date());
+const log=()=>st.days[today()]=st.days[today()]||[];
+const sum=a=>(a||[]).reduce((s,x)=>s+x.ml,0);
+const SZ=[[150,'Small cup'],[250,'Glass'],[330,'Can'],[500,'Bottle']];
+$('gl').innerHTML=SZ.map(s=>'<button class="glass" type="button" data-ml="'+s[0]+'"><b>+'+s[0]+' ml</b><span>'+s[1]+'</span></button>').join('');
+function draw(){const tot=sum(log()),p=Math.min(1,tot/st.goal);$('cur').textContent=tot;$('of').textContent='of '+st.goal+' ml';$('arc').style.strokeDashoffset=String(326.7*(1-p));
+ $('msg').textContent=tot>=st.goal?'Goal reached. Well done!':Math.max(0,st.goal-tot)+' ml to go';
+ const dn=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dn.push(d)}
+ const mx=Math.max(st.goal,...dn.map(d=>sum(st.days[key(d)])));
+ $('wk').innerHTML=dn.map(d=>{const v=sum(st.days[key(d)]);return '<div title="'+v+' ml"><i style="height:'+Math.round(v/mx*80)+'px;'+(v>=st.goal?'':'opacity:.55')+'"></i>'+'SMTWTFS'[d.getDay()]+'</div>'}).join('');
+ $('log').innerHTML=log().length?log().slice().reverse().map(x=>'<li><span class="muted" style="min-width:56px">'+x.t+'</span><b style="flex:1">'+x.ml+' ml</b></li>').join(''):'<li class="muted">Nothing logged yet today.</li>'}
+$('gl').onclick=e=>{const b=e.target.closest('[data-ml]');if(!b)return;const n=new Date();log().push({ml:+b.dataset.ml,t:String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')});save();draw();if(navigator.vibrate)navigator.vibrate(25)};
+$('undo').onclick=()=>{log().pop();save();draw()};
+function remind(){
+ const ev=+st.ev;if(!window.HeyNotify){$('rmsg').textContent='Reminders need the HeyTools app or a browser that allows notifications.';return}
+ if(!ev){HeyNotify.cancelGroup('water');$('rmsg').textContent='Reminders are off.';return}
+ const a=st.st.split(':').map(Number),z=st.en.split(':').map(Number),items=[];let m=a[0]*60+a[1],i=0;
+ while(m<=z[0]*60+z[1]&&i<24){items.push({id:81000+i,title:'Time for some water 💧',body:'Tap to log a glass in HeyTools.',repeat:{hour:Math.floor(m/60),minute:m%60},group:'water'});m+=ev*60;i++}
+ HeyNotify.requestPermission().then(p=>{if(p==='denied'){$('rmsg').textContent='Notifications are blocked. Allow them in your phone settings.';return}HeyNotify.syncGroup('water',items);$('rmsg').textContent=items.length+' reminders a day, every '+ev+' hour'+(ev>1?'s':'')+'.'})}
+$('goal').value=st.goal;$('ev').value=st.ev;$('st').value=st.st;$('en').value=st.en;
+$('goal').onchange=()=>{st.goal=Math.max(500,Math.min(8000,+$('goal').value||2500));$('goal').value=st.goal;save();draw()};
+['ev','st','en'].forEach(i=>$(i).onchange=()=>{st.ev=+$('ev').value;st.st=$('st').value;st.en=$('en').value;save();remind()});
+draw();if(+st.ev&&window.HeyNotify&&HeyNotify.isNative)remind();else $('rmsg').textContent=+st.ev?'Reminders are set.':'Reminders are off.';
+})();
+</script>
+</body>
+</html>
