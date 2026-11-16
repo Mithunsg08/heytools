@@ -176,7 +176,14 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       $('permTxt').textContent = 'Could not verify notification permissions. Check HeyTools notification and alarm permissions in your device settings.';
     });
   }
-  $('permBtn').onclick = function () { HeyNotify.requestPermission().then(function () { ensurePerm(); sync(); }); };
+  $('permBtn').onclick = function () {
+    HeyNotify.requestPermission().then(function () {
+      // Android returns from the settings screen asynchronously; refresh again when the app/page resumes.
+      ensurePerm(); sync();
+    }).catch(function () { ensurePerm(); });
+  };
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { ensurePerm(); sync(); } });
+  window.addEventListener('focus', function () { ensurePerm(); sync(); });
 
   /* ----- editor ----- */
   function buildTones() {
