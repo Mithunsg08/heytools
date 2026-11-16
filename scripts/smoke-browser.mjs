@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-const { chromium } = require('playwright');
-const fs = require('node:fs');
-const path = require('node:path');
+import { chromium } from 'playwright';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'app/tools.js'), 'utf8');
