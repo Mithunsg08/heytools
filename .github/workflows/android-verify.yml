@@ -45,3 +45,28 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
+
+      # Android 17 (API 37) is the current stable Android platform.
+      - name: Install and launch HeyTools on Android 17 emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 37
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am force-stop com.heytools.app
+            adb shell monkey -p com.heytools.app 1
+            sleep 25
+            adb shell dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity' | grep -q 'com.heytools.app'
+            adb shell uiautomator dump /sdcard/window.xml >/dev/null
+            adb shell cat /sdcard/window.xml | grep -q 'HeyTools'
+            if adb logcat -d -t 5000 | grep -E 'FATAL EXCEPTION.*main|Process: com.heytools.app'; then
+              echo "HeyTools crashed during Android 17 launch smoke test."
+              exit 1
+            fi
+            echo "Android 17 install, launch, foreground and UI smoke checks passed."
