@@ -108,10 +108,12 @@ function syncRemind(){try{localStorage.setItem(RK,JSON.stringify(rem))}catch(e){
 $('rton').onclick=()=>{rem.on=!rem.on;if(rem.on&&window.HeyNotify)window.HeyNotify.requestPermission().then(v=>{$('rmsg').textContent=v==='granted'?'Reminder set for '+rem.t+' every day.':'Notifications are blocked. Allow them in your phone settings.'});else $('rmsg').textContent='';syncRemind()};
 $('rt').onchange=e=>{rem.t=e.target.value||'20:00';syncRemind()};
 syncRemind();
-if(window.HeyNotify)window.HeyNotify.on('action',(action,n)=>{
-  if(!n||!n.extra||n.extra.group!=='habit')return;
+function handleHabitAction(action){
   if(action==='later')window.HeyNotify.schedule([{id:900004,title:'Habit check-in',body:'Have you ticked off your habits today?',at:Date.now()+2*60*60*1000,group:'habit',kind:'habit'}]);
- });
+ }
+ function receiveHabitAction(e){if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:notification-action'||!e.data.payload||e.data.payload.group!=='habit')return;handleHabitAction(e.data.payload.action)}
+ window.addEventListener('message',receiveHabitAction);
+ try{const p=JSON.parse(localStorage.getItem('heytools.pending.notification')||'null');if(p&&p.tool==='habit-tracker'&&Date.now()-p.createdAt<86400000){localStorage.removeItem('heytools.pending.notification');handleHabitAction(p.action)}}catch(e){}
 })();
 </script>
 </body>
