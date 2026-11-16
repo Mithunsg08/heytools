@@ -148,6 +148,8 @@ public class MediaLibraryPlugin extends Plugin {
     try {
       Intent i = new Intent(getContext(), PlaybackService.class);
       i.putExtra("title", call.getString("title", "HeyTools"));
+      i.putExtra("artist", call.getString("artist", "Now playing"));
+      i.putExtra("playing", call.getBoolean("playing", true));
       if (Build.VERSION.SDK_INT >= 26) {
         getContext().startForegroundService(i);
       } else {
@@ -157,6 +159,19 @@ public class MediaLibraryPlugin extends Plugin {
     } catch (Exception e) {
       call.reject("Could not start background playback: " + e.getMessage());
     }
+  }
+
+  @PluginMethod
+  public void updatePlayback(PluginCall call) {
+    try {
+      Intent i = new Intent(getContext(), PlaybackService.class);
+      i.putExtra("title", call.getString("title", "HeyTools"));
+      i.putExtra("artist", call.getString("artist", "Now playing"));
+      i.putExtra("playing", call.getBoolean("playing", true));
+      if (Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(i);
+      else getContext().startService(i);
+      call.resolve();
+    } catch (Exception e) { call.reject("Could not update media controls: " + e.getMessage(), e); }
   }
 
   @PluginMethod
