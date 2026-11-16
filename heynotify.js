@@ -50,17 +50,30 @@
   }
 
   /* ----- browser fallback: timers while the page is open ----- */
-  var timers = {};
+  var timers = Object.create(null), timerGroups = Object.create(null);
+  function clearWebTimer(id) {
+    if (timers[id] != null) clearTimeout(timers[id]);
+    delete timers[id]; delete timerGroups[id];
+  }
   function webSchedule(it) {
-    clearTimeout(timers[it.id]);
+    clearWebTimer(it.id);
     var at = it.repeat ? nextRepeat(it.repeat) : +new Date(it.at), wait = at - Date.now();
-    if (!(wait > 0) || wait > 2147000000) return;
-    timers[it.id] = setTimeout(function () {
-      try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification(it.title, { body: it.body || '', tag: 'hey-' + it.id }); } catch (e) { /* ignore */ }
-      if (it.tone && window.HeyTones) window.HeyTones.play(it.tone, { seconds: 6 });
-      (listeners.fire || []).forEach(function (f) { try { f(it); } catch (e) { /* ignore */ } });
-      if (it.repeat) webSchedule(it);
-    }, wait);
+    if (!(wait > 0)) return;
+    timerGroups[it.id] = it.group || '';
+    // Browsers clamp long setTimeout delays. Wake in safe intervals until the target time arrives.
+    function arm() {
+      var remaining = at - Date.now();
+      if (remaining <= 0) {
+        delete timers[it.id];
+        try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification(it.title, { body: it.body || '', tag: 'hey-' + it.id }); } catch (e) { /* ignore */ }
+        if (it.tone && window.HeyTones) window.HeyTones.play(it.tone, { seconds: 6 });
+        (listeners.fire || []).forEach(function (f) { try { f(it); } catch (e) { /* ignore */ } });
+        if (it.repeat) webSchedule(it); else delete timerGroups[it.id];
+        return;
+      }
+      timers[it.id] = setTimeout(arm, Math.min(remaining, 2147000000));
+    }
+    arm();
   }
   function nextRepeat(r) {
     var best = Infinity, now = new Date();
@@ -95,12 +108,12 @@
   }
   function pending() { return native ? LN.getPending().then(function (r) { return r.notifications || []; }) : Promise.resolve([]); }
   function cancelIds(ids) {
-    if (!native) { ids.forEach(function (i) { clearTimeout(timers[i]); }); return Promise.resolve(); }
+    if (!native) { ids.forEach(clearWebTimer); return Promise.resolve(); }
     var all = []; ids.forEach(function (i) { all.push({ id: i * 10 }); for (var w = 1; w <= 7; w++) all.push({ id: i * 10 + w }); });
     return LN.cancel({ notifications: all }).catch(function () {});
   }
   function cancelGroup(group) {
-    if (!native) return Promise.resolve();
+    if (!native) { Object.keys(timerGroups).forEach(function (id) { if (timerGroups[id] === group) clearWebTimer(id); }); return Promise.resolve(); }
     return pending().then(function (list) {
       var mine = list.filter(function (n) { return n.extra && n.extra.group === group; }).map(function (n) { return { id: n.id }; });
       return mine.length ? LN.cancel({ notifications: mine }) : null;
