@@ -78,7 +78,7 @@
     if(it.actionTypeId)return it.actionTypeId;
     if(it.alarm)return 'ALARM';
     var g=it.kind||it.group||'';
-    if(g==='timers')return 'TIMER';if(g==='todo')return 'TASK';if(g==='water')return 'WATER';
+    if(g==='timers')return 'TIMER';if(g==='todo'||g==='task')return 'TASK';if(g==='water')return 'WATER';
     if(g==='habit')return 'HABIT';if(g==='focus')return 'FOCUS';return '';
   }
   function toNative(it,wd){
