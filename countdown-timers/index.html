@@ -115,7 +115,12 @@ $('list').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const n=
  if(b.dataset.a==='reset'){t.left=t.total;t.running=false;unnotify(t)}
  if(b.dataset.a==='del'){unnotify(t);st.t=st.t.filter(x=>x!==t)}
  save();draw()};
-setInterval(tick,250);document.addEventListener('visibilitychange',tick);draw();
+if(window.HeyNotify)HeyNotify.on('action',(action,n)=>{
+  if(!n||!n.id)return;const base=Math.floor(n.id/10),t=st.t.find(x=>nid(x)===base);if(!t)return;
+  if(action==='restart'){t.left=t.total;t.end=Date.now()+t.total*1000;t.running=true;notify(t);save();draw();$('msg').textContent='Timer restarted from notification.'}
+  else if(action==='dismiss'){unnotify(t);t.running=false;t.left=0;save();draw();$('msg').textContent='Timer notification dismissed.'}
+ });
+ setInterval(tick,250);document.addEventListener('visibilitychange',tick);draw();
 })();
 </script>
 </body>
