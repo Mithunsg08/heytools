@@ -15,12 +15,14 @@ import androidx.core.app.NotificationCompat;
 public class PlaybackService extends Service {
   public static final String CHANNEL = "heytools_playback";
   private static final int NOTIFICATION_ID = 7001;
+  public static volatile boolean isRunning = false;
   private String title = "HeyTools";
   private String artist = "Now playing";
   private boolean playing = true;
   private String lastSignature = "";
 
   @Override public IBinder onBind(Intent intent) { return null; }
+  @Override public void onCreate() { super.onCreate(); isRunning = true; }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
     if (intent != null) {
@@ -69,6 +71,7 @@ public class PlaybackService extends Service {
   @Override public void onDestroy(){
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
+    isRunning = false;
     super.onDestroy();
   }
 }
