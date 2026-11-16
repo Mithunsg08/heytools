@@ -41,7 +41,7 @@ const alarmComponents = [
 for (const component of alarmComponents) {
   const match = component.match(/(?:service|receiver) android:name="([^"]+)/);
   if (match && !m.includes('android:name="' + match[1] + '"')) {
-    m = m.replace('</application>', '    ' + component + '\\n    </application>');
+    m = m.replace('</application>', '    ' + component + '\n    </application>');
   }
 }
 fs.writeFileSync(mp, m);
