@@ -538,7 +538,7 @@
     var target = targets[group]; if (!target) return;
     var payload = { tool: target, group: group, action: action, notification: n, createdAt: Date.now() };
     var f = frames[target];
-    if (f && f.contentWindow) {
+    if (f && f.contentWindow && f.dataset.ready === '1') {
       f.contentWindow.postMessage({ type: 'heytools:notification-action', payload: payload }, location.origin);
       if (current !== target) location.hash = '#/' + target;
     } else {
@@ -648,6 +648,7 @@
   }
   function onFrameLoad(t, f) {
     if (f.getAttribute('src') === 'about:blank') return;
+    f.dataset.ready = '1';
     applyHide(t, f); pushTheme(t, f);
     try { interceptLinks(f.contentDocument); } catch (err) { /* ignore */ }
     if (NATIVE.hasSave) injectSaveBridge(f);
