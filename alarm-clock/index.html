@@ -165,7 +165,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       t.onclick = function () { openSheet(a); };
       var meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = (a.label ? a.label + ' · ' : '') + repeatText(a) + ' · ' + (HeyTones.byId[a.tone] || {}).name;
       var sw = document.createElement('input'); sw.type = 'checkbox'; sw.className = 'sw'; sw.checked = a.on; sw.setAttribute('aria-label', 'Alarm at ' + f.t + ' ' + f.ap + ' on or off');
-      sw.onchange = function () { a.on = sw.checked; if (a.on) ensurePerm(); sync(); render(); };
+      sw.onchange = function () { a.on = sw.checked; if (a.on) { a.fireAt = 0; ensurePerm(); } sync(); render(); };
       li.appendChild(t); li.appendChild(meta); li.appendChild(sw); list.appendChild(li);
     });
     $('empty').hidden = alarms.length > 0;
@@ -226,7 +226,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   $('sCancel').onclick = closeSheet;
   $('scrim').addEventListener('click', function (e) { if (e.target === $('scrim')) closeSheet(); });
   $('sSave').onclick = function () {
-    var data = { time: $('fTime').value || '07:00', label: $('fLabel').value.trim(), days: formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true };
+    var data = { time: $('fTime').value || '07:00', label: $('fLabel').value.trim(), days: formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true, fireAt: 0 };
     if (editing) Object.assign(editing, data); else alarms.push(Object.assign({ id: uid() }, data));
     closeSheet(); ensurePerm(); sync(); render();
   };
