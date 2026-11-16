@@ -52,7 +52,7 @@ public class PlaybackService extends Service {
       .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
       .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, artist)
       .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
-        BitmapFactory.decodeResource(getResources(), getResources().getIdentifier("ic_launcher", "mipmap", getPackageName())))
+        BitmapFactory.decodeResource(getResources(), getResources().getIdentifier("ic_stat_hey", "drawable", getPackageName())))
       .build());
     long actions=PlaybackStateCompat.ACTION_PLAY|PlaybackStateCompat.ACTION_PAUSE|
       PlaybackStateCompat.ACTION_PLAY_PAUSE|PlaybackStateCompat.ACTION_SKIP_TO_NEXT|
