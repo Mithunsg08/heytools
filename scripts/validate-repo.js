@@ -92,7 +92,7 @@ if (!androidPatch.includes("android.permission.SCHEDULE_EXACT_ALARM")) {
 }
 
 const trackingConfig = read('track-config.js');
-if (/window\\.HEY_TRACK_URL\\s*=\\s*['"]https?:/.test(trackingConfig)) {
+if (/window\.HEY_TRACK_URL\s*=\s*['"]https?:/.test(trackingConfig)) {
   fail('Analytics endpoint is enabled by default; require an explicit consent design first');
 } else {
   pass('Analytics endpoint is disabled by default');
