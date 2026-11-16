@@ -254,12 +254,27 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   $('ringStop').onclick = endRing;
   $('ringSnooze').onclick = function () { snoozeFor(ringing); endRing(); };
   HeyNotify.on('fire', function (it) { if (it.group === 'alarm' && !HeyNotify.isNative) { it.id = it.id; showRing(it); } });
-  HeyNotify.on('action', function (id, n) {
+  function handleAlarmNotificationAction(id, n) {
+    if (!n || !n.id) return;
     var base = Math.floor(n.id / 10);
     var a = alarms.filter(function (x) { return x.id === base || x.id === base - 5000000; })[0] || null;
     if (id === 'snooze') snoozeFor(a);
     else if (id === 'stop' && a && !a.days.length) { a.on = false; sync(); render(); }
-  });
+  }
+  function receiveAlarmAction(e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'heytools:notification-action' ||
+        !e.data.payload || e.data.payload.group !== 'alarm-snooze') return;
+    handleAlarmNotificationAction(e.data.payload.action, e.data.payload.notification);
+  }
+  window.addEventListener('message', receiveAlarmAction);
+  try {
+    var pendingAlarmAction = JSON.parse(localStorage.getItem('heytools.pending.notification') || 'null');
+    if (pendingAlarmAction && pendingAlarmAction.tool === 'alarm-clock' && Date.now() - pendingAlarmAction.createdAt < 86400000) {
+      localStorage.removeItem('heytools.pending.notification');
+      handleAlarmNotificationAction(pendingAlarmAction.action, pendingAlarmAction.notification);
+    }
+  } catch (e) {}
+
 
   render(); ensurePerm(); sync();
   setInterval(render, 30000);
