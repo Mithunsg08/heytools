@@ -48,7 +48,7 @@ final class AlarmScheduler {
     }
     write(c,all);
   }
-  static void sync(Context c, JSONArray incoming) {
+  static void sync(Context c, JSONArray incoming) throws Exception {
     if (!canScheduleExact(c)) throw new SecurityException("Exact alarm access is disabled");
     JSONArray old=read(c);
     for(int i=0;i<old.length();i++){JSONObject o=old.optJSONObject(i);if(o!=null)cancelId(c,o.optInt("id",-1));}
