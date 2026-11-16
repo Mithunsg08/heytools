@@ -34,6 +34,24 @@ if (localIds.every((id) => fs.existsSync(path.join(root, id, 'index.html')))) {
   pass('All ' + localIds.length + ' local tools have an index.html page');
 }
 
+for (const id of localIds) {
+  const html = read(id + '/index.html');
+  const inlineScripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
+  let checked = 0;
+  inlineScripts.forEach((match, index) => {
+    const attrs = match[1] || '';
+    if (/\\bsrc\\s*=|application\\/(?:ld\\+)?json|type\\s*=\\s*["']module["']/i.test(attrs)) return;
+    try {
+      new vm.Script(match[2], { filename: id + '/index.html inline script ' + (index + 1) });
+      checked++;
+    } catch (error) {
+      fail('Inline JavaScript syntax error in ' + id + '/index.html script ' + (index + 1) + ': ' + error.message);
+    }
+  });
+  if (checked === 0) fail('No inline JavaScript was checked for ' + id);
+}
+pass('Inline scripts checked for all local tool pages');
+
 const swSource = read('heytools-sw.js');
 const swBlock = (swSource.match(/const TOOLS = \[([\s\S]*?)\];/) || [])[1];
 if (!swBlock) {
