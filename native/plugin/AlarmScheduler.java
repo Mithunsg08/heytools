@@ -112,7 +112,7 @@ final class AlarmScheduler {
     JSONArray all=read(c);int ix=indexOf(all,id);if(ix<0)return null;
     JSONObject a=all.optJSONObject(ix);if(a==null)return null;
     long snooze=a.optLong("snoozeAt",0L);
-    if(!a.optBoolean("on",false)&&snooze<=System.currentTimeMillis())return null;
+    if(!a.optBoolean("on",false)&&!a.optBoolean("snoozed",false))return null;
     try{
       a.put("lastFiredAt",System.currentTimeMillis());
       if(snooze>0){a.put("snoozeAt",0L);a.put("snoozed",false);}
