@@ -55,8 +55,11 @@ jobs:
           channel: canary
           target: google_apis
           arch: x86_64
-          profile: pixel_7
+          profile: pixel_2
           disable-animations: true
+        env:
+          # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
+          ANDROID_I_WANT_MY_TCG: 'yes'
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             set -euo pipefail
