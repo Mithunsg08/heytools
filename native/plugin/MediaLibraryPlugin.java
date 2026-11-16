@@ -245,6 +245,26 @@ public class MediaLibraryPlugin extends Plugin {
     }
   }
 
+  /** Remove an incomplete file after a cancelled or failed transfer. */
+  @PluginMethod
+  public void saveAbort(PluginCall call) {
+    String id = call.getString("id", "");
+    try {
+      OutputStream os = saveStreams.remove(id);
+      if (os != null) {
+        try { os.close(); } catch (Exception ignored) { /* continue cleanup */ }
+      }
+      Uri uri = saveUris.remove(id);
+      if (uri != null) getContext().getContentResolver().delete(uri, null, null);
+      File f = saveFiles.remove(id);
+      if (f != null && f.exists()) f.delete();
+      saveWhere.remove(id);
+      call.resolve();
+    } catch (Exception e) {
+      call.reject("Could not clean up the incomplete file: " + e.getMessage());
+    }
+  }
+
   @PluginMethod
   public void saveFinish(PluginCall call) {
     String id = call.getString("id", "");
