@@ -131,7 +131,8 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
 
   function sync() {
     return HeyNotify.alarmState().then(function (nativeState) {
-      (nativeState.alarms || []).forEach(function (saved) {
+      var savedAlarms = nativeState.alarms || [];
+      savedAlarms.forEach(function (saved) {
         var local = alarms.filter(function (a) { return a.id === saved.id; })[0];
         if (local && local.on && !local.days.length && !saved.snoozed &&
             saved.lastFiredAt && local.fireAt && saved.lastFiredAt >= local.fireAt) local.on = false;
@@ -140,7 +141,11 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       alarms.filter(function (a) { return a.on; }).forEach(function (a) {
         var p = parts(a.time), it = { id: a.id, title: a.label || 'Alarm', body: fmt(a.time).t + ' ' + fmt(a.time).ap, tone: a.tone, alarm: true, snooze: a.snooze };
         if (a.days.length) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
-        else { a.fireAt = nextAt(a); it.at = a.fireAt; }
+        else {
+          var saved = savedAlarms.filter(function (x) { return x.id === a.id; })[0];
+          if (!saved || !saved.snoozed) a.fireAt = nextAt(a);
+          it.at = a.fireAt;
+        }
         items.push(it);
       });
       save();
