@@ -167,7 +167,6 @@ public class MediaLibraryPlugin extends Plugin {
       if (PlaybackService.isRunning) getContext().startService(i);
       else if (Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(i);
       else getContext().startService(i);
-      playbackStarted = true;
       call.resolve();
     } catch (Exception e) { call.reject("Could not update media controls: " + e.getMessage(), e); }
   }
@@ -176,7 +175,6 @@ public class MediaLibraryPlugin extends Plugin {
   public void stopPlayback(PluginCall call) {
     try {
       getContext().stopService(new Intent(getContext(), PlaybackService.class));
-      playbackStarted = false;
       call.resolve();
     } catch (Exception e) {
       call.reject("Could not stop background playback: " + e.getMessage());
