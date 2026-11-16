@@ -44,6 +44,10 @@ for (const component of alarmComponents) {
     m = m.replace('</application>', '    ' + component + '\n    </application>');
   }
 }
+const testSource = path.resolve(__dirname, '../tests/AlarmSchedulerTest.java');
+const testTargetDir = path.join(root, 'app/src/androidTest/java/com/heytools/app');
+fs.mkdirSync(testTargetDir, { recursive: true });
+fs.copyFileSync(testSource, path.join(testTargetDir, 'AlarmSchedulerTest.java'));
 fs.writeFileSync(mp, m);
 
 /* App icon: the HeyTools logo from app/icons. Resized with ImageMagick when available, otherwise copied as is. */
@@ -132,6 +136,8 @@ fs.writeFileSync(mp, m);
     g = g.replace(/release \{\n(\s+)minifyEnabled false/, 'release {\n$1signingConfig signingConfigs.heytools\n$1minifyEnabled false');
   }
   if (!g.includes('androidx.work:work-runtime')) g = g.replace("implementation project(':capacitor-android')", "implementation project(':capacitor-android')\n    implementation 'androidx.work:work-runtime:2.9.0'");
+  if (!g.includes('testInstrumentationRunner')) g = g.replace('defaultConfig {', 'defaultConfig {\n        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"');
+  if (!g.includes('androidx.test:runner')) g = g.replace('dependencies {', "dependencies {\n    androidTestImplementation 'androidx.test:runner:1.6.2'\n    androidTestImplementation 'androidx.test.ext:junit:1.2.1'");
   if (!g.includes('checkReleaseBuilds')) g = g.replace('android {\n    namespace', 'android {\n    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n    namespace');
   fs.writeFileSync(gp, g);
   console.log('Version', run, process.env.HEY_KEYSTORE ? '(signed with the HeyTools key)' : '(default debug signing)');
