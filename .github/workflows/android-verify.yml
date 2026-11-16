@@ -50,7 +50,9 @@ jobs:
       - name: Install and launch HeyTools on Android 17 emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 37
+          api-level: 36
+          system-image-api-level: 37
+          channel: canary
           target: google_apis
           arch: x86_64
           profile: pixel_7
