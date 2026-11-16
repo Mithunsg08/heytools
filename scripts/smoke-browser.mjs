@@ -27,7 +27,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
     page.on('pageerror', error => errors.push('homepage: ' + error.message));
     const response = await page.goto(new URL('app/index.html', base).toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
     if (!response || !response.ok()) throw new Error('Homepage failed to load: ' + (response && response.status()));
-    await page.waitForFunction(() => Array.isArray(window.HEY_TOOLS) && window.HEY_TOOLS.length > 0, { timeout: 15000 });
+    await page.waitForFunction(() => Array.isArray(window.HEY_TOOLS) && window.HEY_TOOLS.length > 0, null, { timeout: 15000 });
     const count = await page.evaluate(() => window.HEY_TOOLS.filter(t => !t.external).length);
     if (count !== local.length) throw new Error('Homepage registry count mismatch: ' + count + ' vs ' + local.length);
     const title = await page.title();
