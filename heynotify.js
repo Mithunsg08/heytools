@@ -38,15 +38,15 @@
   function exactPermission() {
     if (!native || !LN.checkExactNotificationSetting) return Promise.resolve('not-applicable');
     return LN.checkExactNotificationSetting().then(function (r) {
-      // Capacitor Local Notifications returns exact_alarm as a boolean, not a permission string.
-      return r && r.exact_alarm === true ? 'granted' : 'denied';
+      // Capacitor SettingsPermissionStatus.exact_alarm uses PermissionState: granted, denied or prompt.
+      return r && typeof r.exact_alarm === 'string' ? r.exact_alarm : 'unknown';
     }).catch(function () { return 'unknown'; });
   }
   function requestPermission() {
     if (native) {
       return LN.requestPermissions().then(function (r) {
         return LN.checkExactNotificationSetting ? LN.checkExactNotificationSetting().then(function (x) {
-          if ((!x || x.exact_alarm !== true) && LN.changeExactNotificationSetting) {
+          if ((!x || x.exact_alarm !== 'granted') && LN.changeExactNotificationSetting) {
             return LN.changeExactNotificationSetting().then(function () { return r.display; }, function () { return r.display; });
           }
           return r.display;
