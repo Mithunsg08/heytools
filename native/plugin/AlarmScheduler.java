@@ -69,6 +69,7 @@ final class AlarmScheduler {
     for(int i=0;i<all.length();i++){
       JSONObject a=all.optJSONObject(i); if(a!=null) scheduleOne(c,a);
     }
+    write(c,all);
   }
   private static long nextTime(JSONObject a) {
     long snooze=a.optLong("snoozeAt",0L);
@@ -106,6 +107,7 @@ final class AlarmScheduler {
     JSONObject a=all.optJSONObject(ix);if(a==null||!a.optBoolean("on",false))return null;
     long snooze=a.optLong("snoozeAt",0L);
     try{
+      a.put("lastFiredAt",System.currentTimeMillis());
       if(snooze>0){a.put("snoozeAt",0L);a.put("snoozed",false);}
       JSONArray days=a.optJSONArray("days");
       if(days==null||days.length()==0){a.put("on",false);a.put("nextAt",0L);}
@@ -113,6 +115,7 @@ final class AlarmScheduler {
       write(c,all);
     }catch(Exception ignored){}
     if(a.optBoolean("on",false))scheduleOne(c,a);
+    write(c,all);
     return a;
   }
   static void snooze(Context c,int id,int minutes) {
@@ -125,7 +128,7 @@ final class AlarmScheduler {
   static JSONObject getState(Context c) {
     JSONObject out=new JSONObject();JSONArray state=new JSONArray(),all=read(c);
     for(int i=0;i<all.length();i++){JSONObject a=all.optJSONObject(i);if(a==null)continue;
-      JSONObject x=new JSONObject();try{x.put("id",a.optInt("id"));x.put("on",a.optBoolean("on"));x.put("nextAt",a.optLong("nextAt"));x.put("snoozed",a.optBoolean("snoozed"));state.put(x);}catch(Exception ignored){}
+      JSONObject x=new JSONObject();try{x.put("id",a.optInt("id"));x.put("on",a.optBoolean("on"));x.put("nextAt",a.optLong("nextAt"));x.put("snoozed",a.optBoolean("snoozed"));x.put("lastFiredAt",a.optLong("lastFiredAt"));state.put(x);}catch(Exception ignored){}
     }
     try{out.put("alarms",state);out.put("exactPermission",canScheduleExact(c));}catch(Exception ignored){}
     return out;
