@@ -130,15 +130,22 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   alarms.forEach(function (a) { if (a.on && !a.days.length && a.fireAt && a.fireAt < Date.now() - 60000) a.on = false; });
 
   function sync() {
-    var items = [];
-    alarms.filter(function (a) { return a.on; }).forEach(function (a) {
-      var p = parts(a.time), it = { id: a.id, title: a.label || 'Alarm', body: fmt(a.time).t + ' ' + fmt(a.time).ap, tone: a.tone, alarm: true };
-      if (a.days.length) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
-      else { a.fireAt = nextAt(a); it.at = a.fireAt; }
-      items.push(it);
-    });
-    save();
-    return HeyNotify.syncGroup('alarm', items).catch(function (e) {
+    return HeyNotify.alarmState().then(function (nativeState) {
+      (nativeState.alarms || []).forEach(function (saved) {
+        var local = alarms.filter(function (a) { return a.id === saved.id; })[0];
+        if (local && local.on && !local.days.length && !saved.snoozed &&
+            saved.lastFiredAt && local.fireAt && saved.lastFiredAt >= local.fireAt) local.on = false;
+      });
+      var items = [];
+      alarms.filter(function (a) { return a.on; }).forEach(function (a) {
+        var p = parts(a.time), it = { id: a.id, title: a.label || 'Alarm', body: fmt(a.time).t + ' ' + fmt(a.time).ap, tone: a.tone, alarm: true, snooze: a.snooze };
+        if (a.days.length) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
+        else { a.fireAt = nextAt(a); it.at = a.fireAt; }
+        items.push(it);
+      });
+      save();
+      return HeyNotify.syncGroup('alarm', items);
+    }).catch(function (e) {
       $('perm').hidden = false;
       $('permTxt').textContent = 'Alarm not scheduled. Allow notifications and exact alarms in Android settings, then return to HeyTools and save again.';
       return false;
