@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
+import android.content.res.AssetFileDescriptor;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -68,11 +69,13 @@ public class AlarmRingingService extends Service {
     int res=getResources().getIdentifier("tone_"+safe,"raw",getPackageName());
     if(res==0)res=getResources().getIdentifier("tone_classic","raw",getPackageName());
     try{
-      player=MediaPlayer.create(this,res);
-      if(player!=null){
-        player.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
-        player.setLooping(true);player.setVolume(1f,1f);player.start();
-      }
+      player=new MediaPlayer();
+      player.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+      AssetFileDescriptor afd=getResources().openRawResourceFd(res);
+      if(afd==null)throw new IllegalStateException("Alarm tone resource is unavailable");
+      try { player.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength()); }
+      finally { afd.close(); }
+      player.setLooping(true);player.setVolume(1f,1f);player.prepare();player.start();
     }catch(Exception ignored){stopPlayer();}
   }
   private void stopPlayer(){if(player!=null){try{if(player.isPlaying())player.stop();player.release();}catch(Exception ignored){}player=null;}}
