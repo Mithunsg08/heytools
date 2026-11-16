@@ -475,7 +475,7 @@
   /* ---------- one frame per tool ----------
      Leaving a tool that is playing music or video keeps its frame alive (hidden), so the sound does not stop.
      Every other tool is unloaded when you leave it, which keeps the phone fast. */
-  var frames = {}, framesBox = $('frames'), svcOn = false;
+  var frames = {}, framesBox = $('frames'), svcOn = false, pendingMediaAction = null;
   function makeFrame(t) {
     var f = document.createElement('iframe');
     f.className = 'tool-frame'; f.title = t.name; f.setAttribute('data-id', t.id); f.setAttribute('allow', framesBox.getAttribute('data-allow') || ''); f.setAttribute('allowfullscreen', '');
@@ -512,6 +512,7 @@
   function syncPlayback() {
     var live = playingFrames();
     currentMediaControlId = live.length ? live[0] : null;
+    if (currentMediaControlId) put('heytools.media.active', currentMediaControlId);
     Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].media && live.indexOf(k) === -1) dropFrame(k); });   // paused and out of sight: free the memory
     var other = live.filter(function (k) { return k !== current; });
     var bar = $('nowp');
@@ -537,8 +538,10 @@
     if (group === 'todo' && (action === 'done' || action === 'snooze')) location.hash = '#/notes-to-do-list';
   });
   window.addEventListener('heytools:media-action', function (e) {
-    var f = frames[currentMediaControlId] || frames['music-player'];
-    if (!f || !f.contentWindow || !e.detail) return;
+    if (!e.detail) return;
+    var target = currentMediaControlId || get('heytools.media.active', 'music-player');
+    var f = frames[target];
+    if (!f || !f.contentWindow) { pendingMediaAction = { target: target, action: e.detail.action }; return; }
     f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
   });
   setInterval(syncPlayback, 1500);
@@ -639,6 +642,9 @@
     applyHide(t, f); pushTheme(t, f);
     try { interceptLinks(f.contentDocument); } catch (err) { /* ignore */ }
     if (NATIVE.hasSave) injectSaveBridge(f);
+    if (pendingMediaAction && t.id === pendingMediaAction.target) {
+      try { f.contentWindow.postMessage({ type: 'heytools:media-action', action: pendingMediaAction.action }, location.origin); pendingMediaAction = null; } catch (e) {}
+    }
     if (current === t.id && $('gate').hidden) loading.classList.add('done');
     if (pendingFiles && pendingFiles.length && t.id === 'music-player') {
       try { f.contentWindow.postMessage({ type: 'heytools:files', files: pendingFiles }, location.origin); } catch (err) { /* ignore */ }
