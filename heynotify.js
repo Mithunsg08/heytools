@@ -35,6 +35,12 @@
     if (native) return LN.checkPermissions().then(function (r) { return r.display; });
     try { return Promise.resolve(typeof Notification === 'undefined' ? 'denied' : Notification.permission === 'default' ? 'prompt' : Notification.permission); } catch (e) { return Promise.resolve('denied'); }
   }
+  function exactPermission() {
+    if (!native || !LN.checkExactNotificationSetting) return Promise.resolve('not-applicable');
+    return LN.checkExactNotificationSetting().then(function (r) {
+      return r && r.exact_alarm ? r.exact_alarm : 'unknown';
+    }).catch(function () { return 'unknown'; });
+  }
   function requestPermission() {
     if (native) {
       return LN.requestPermissions().then(function (r) {
@@ -128,5 +134,5 @@
   if (native) {
     try { LN.addListener('localNotificationActionPerformed', function (e) { (listeners.action || []).forEach(function (f) { try { f(e.actionId, e.notification); } catch (x) { /* ignore */ } }); }); } catch (e) { /* ignore */ }
   }
-  window.HeyNotify = { isNative: native, permission: permission, requestPermission: requestPermission, schedule: schedule, syncGroup: syncGroup, cancelGroup: cancelGroup, cancelIds: cancelIds, pending: pending, on: on, ensureChannels: ensureChannels };
+  window.HeyNotify = { isNative: native, permission: permission, exactPermission: exactPermission, requestPermission: requestPermission, schedule: schedule, syncGroup: syncGroup, cancelGroup: cancelGroup, cancelIds: cancelIds, pending: pending, on: on, ensureChannels: ensureChannels };
 })();
