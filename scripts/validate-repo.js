@@ -71,7 +71,7 @@ const jsFiles = [
   'app/app.js', 'app/native.js', 'app/tools.js', 'heynotify.js', 'heytrack.js',
   'heytools-sw.js', 'tones.js', 'track-config.js', 'install-prompt.js',
   'native/scripts/patch-android.js', 'native/scripts/prepare-web.js',
-  'dashboard/Code.gs'
+  'scripts/test-notifications.js', 'dashboard/Code.gs'
 ];
 for (const file of jsFiles) {
   try {
@@ -90,6 +90,26 @@ if (!androidPatch.includes("android.permission.SCHEDULE_EXACT_ALARM")) {
 } else {
   pass('Android exact-alarm permission is user-controlled');
 }
+
+const androidPatch = read('native/scripts/patch-android.js');
+const alarmSources = ['HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java',
+  'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java'];
+for (const file of alarmSources) {
+  if (!androidPatch.includes("'" + file + "'")) fail('Android generator does not copy ' + file);
+  if (!fs.existsSync(path.join(root, 'native/plugin', file))) fail('Missing native alarm source: ' + file);
+}
+const mainActivity = read('native/plugin/MainActivity.java');
+if (!mainActivity.includes('registerPlugin(HeyAlarmPlugin.class)')) fail('Native alarm plugin is not registered');
+if (!mainActivity.includes('dispatchAlarmOpen')) fail('Alarm notification taps are not routed to the alarm clock');
+const notifySource = read('heynotify.js');
+if (!notifySource.includes("group==='alarm'") || !notifySource.includes('HA.syncAlarms')) fail('Alarm clock is not routed through the persistent native scheduler');
+const manifestPatch = androidPatch;
+['android.permission.SCHEDULE_EXACT_ALARM','android.permission.RECEIVE_BOOT_COMPLETED','android.permission.USE_FULL_SCREEN_INTENT',
+ 'AlarmBootReceiver','AlarmRingingService'].forEach((v) => {
+  if (!manifestPatch.includes(v)) fail('Android manifest generator is missing ' + v);
+});
+if (fs.existsSync(path.join(root, 'native/tests/AlarmSchedulerTest.java'))) pass('Native alarm instrumentation tests are present');
+else fail('Native alarm instrumentation tests are missing');
 
 const trackingConfig = read('track-config.js');
 if (/window\.HEY_TRACK_URL\s*=\s*['"]https?:/.test(trackingConfig)) {
