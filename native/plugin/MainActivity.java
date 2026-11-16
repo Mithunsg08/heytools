@@ -21,19 +21,30 @@ public class MainActivity extends BridgeActivity {
     dispatchAlarmOpen(intent);
   }
 
-  private void dispatchAlarmOpen(final Intent intent) {
-    if (intent == null || !"com.heytools.ALARM_OPEN".equals(intent.getAction())) return;
-    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-      int tries = 0;
+  private void runWhenHeyToolsReady(final String javascript) {
+    final Handler handler = new Handler(Looper.getMainLooper());
+    final Runnable[] task = new Runnable[1];
+    task[0] = new Runnable() {
+      int attempts = 0;
+      private void retry() {
+        if (++attempts < 20) handler.postDelayed(task[0], 300);
+      }
       @Override public void run() {
         try {
-          if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().evaluateJavascript("location.hash='#/alarm-clock';", null);
-          }
-        } catch (Exception ignored) {}
-        if (++tries < 4) new Handler(Looper.getMainLooper()).postDelayed(this, 650);
+          if (getBridge() == null || getBridge().getWebView() == null) { retry(); return; }
+          String wrapped = "(function(){if(!window.__HEYTOOLS_READY)return false;" + javascript + ";return true;})()";
+          getBridge().getWebView().evaluateJavascript(wrapped, value -> {
+            if (!"true".equals(value)) retry();
+          });
+        } catch (Exception ignored) { retry(); }
       }
-    }, 700);
+    };
+    handler.postDelayed(task[0], 250);
+  }
+
+  private void dispatchAlarmOpen(final Intent intent) {
+    if (intent == null || !"com.heytools.ALARM_OPEN".equals(intent.getAction())) return;
+    runWhenHeyToolsReady("location.hash='#/alarm-clock'");
   }
 
   private void dispatchMediaAction(final Intent intent) {
@@ -41,18 +52,7 @@ public class MainActivity extends BridgeActivity {
     final String action = intent.getAction().substring("com.heytools.MEDIA_".length()).toLowerCase(java.util.Locale.US);
     if (!("play".equals(action) || "pause".equals(action) || "toggle".equals(action) ||
           "next".equals(action) || "previous".equals(action) || "open".equals(action))) return;
-    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-      int tries = 0;
-      @Override public void run() {
-        try {
-          if (getBridge() != null && getBridge().getWebView() != null) {
-            String js = "window.dispatchEvent(new CustomEvent('heytools:media-action',{detail:{action:'" + action + "'}}));";
-            getBridge().getWebView().evaluateJavascript(js, null);
-          }
-        } catch (Exception ignored) {}
-        if (++tries < 4) new Handler(Looper.getMainLooper()).postDelayed(this, 650);
-      }
-    }, 700);
+    runWhenHeyToolsReady("window.dispatchEvent(new CustomEvent('heytools:media-action',{detail:{action:'" + action + "'}}))");
   }
 
   @Override
