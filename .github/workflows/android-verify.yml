@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [heytools-v2-audit]
+    branches: [heytools-v2-audit, heytools-premium-notifications]
 
 permissions:
   contents: read
@@ -46,13 +46,13 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      # Android 17 (API 37) is the current stable Android platform.
-      - name: Install and launch HeyTools on Android 17 emulator
+      # Android 17 / API 37 compatibility, including exact alarms and background notifications.
+      - name: Test HeyTools on Android 17 emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 36
+          api-level: 37
           system-image-api-level: '37.0'
-          channel: canary
+          channel: stable
           target: google_apis
           arch: x86_64
           profile: pixel_2
@@ -60,7 +60,13 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             set -euo pipefail
+            set -euo pipefail
             adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell appops set com.heytools.app SCHEDULE_EXACT_ALARM allow
+            adb shell pm grant com.heytools.app android.permission.POST_NOTIFICATIONS || true
+            (cd native/android && ./gradlew connectedDebugAndroidTest --no-daemon)
+            adb shell appops set com.heytools.app SCHEDULE_EXACT_ALARM allow
+            adb shell pm grant com.heytools.app android.permission.POST_NOTIFICATIONS || true
             adb shell am force-stop com.heytools.app
             adb shell monkey -p com.heytools.app 1
             sleep 25
@@ -71,7 +77,7 @@ jobs:
               echo "HeyTools crashed during Android 17 launch smoke test."
               exit 1
             fi
-            echo "Android 17 install, launch, foreground and UI smoke checks passed."
+            echo "Android 17 install, exact-alarm instrumentation, launch and UI checks passed."
         env:
           # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
           ANDROID_I_WANT_MY_TCG: 'yes'
