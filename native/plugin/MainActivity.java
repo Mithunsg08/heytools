@@ -18,6 +18,22 @@ public class MainActivity extends BridgeActivity {
     super.onNewIntent(intent);
     setIntent(intent);
     dispatchMediaAction(intent);
+    dispatchAlarmOpen(intent);
+  }
+
+  private void dispatchAlarmOpen(final Intent intent) {
+    if (intent == null || !"com.heytools.ALARM_OPEN".equals(intent.getAction())) return;
+    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+      int tries = 0;
+      @Override public void run() {
+        try {
+          if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript("location.hash='#/alarm-clock';", null);
+          }
+        } catch (Exception ignored) {}
+        if (++tries < 4) new Handler(Looper.getMainLooper()).postDelayed(this, 650);
+      }
+    }, 700);
   }
 
   private void dispatchMediaAction(final Intent intent) {
@@ -56,5 +72,6 @@ public class MainActivity extends BridgeActivity {
       // never stop the app from opening because of this
     }
     dispatchMediaAction(getIntent());
+    dispatchAlarmOpen(getIntent());
   }
 }
