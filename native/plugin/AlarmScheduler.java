@@ -21,12 +21,15 @@ final class AlarmScheduler {
     return Build.VERSION.SDK_INT < 31 || (am != null && am.canScheduleExactAlarms());
   }
 
+  private static Context storage(Context c) {
+    return Build.VERSION.SDK_INT >= 24 ? c.createDeviceProtectedStorageContext() : c;
+  }
   private static JSONArray read(Context c) {
-    try { return new JSONArray(c.getSharedPreferences(PREFS, 0).getString(KEY, "[]")); }
+    try { return new JSONArray(storage(c).getSharedPreferences(PREFS, 0).getString(KEY, "[]")); }
     catch (Exception e) { return new JSONArray(); }
   }
   private static void write(Context c, JSONArray a) {
-    c.getSharedPreferences(PREFS, 0).edit().putString(KEY, a.toString()).commit();
+    storage(c).getSharedPreferences(PREFS, 0).edit().putString(KEY, a.toString()).commit();
   }
   private static int indexOf(JSONArray a, int id) {
     for (int i=0;i<a.length();i++) if (a.optJSONObject(i)!=null && a.optJSONObject(i).optInt("id",-1)==id) return i;
