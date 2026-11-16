@@ -534,7 +534,7 @@
   if (window.HeyNotify) HeyNotify.on('action', function (action, n) {
     var group = n && n.extra && n.extra.group;
     var targets = { habit: 'habit-tracker', 'habit-snooze': 'habit-tracker', focus: 'focus-timer',
-      todo: 'notes-to-do-list', 'todo-snooze': 'notes-to-do-list', timers: 'countdown-timers',
+      todo: 'notes-to-do-list', 'todo-snooze': 'notes-to-do-list', timers: 'countdown-timers', 'alarm-snooze': 'alarm-clock',
       water: 'water-tracker', 'water-snooze': 'water-tracker' };
     var target = targets[group]; if (!target) return;
     var payload = { tool: target, group: group, action: action, notification: n, createdAt: Date.now() };
