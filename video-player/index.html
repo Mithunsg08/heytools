@@ -398,13 +398,14 @@ $('#hClr').onclick=()=>{hist=[];store.set('vp4h',[]);renderHist();toast('History
 const load=on=>pl.classList.toggle('ld',on);
 const fail=m=>{load(false);$('#errM').textContent=m;$('#err').classList.add('show')};
 $('#errX').onclick=()=>$('#err').classList.remove('show');
-function teardown(){if(hls){try{hls.destroy()}catch{}hls=null}if(objU){URL.revokeObjectURL(objU);objU=null}fr.src='about:blank';pl.classList.remove('emb');$('#err').classList.remove('show');try{v.pause();v.removeAttribute('src');$$('track',v).forEach(t=>t.remove());v.load()}catch{}}
+function teardown(){document.body.dataset.mediaReady='false';if(hls){try{hls.destroy()}catch{}hls=null}if(objU){URL.revokeObjectURL(objU);objU=null}fr.src='about:blank';pl.classList.remove('emb');$('#err').classList.remove('show');try{v.pause();v.removeAttribute('src');$$('track',v).forEach(t=>t.remove());v.load()}catch{}}
 async function open(it){
   cur=it;teardown();pl.classList.add('has');
   $('#tt').textContent=it.title||'Untitled';$('#mt').textContent=it.meta||'';document.title=(it.title?it.title+' · ':'')+'Video Player';
   $$('.it').forEach(el=>el.classList.toggle('cur',el.dataset.k===it.hk));
   addHist(it);
   if(it.kind==='embed'){if(!navigator.onLine)return fail('You’re offline. Streaming sites need internet.');pl.classList.add('emb');fr.src=it.url;return}
+  document.body.dataset.mediaReady='true';
   load(true);let src=it.url;
   try{
     if(it.handle){
@@ -425,6 +426,15 @@ async function open(it){
 const setQ=(l,i)=>{queue=l;qi=i;open(l[i])};
 const go=d=>{const n=qi+d;if(!queue.length||n<0||n>=queue.length)return toast(d>0?'End of list':'Start of list');qi=n;open(queue[n])};
 const tog=()=>{if(pl.classList.contains('emb')||!pl.classList.contains('has'))return;v.paused?v.play():v.pause()};
+window.addEventListener('message',e=>{
+ if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:media-action')return;
+ const a=e.data.action;
+ if(a==='play'){if(v.paused)tog()}
+ else if(a==='pause'){if(!v.paused)tog()}
+ else if(a==='toggle')tog();
+ else if(a==='next')go(1);
+ else if(a==='previous')go(-1);
+});
 const skip=s=>{if(!isFinite(v.duration))return;v.currentTime=Math.max(0,Math.min(v.duration,v.currentTime+s));const e=$(s>0?'#fxR':'#fxL');e.classList.remove('go');void e.offsetWidth;e.classList.add('go')};
 v.onplay=v.onpause=()=>{$('#bP').textContent=v.paused?'▶':'⏸';pl.classList.toggle('play',!v.paused)};
 v.onwaiting=()=>load(true);v.oncanplay=v.onplaying=()=>load(false);
