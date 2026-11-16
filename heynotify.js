@@ -11,7 +11,7 @@
   }
   var C=cap(),LN=null,HA=null;
   if(C){try{LN=C.registerPlugin('LocalNotifications');}catch(e){}try{HA=C.registerPlugin('HeyAlarm');}catch(e){}}
-  var native=!!LN,channelsReady=null,listeners=Object.create(null);
+  var native=!!LN,channelsReady=null,listeners=Object.create(null),pendingActions=[];
   var ACTION_TYPES=[
     {id:'ALARM',actions:[{id:'snooze',title:'Snooze'},{id:'stop',title:'Stop',destructive:true}]},
     {id:'TIMER',actions:[{id:'restart',title:'Restart'},{id:'dismiss',title:'Dismiss',destructive:true}]},
@@ -132,9 +132,17 @@
     return cancelGroup(group).then(function(){return schedule(items);});
   }
   function alarmState(){return native&&HA&&HA.getState?HA.getState():Promise.resolve({alarms:[],exactPermission:false});}
-  function on(evt,fn){(listeners[evt]=listeners[evt]||[]).push(fn);}
+  function on(evt,fn){
+    (listeners[evt]=listeners[evt]||[]).push(fn);
+    if(evt==='action'&&pendingActions.length){
+      var queued=pendingActions.splice(0);
+      queued.forEach(function(e){try{fn(e.actionId,e.notification);}catch(x){}});
+    }
+  }
   if(native)LN.addListener('localNotificationActionPerformed',function(e){
-    (listeners.action||[]).forEach(function(fn){try{fn(e.actionId,e.notification);}catch(x){}});
+    var handlers=listeners.action||[];
+    if(!handlers.length){pendingActions.push(e);if(pendingActions.length>20)pendingActions.shift();return;}
+    handlers.forEach(function(fn){try{fn(e.actionId,e.notification);}catch(x){}});
   });
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
