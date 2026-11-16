@@ -55,5 +55,6 @@ public class MainActivity extends BridgeActivity {
     } catch (Throwable ignored) {
       // never stop the app from opening because of this
     }
+    dispatchMediaAction(getIntent());
   }
 }
