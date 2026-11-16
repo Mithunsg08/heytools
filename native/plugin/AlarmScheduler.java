@@ -57,7 +57,13 @@ final class AlarmScheduler {
       JSONObject o=incoming.optJSONObject(i); if(o==null)continue;
       JSONObject n=new JSONObject(o.toString());
       if(n.optInt("id",-1)<0)continue;
-      n.put("snoozeAt",0L); n.put("snoozed",false);
+      int previousIndex=indexOf(old,n.optInt("id",-1));
+      JSONObject previous=previousIndex>=0?old.optJSONObject(previousIndex):null;
+      if(previous!=null){
+        long snoozeAt=previous.optLong("snoozeAt",0L);
+        if(snoozeAt>System.currentTimeMillis()){n.put("snoozeAt",snoozeAt);n.put("snoozed",true);}
+        n.put("lastFiredAt",previous.optLong("lastFiredAt",0L));
+      } else { n.put("snoozeAt",0L); n.put("snoozed",false); n.put("lastFiredAt",0L); }
       clean.put(n);
     }
     write(c,clean);
@@ -121,7 +127,7 @@ final class AlarmScheduler {
   static void snooze(Context c,int id,int minutes) {
     JSONArray all=read(c);int ix=indexOf(all,id);if(ix<0)return;
     JSONObject a=all.optJSONObject(ix);if(a==null)return;
-    try{a.put("snoozeAt",System.currentTimeMillis()+minutes*60000L);a.put("snoozed",true);write(c,all);scheduleOne(c,a);}
+    try{a.put("snoozeAt",System.currentTimeMillis()+minutes*60000L);a.put("snoozed",true);write(c,all);scheduleOne(c,a);write(c,all);}
     catch(Exception e){throw new IllegalStateException(e);}
   }
   static void reschedule(Context c) { scheduleAll(c); }
