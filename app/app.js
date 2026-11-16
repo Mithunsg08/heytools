@@ -489,7 +489,7 @@
     try {
       var d = f.contentDocument; if (!d) return false;
       if (d.body && d.body.classList.contains('playing')) return true;
-      return f.getAttribute('data-id') === 'music-player' && d.body && d.body.dataset.mediaReady === 'true';
+      return d.body && d.body.dataset.mediaReady === 'true';
     } catch (e) { return false; }
   }
   function mediaPlaying(f) {
@@ -508,8 +508,10 @@
   }
   /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
   function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); }); }
+  var currentMediaControlId = null;
   function syncPlayback() {
     var live = playingFrames();
+    currentMediaControlId = live.length ? live[0] : null;
     Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].media && live.indexOf(k) === -1) dropFrame(k); });   // paused and out of sight: free the memory
     var other = live.filter(function (k) { return k !== current; });
     var bar = $('nowp');
@@ -517,9 +519,12 @@
     if (live.length) {
       var mediaId = live[0], mediaFrame = frames[mediaId], mediaDoc = null;
       try { mediaDoc = mediaFrame && mediaFrame.contentDocument; } catch (e) {}
-      var mediaTitle = mediaDoc && mediaDoc.getElementById('nTitle') ? mediaDoc.getElementById('nTitle').textContent : byId[mediaId].name;
-      var mediaArtist = mediaDoc && mediaDoc.getElementById('nArtist') ? mediaDoc.getElementById('nArtist').textContent : 'Now playing';
-      var mediaIsPlaying = !!(mediaFrame && mediaFrame.contentDocument && mediaFrame.contentDocument.body.classList.contains('playing'));
+      var titleNode = mediaDoc && mediaDoc.getElementById(mediaId === 'music-player' ? 'nTitle' : 'tt');
+      var artistNode = mediaDoc && mediaDoc.getElementById(mediaId === 'music-player' ? 'nArtist' : 'mt');
+      var mediaTitle = titleNode ? titleNode.textContent : byId[mediaId].name;
+      var mediaArtist = artistNode ? artistNode.textContent : 'Now playing';
+      var mediaVideo = mediaDoc && mediaDoc.querySelector('video');
+      var mediaIsPlaying = !!(mediaDoc && mediaDoc.body && mediaDoc.body.classList.contains('playing')) || !!(mediaVideo && !mediaVideo.paused && !mediaVideo.ended);
       if (!svcOn) { svcOn = true; NATIVE.startPlayback && NATIVE.startPlayback(mediaTitle, mediaArtist, mediaIsPlaying); }
       else { NATIVE.updatePlayback && NATIVE.updatePlayback(mediaTitle, mediaArtist, mediaIsPlaying); }
     }
@@ -532,7 +537,7 @@
     if (group === 'todo' && (action === 'done' || action === 'snooze')) location.hash = '#/notes-to-do-list';
   });
   window.addEventListener('heytools:media-action', function (e) {
-    var f = frames['music-player'];
+    var f = frames[currentMediaControlId] || frames['music-player'];
     if (!f || !f.contentWindow || !e.detail) return;
     f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
   });
