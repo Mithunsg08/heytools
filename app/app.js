@@ -551,7 +551,11 @@
     if (!e.detail) return;
     var target = currentMediaControlId || get('heytools.media.active', 'music-player');
     var f = frames[target];
-    if (!f || !f.contentWindow || f.dataset.ready !== '1') { pendingMediaAction = { target: target, action: e.detail.action }; return; }
+    if (!f || !f.contentWindow || f.dataset.ready !== '1') {
+      pendingMediaAction = { target: target, action: e.detail.action };
+      if (current !== target) location.hash = '#/' + target;
+      return;
+    }
     f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
   });
   setInterval(syncPlayback, 1500);
