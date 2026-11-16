@@ -138,7 +138,11 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       items.push(it);
     });
     save();
-    return HeyNotify.syncGroup('alarm', items);
+    return HeyNotify.syncGroup('alarm', items).catch(function (e) {
+      $('perm').hidden = false;
+      $('permTxt').textContent = 'Alarm not scheduled. Allow notifications and exact alarms in Android settings, then return to HeyTools and save again.';
+      return false;
+    });
   }
   function until(ms) {
     var m = Math.max(1, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60, out = [];
@@ -177,8 +181,11 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     });
   }
   $('permBtn').onclick = function () {
-    HeyNotify.requestPermission().then(function () {
-      // Android returns from the settings screen asynchronously; refresh again when the app/page resumes.
+    HeyNotify.requestPermission().then(function (display) {
+      if (display !== 'granted') return;
+      return HeyNotify.requestExactPermission ? HeyNotify.requestExactPermission() : null;
+    }).then(function () {
+      // Android returns from Alarms & reminders settings asynchronously.
       ensurePerm(); sync();
     }).catch(function () { ensurePerm(); });
   };
@@ -216,7 +223,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     if (editing) Object.assign(editing, data); else alarms.push(Object.assign({ id: uid() }, data));
     closeSheet(); ensurePerm(); sync(); render();
   };
-  $('sDel').onclick = function () { if (!editing) return; HeyNotify.cancelIds([editing.id]); alarms = alarms.filter(function (a) { return a !== editing; }); closeSheet(); sync(); render(); };
+  $('sDel').onclick = function () { if (!editing) return; HeyNotify.cancelAlarmIds ? HeyNotify.cancelAlarmIds([editing.id]) : HeyNotify.cancelIds([editing.id]); alarms = alarms.filter(function (a) { return a !== editing; }); closeSheet(); sync(); render(); };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('scrim').hidden) closeSheet(); });
 
   /* ----- ringing: browser while the page is open, and Snooze / Stop buttons on the Android notification ----- */
