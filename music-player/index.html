@@ -633,6 +633,16 @@ document.addEventListener('keydown',e=>{
 });
 if('mediaSession'in navigator){const ms=navigator.mediaSession;try{ms.setActionHandler('play',toggle);ms.setActionHandler('pause',toggle);ms.setActionHandler('nexttrack',()=>next(false));ms.setActionHandler('previoustrack',prev)}catch(e){}}
 
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:media-action')return;
+  const a=e.data.action;
+  if(a==='play'){if(!S.playing)toggle()}
+  else if(a==='pause'){if(S.playing)toggle()}
+  else if(a==='toggle')toggle();
+  else if(a==='next')next(false);
+  else if(a==='previous')prev();
+});
+ 
 /* local files */
 const AUDIO_RE=/\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|webm|mp4|m4v|mov|mkv|3gp|mpga)$/i;
 function addFiles(files){
