@@ -652,19 +652,41 @@
     var sv = saves[d.id];
     if (!sv) {
       if (d.seq !== 0) return;
-      sv = saves[d.id] = { chain: Promise.resolve(), nid: null, nextSeq: 0, bytes: 0 };
+      if (Object.keys(saves).length >= 3) { toast('Finish the current file save before starting another'); return; }
+      sv = saves[d.id] = { chain: Promise.resolve(), nid: null, nextSeq: 0, bytes: 0, failed: false };
     }
-    if (d.seq !== sv.nextSeq) { delete saves[d.id]; return; }
+    if (d.seq !== sv.nextSeq) {
+      sv.failed = true;
+      sv.chain = sv.chain.catch(function () {}).then(function () {
+        if (sv.nid && NATIVE.saveAbort) return NATIVE.saveAbort(sv.nid);
+      }).catch(function () {}).then(function () { if (saves[d.id] === sv) delete saves[d.id]; });
+      return;
+    }
     sv.nextSeq++;
     sv.bytes += Math.floor(d.data.length * 3 / 4);
-    if (sv.bytes > 536870912) { delete saves[d.id]; toast('File is too large to save'); return; }
+    if (sv.bytes > 536870912) {
+      sv.failed = true;
+      sv.chain = sv.chain.catch(function () {}).then(function () {
+        if (sv.nid && NATIVE.saveAbort) return NATIVE.saveAbort(sv.nid);
+      }).catch(function () {}).then(function () { if (saves[d.id] === sv) delete saves[d.id]; });
+      toast('File is too large to save'); return;
+    }
     sv.chain = sv.chain.then(function () {
+      if (sv.failed) return;
       if (d.seq === 0) return NATIVE.saveStart(d.name, d.mime).then(function (r) { sv.nid = r.id; });
     }).then(function () {
+      if (sv.failed) return;
       if (d.data) return NATIVE.saveChunk(sv.nid, d.data);
     }).then(function () {
+      if (sv.failed) return;
       if (d.last) return NATIVE.saveFinish(sv.nid).then(function (r) { toast('Saved to ' + ((r && r.where) || 'your phone')); delete saves[d.id]; });
-    }).catch(function () { toast('Could not save the file'); delete saves[d.id]; });
+    }).catch(function () {
+      sv.failed = true;
+      return (sv.nid && NATIVE.saveAbort ? NATIVE.saveAbort(sv.nid).catch(function () {}) : Promise.resolve()).then(function () {
+        toast('Could not save the file');
+        if (saves[d.id] === sv) delete saves[d.id];
+      });
+    });
   });
 
   /* ---------- toolbar + Back button ---------- */
