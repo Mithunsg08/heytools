@@ -91,7 +91,7 @@ if (!androidPatch.includes("android.permission.SCHEDULE_EXACT_ALARM")) {
   pass('Android exact-alarm permission is user-controlled');
 }
 
-const androidPatch = read('native/scripts/patch-android.js');
+
 const alarmSources = ['HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java',
   'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java'];
 for (const file of alarmSources) {
