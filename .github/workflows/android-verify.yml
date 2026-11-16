@@ -1,0 +1,77 @@
+name: Android build verification
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [heytools-v2-audit]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install Capacitor dependencies
+        working-directory: native
+        run: npm install
+      - name: Bundle website assets
+        working-directory: native
+        run: node scripts/prepare-web.js
+      - name: Generate Android project
+        working-directory: native
+        run: npx cap add android
+      - name: Apply Android plugins, permissions and resources
+        working-directory: native
+        run: node scripts/patch-android.js
+      - name: Sync Capacitor
+        working-directory: native
+        run: npx cap sync android
+      - name: Compile Android debug APK (no signing secrets required)
+        working-directory: native/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      # Android 17 (API 37) is the current stable Android platform.
+      - name: Install and launch HeyTools on Android 17 emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          system-image-api-level: '37.0'
+          channel: canary
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am force-stop com.heytools.app
+            adb shell monkey -p com.heytools.app 1
+            sleep 25
+            adb shell dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity' | grep -q 'com.heytools.app'
+            adb shell uiautomator dump /sdcard/window.xml >/dev/null
+            adb shell cat /sdcard/window.xml | grep -q 'HeyTools'
+            if adb logcat -d -t 5000 | grep -E 'FATAL EXCEPTION.*main|Process: com.heytools.app'; then
+              echo "HeyTools crashed during Android 17 launch smoke test."
+              exit 1
+            fi
+            echo "Android 17 install, launch, foreground and UI smoke checks passed."
+        env:
+          # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
+          ANDROID_I_WANT_MY_TCG: 'yes'

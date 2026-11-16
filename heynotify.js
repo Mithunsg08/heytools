@@ -35,11 +35,20 @@
     if (native) return LN.checkPermissions().then(function (r) { return r.display; });
     try { return Promise.resolve(typeof Notification === 'undefined' ? 'denied' : Notification.permission === 'default' ? 'prompt' : Notification.permission); } catch (e) { return Promise.resolve('denied'); }
   }
+  function exactPermission() {
+    if (!native || !LN.checkExactNotificationSetting) return Promise.resolve('not-applicable');
+    return LN.checkExactNotificationSetting().then(function (r) {
+      // Capacitor SettingsPermissionStatus.exact_alarm uses PermissionState: granted, denied or prompt.
+      return r && typeof r.exact_alarm === 'string' ? r.exact_alarm : 'unknown';
+    }).catch(function () { return 'unknown'; });
+  }
   function requestPermission() {
     if (native) {
       return LN.requestPermissions().then(function (r) {
         return LN.checkExactNotificationSetting ? LN.checkExactNotificationSetting().then(function (x) {
-          if (x && x.exact_alarm !== 'granted' && LN.changeExactNotificationSetting) return LN.changeExactNotificationSetting().then(function () { return r.display; }, function () { return r.display; });
+          if ((!x || x.exact_alarm !== 'granted') && LN.changeExactNotificationSetting) {
+            return LN.changeExactNotificationSetting().then(function () { return r.display; }, function () { return r.display; });
+          }
           return r.display;
         }, function () { return r.display; }) : r.display;
       }).catch(function () { return 'denied'; });
@@ -50,17 +59,30 @@
   }
 
   /* ----- browser fallback: timers while the page is open ----- */
-  var timers = {};
+  var timers = Object.create(null), timerGroups = Object.create(null);
+  function clearWebTimer(id) {
+    if (timers[id] != null) clearTimeout(timers[id]);
+    delete timers[id]; delete timerGroups[id];
+  }
   function webSchedule(it) {
-    clearTimeout(timers[it.id]);
+    clearWebTimer(it.id);
     var at = it.repeat ? nextRepeat(it.repeat) : +new Date(it.at), wait = at - Date.now();
-    if (!(wait > 0) || wait > 2147000000) return;
-    timers[it.id] = setTimeout(function () {
-      try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification(it.title, { body: it.body || '', tag: 'hey-' + it.id }); } catch (e) { /* ignore */ }
-      if (it.tone && window.HeyTones) window.HeyTones.play(it.tone, { seconds: 6 });
-      (listeners.fire || []).forEach(function (f) { try { f(it); } catch (e) { /* ignore */ } });
-      if (it.repeat) webSchedule(it);
-    }, wait);
+    if (!(wait > 0)) return;
+    timerGroups[it.id] = it.group || '';
+    // Browsers clamp long setTimeout delays. Wake in safe intervals until the target time arrives.
+    function arm() {
+      var remaining = at - Date.now();
+      if (remaining <= 0) {
+        delete timers[it.id];
+        try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification(it.title, { body: it.body || '', tag: 'hey-' + it.id }); } catch (e) { /* ignore */ }
+        if (it.tone && window.HeyTones) window.HeyTones.play(it.tone, { seconds: 6 });
+        (listeners.fire || []).forEach(function (f) { try { f(it); } catch (e) { /* ignore */ } });
+        if (it.repeat) webSchedule(it); else delete timerGroups[it.id];
+        return;
+      }
+      timers[it.id] = setTimeout(arm, Math.min(remaining, 2147000000));
+    }
+    arm();
   }
   function nextRepeat(r) {
     var best = Infinity, now = new Date();
@@ -95,12 +117,12 @@
   }
   function pending() { return native ? LN.getPending().then(function (r) { return r.notifications || []; }) : Promise.resolve([]); }
   function cancelIds(ids) {
-    if (!native) { ids.forEach(function (i) { clearTimeout(timers[i]); }); return Promise.resolve(); }
+    if (!native) { ids.forEach(clearWebTimer); return Promise.resolve(); }
     var all = []; ids.forEach(function (i) { all.push({ id: i * 10 }); for (var w = 1; w <= 7; w++) all.push({ id: i * 10 + w }); });
     return LN.cancel({ notifications: all }).catch(function () {});
   }
   function cancelGroup(group) {
-    if (!native) return Promise.resolve();
+    if (!native) { Object.keys(timerGroups).forEach(function (id) { if (timerGroups[id] === group) clearWebTimer(id); }); return Promise.resolve(); }
     return pending().then(function (list) {
       var mine = list.filter(function (n) { return n.extra && n.extra.group === group; }).map(function (n) { return { id: n.id }; });
       return mine.length ? LN.cancel({ notifications: mine }) : null;
@@ -115,5 +137,5 @@
   if (native) {
     try { LN.addListener('localNotificationActionPerformed', function (e) { (listeners.action || []).forEach(function (f) { try { f(e.actionId, e.notification); } catch (x) { /* ignore */ } }); }); } catch (e) { /* ignore */ }
   }
-  window.HeyNotify = { isNative: native, permission: permission, requestPermission: requestPermission, schedule: schedule, syncGroup: syncGroup, cancelGroup: cancelGroup, cancelIds: cancelIds, pending: pending, on: on, ensureChannels: ensureChannels };
+  window.HeyNotify = { isNative: native, permission: permission, exactPermission: exactPermission, requestPermission: requestPermission, schedule: schedule, syncGroup: syncGroup, cancelGroup: cancelGroup, cancelIds: cancelIds, pending: pending, on: on, ensureChannels: ensureChannels };
 })();

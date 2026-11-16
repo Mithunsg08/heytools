@@ -24,7 +24,6 @@ const perms = [
   ['android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'],
   ['android.permission.POST_NOTIFICATIONS'],
   ['android.permission.SCHEDULE_EXACT_ALARM'],
-  ['android.permission.USE_EXACT_ALARM'],
   ['android.permission.RECEIVE_BOOT_COMPLETED']
 ];
 const add = perms.filter(p => !m.includes('"' + p[0] + '"'))
