@@ -779,16 +779,6 @@ main { padding-top: 4px; }
     }
   } catch (e) {}
 
-    });
-    if (!task) return;
-    if (action === 'done') {
-      task.done = true; task.doneAt = Date.now(); save(); renderTodos(); renderAlerts(); checkReminders();
-    } else if (action === 'snooze') {
-      HeyNotify.schedule([{ id: baseId + 10000000, title: 'Task reminder', body: task.text,
-        at: Date.now() + 60 * 60000, group: 'todo', kind: 'task' }]);
-    }
-  });
-
   /* ---------- toast and confetti ---------- */
   var toastTimer = null, undoFn = null;
   function toast(msg, undo, ms) {
