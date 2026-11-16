@@ -37,6 +37,7 @@
     saveStart: function (name, mime) { return P.saveStart({ name: name, mime: mime }); },
     saveChunk: function (id, data) { return P.saveChunk({ id: id, data: data }); },
     saveFinish: function (id) { return P.saveFinish({ id: id }); },
+    saveAbort: function (id) { return P.saveAbort({ id: id }); },
     onResume: function (cb) { if (A && A.addListener) A.addListener('resume', cb); },
     /* keep music / video playing when the screen is left or the phone is locked */
     startPlayback: function (title) { if (P && P.startPlayback) P.startPlayback({ title: title || 'HeyTools' }).catch(function () {}); },
