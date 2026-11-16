@@ -27,6 +27,21 @@ public class HeyAlarmPlugin extends Plugin {
   }
 
   @PluginMethod
+  public void requestExactPermission(PluginCall call) {
+    try {
+      if (android.os.Build.VERSION.SDK_INT >= 31 && !AlarmScheduler.canScheduleExact(getContext())) {
+        android.content.Intent i = new android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+          android.net.Uri.parse("package:" + getContext().getPackageName()));
+        i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(i);
+      }
+      JSObject r = new JSObject();
+      r.put("exactPermission", AlarmScheduler.canScheduleExact(getContext()));
+      call.resolve(r);
+    } catch (Exception e) { call.reject("Could not open Alarms & reminders settings: " + e.getMessage(), e); }
+  }
+
+  @PluginMethod
   public void getState(PluginCall call) {
     try { call.resolve(AlarmScheduler.getState(getContext())); }
     catch (Exception e) { call.reject("Could not read alarm state: " + e.getMessage(), e); }
