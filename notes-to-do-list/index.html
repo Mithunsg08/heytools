@@ -761,7 +761,7 @@ main { padding-top: 4px; }
     if (action === 'done') {
       task.done = true; task.doneAt = Date.now(); save(); renderTodos(); renderAlerts(); checkReminders();
     } else if (action === 'snooze') {
-      HeyNotify.schedule([{ id: baseId + 10000000, title: 'Task reminder', body: task.text,
+      HeyNotify.schedule([{ id: baseId, title: 'Task reminder', body: task.text,
         at: Date.now() + 60 * 60000, group: 'todo', kind: 'task' }]);
     }
   }
