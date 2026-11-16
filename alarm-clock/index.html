@@ -163,9 +163,17 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     else { $('nextT').textContent = 'No alarm set'; $('nextS').textContent = 'Tap New alarm to add one.'; }
   }
   function ensurePerm() {
-    HeyNotify.permission().then(function (p) {
-      if (p === 'granted') { $('perm').hidden = true; return; }
-      $('perm').hidden = false; $('permTxt').textContent = p === 'denied' ? 'Notifications are blocked. Allow them in your phone or browser settings so alarms can ring.' : 'Allow notifications so alarms can ring.';
+    Promise.all([HeyNotify.permission(), HeyNotify.exactPermission ? HeyNotify.exactPermission() : Promise.resolve('not-applicable')]).then(function (states) {
+      var display = states[0], exact = states[1];
+      var displayOk = display === 'granted';
+      var exactOk = exact === 'granted' || exact === 'not-applicable';
+      if (displayOk && exactOk) { $('perm').hidden = true; return; }
+      $('perm').hidden = false;
+      if (!displayOk) $('permTxt').textContent = display === 'denied' ? 'Notifications are blocked. Allow them in your phone or browser settings so alarms can ring.' : 'Allow notifications so alarms can ring.';
+      else $('permTxt').textContent = 'Allow exact alarms in Android settings so alarms can ring at the selected time, including when the phone is idle.';
+    }).catch(function () {
+      $('perm').hidden = false;
+      $('permTxt').textContent = 'Could not verify notification permissions. Check HeyTools notification and alarm permissions in your device settings.';
     });
   }
   $('permBtn').onclick = function () { HeyNotify.requestPermission().then(function () { ensurePerm(); sync(); }); };
