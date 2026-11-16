@@ -36,11 +36,11 @@ if (localIds.every((id) => fs.existsSync(path.join(root, id, 'index.html')))) {
 
 for (const id of localIds) {
   const html = read(id + '/index.html');
-  const inlineScripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
+  const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   let checked = 0;
   inlineScripts.forEach((match, index) => {
     const attrs = match[1] || '';
-    if (/\\bsrc\\s*=|application\\/(?:ld\\+)?json|type\\s*=\\s*["']module["']/i.test(attrs)) return;
+    if (/\bsrc\s*=|application\/(?:ld\+)?json|type\s*=\s*["']module["']/i.test(attrs)) return;
     try {
       new vm.Script(match[2], { filename: id + '/index.html inline script ' + (index + 1) });
       checked++;
