@@ -64,6 +64,22 @@ for (const file of jsFiles) {
   }
 }
 
+const androidPatch = read('native/scripts/patch-android.js');
+if (!androidPatch.includes("android.permission.SCHEDULE_EXACT_ALARM")) {
+  fail('Android build does not declare user-controlled exact-alarm access');
+} else if (androidPatch.includes("android.permission.USE_EXACT_ALARM")) {
+  fail('Do not request USE_EXACT_ALARM for this general-purpose toolkit; use user-granted SCHEDULE_EXACT_ALARM');
+} else {
+  pass('Android exact-alarm permission is user-controlled');
+}
+
+const trackingConfig = read('track-config.js');
+if (/window\\.HEY_TRACK_URL\\s*=\\s*['"]https?:/.test(trackingConfig)) {
+  fail('Analytics endpoint is enabled by default; require an explicit consent design first');
+} else {
+  pass('Analytics endpoint is disabled by default');
+}
+
 const manifest = JSON.parse(read('app/manifest.webmanifest'));
 if (!manifest.name || !manifest.start_url || !manifest.scope || !Array.isArray(manifest.icons)) {
   fail('PWA manifest is missing required identity, launch, scope, or icon fields');
