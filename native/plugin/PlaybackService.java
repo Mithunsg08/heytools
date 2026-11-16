@@ -10,6 +10,11 @@ import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
+import androidx.media.app.NotificationCompat.MediaStyle;
+import android.graphics.BitmapFactory;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 
 /** Persistent media controls for the active HeyTools player. */
 public class PlaybackService extends Service {
@@ -20,9 +25,42 @@ public class PlaybackService extends Service {
   private String artist = "Now playing";
   private boolean playing = true;
   private String lastSignature = "";
+  private MediaSessionCompat mediaSession;
 
   @Override public IBinder onBind(Intent intent) { return null; }
-  @Override public void onCreate() { super.onCreate(); isRunning = true; }
+  @Override public void onCreate() {
+    super.onCreate(); isRunning = true;
+    mediaSession = new MediaSessionCompat(this, "HeyToolsPlayback");
+    mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+    mediaSession.setCallback(new MediaSessionCompat.Callback() {
+      @Override public void onPlay() { sendAction("PLAY", 7102); }
+      @Override public void onPause() { sendAction("PAUSE", 7102); }
+      @Override public void onSkipToNext() { sendAction("NEXT", 7103); }
+      @Override public void onSkipToPrevious() { sendAction("PREVIOUS", 7101); }
+      @Override public void onStop() { sendAction("PAUSE", 7102); }
+    });
+    mediaSession.setActive(true);
+  }
+  private void sendAction(String name, int request) {
+    try { action(name, request).send(); } catch (Exception ignored) {}
+  }
+  private void updateMediaSession() {
+    if (mediaSession == null) return;
+    mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+      .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+      .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+      .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
+      .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, artist)
+      .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
+        BitmapFactory.decodeResource(getResources(), getResources().getIdentifier("ic_launcher", "mipmap", getPackageName())))
+      .build());
+    long actions=PlaybackStateCompat.ACTION_PLAY|PlaybackStateCompat.ACTION_PAUSE|
+      PlaybackStateCompat.ACTION_PLAY_PAUSE|PlaybackStateCompat.ACTION_SKIP_TO_NEXT|
+      PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS|PlaybackStateCompat.ACTION_STOP;
+    mediaSession.setPlaybackState(new PlaybackStateCompat.Builder().setActions(actions)
+      .setState(playing?PlaybackStateCompat.STATE_PLAYING:PlaybackStateCompat.STATE_PAUSED,
+        PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, playing?1f:0f).build());
+  }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
     if (intent != null) {
@@ -37,6 +75,7 @@ public class PlaybackService extends Service {
       ch.setDescription("Play, pause and skip HeyTools music");
       ch.setShowBadge(false);nm.createNotificationChannel(ch);
     }
+    updateMediaSession();
     String signature=title+"|"+artist+"|"+playing;
     if(!signature.equals(lastSignature)){
       Notification n=buildNotification();
@@ -62,6 +101,8 @@ public class PlaybackService extends Service {
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setOnlyAlertOnce(true)
       .setOngoing(true).setAutoCancel(false)
       .setContentIntent(action("OPEN",7100))
+      .setStyle(new MediaStyle().setMediaSession(mediaSession == null ? null : mediaSession.getSessionToken())
+        .setShowActionsInCompactView(0,1,2))
       .addAction(android.R.drawable.ic_media_previous,"Previous",action("PREVIOUS",7101))
       .addAction(playing?android.R.drawable.ic_media_pause:android.R.drawable.ic_media_play,
         playing?"Pause":"Play",action("TOGGLE",7102))
@@ -72,6 +113,7 @@ public class PlaybackService extends Service {
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
     isRunning = false;
+    if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; }
     super.onDestroy();
   }
 }
