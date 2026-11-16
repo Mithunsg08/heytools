@@ -533,9 +533,18 @@
   }
   if (window.HeyNotify) HeyNotify.on('action', function (action, n) {
     var group = n && n.extra && n.extra.group;
-    if (group === 'habit' && action === 'open') location.hash = '#/habit-tracker';
-    if (group === 'focus' && action === 'next') location.hash = '#/focus-timer';
-    if (group === 'todo' && (action === 'done' || action === 'snooze')) location.hash = '#/notes-to-do-list';
+    var targets = { habit: 'habit-tracker', focus: 'focus-timer', todo: 'notes-to-do-list',
+      timers: 'countdown-timers', water: 'water-tracker' };
+    var target = targets[group]; if (!target) return;
+    var payload = { tool: target, group: group, action: action, notification: n, createdAt: Date.now() };
+    var f = frames[target];
+    if (f && f.contentWindow) {
+      f.contentWindow.postMessage({ type: 'heytools:notification-action', payload: payload }, location.origin);
+      if (current !== target) location.hash = '#/' + target;
+    } else {
+      put('heytools.pending.notification', payload);
+      location.hash = '#/' + target;
+    }
   });
   window.addEventListener('heytools:media-action', function (e) {
     if (!e.detail) return;
@@ -644,6 +653,13 @@
     if (NATIVE.hasSave) injectSaveBridge(f);
     if (pendingMediaAction && t.id === pendingMediaAction.target) {
       try { f.contentWindow.postMessage({ type: 'heytools:media-action', action: pendingMediaAction.action }, location.origin); pendingMediaAction = null; } catch (e) {}
+    }
+    var pendingAction = get('heytools.pending.notification', null);
+    if (pendingAction && pendingAction.tool === t.id && Date.now() - pendingAction.createdAt < 86400000) {
+      try {
+        localStorage.removeItem('heytools.pending.notification');
+        f.contentWindow.postMessage({ type: 'heytools:notification-action', payload: pendingAction }, location.origin);
+      } catch (e) {}
     }
     if (current === t.id && $('gate').hidden) loading.classList.add('done');
     if (pendingFiles && pendingFiles.length && t.id === 'music-player') {
