@@ -485,6 +485,13 @@
   function showFrame(id) { Object.keys(frames).forEach(function (k) { frames[k].hidden = (k !== id); }); }
   function dropFrame(id) { var f = frames[id]; if (!f) return; try { f.src = 'about:blank'; } catch (e) { /* ignore */ } f.remove(); delete frames[id]; }
   function activeFrame() { return current ? frames[current] : null; }
+  function mediaAvailable(f) {
+    try {
+      var d = f.contentDocument; if (!d) return false;
+      if (d.body && d.body.classList.contains('playing')) return true;
+      return f.getAttribute('data-id') === 'music-player' && d.body && d.body.dataset.mediaReady === 'true';
+    } catch (e) { return false; }
+  }
   function mediaPlaying(f) {
     try {
       var d = f.contentDocument; if (!d) return false;
@@ -496,11 +503,11 @@
   }
   function leave(id) {
     var t = byId[id], f = frames[id]; if (!f) return;
-    if (t && t.media && mediaPlaying(f)) { f.hidden = true; syncPlayback(); }
+    if (t && t.media && mediaAvailable(f)) { f.hidden = true; syncPlayback(); }
     else { dropFrame(id); syncPlayback(); }
   }
   /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
-  function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaPlaying(frames[k]); }); }
+  function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); }); }
   function syncPlayback() {
     var live = playingFrames();
     Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].media && live.indexOf(k) === -1) dropFrame(k); });   // paused and out of sight: free the memory
