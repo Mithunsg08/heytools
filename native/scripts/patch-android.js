@@ -135,6 +135,7 @@ fs.writeFileSync(mp, m);
     ].join('\n'));
     g = g.replace(/release \{\n(\s+)minifyEnabled false/, 'release {\n$1signingConfig signingConfigs.heytools\n$1minifyEnabled false');
   }
+  if (!g.includes('androidx.media:media')) g = g.replace('dependencies {', "dependencies {\n    implementation 'androidx.media:media:1.7.0'");
   if (!g.includes('androidx.work:work-runtime')) g = g.replace("implementation project(':capacitor-android')", "implementation project(':capacitor-android')\n    implementation 'androidx.work:work-runtime:2.9.0'");
   if (!g.includes('testInstrumentationRunner')) g = g.replace('defaultConfig {', 'defaultConfig {\n        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"');
   if (!g.includes('androidx.test:runner')) g = g.replace('dependencies {', "dependencies {\n    androidTestImplementation 'androidx.test:runner:1.6.2'\n    androidTestImplementation 'androidx.test.ext:junit:1.2.1'");
