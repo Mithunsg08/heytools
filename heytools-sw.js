@@ -4,8 +4,8 @@
    - Same-origin files: network first (updates show up), cache as offline fallback.
    - Common CDN libraries and fonts: stale-while-revalidate.
    - Everything else (speed tests, streams, APIs, range requests) goes straight to the network.
-   Bump VERSION whenever you add or rename a tool. */
-const VERSION = 'heytools-app-v8';
+   Bump VERSION whenever the app shell or any tool implementation changes. */
+const VERSION = 'heytools-app-v9';
 
 const TOOLS = [
   'background-removal', 'barcode-generate', 'calculator', 'compass', 'cyber-rush',
