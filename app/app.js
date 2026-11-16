@@ -193,7 +193,7 @@
   function render() {
     renderCats(); renderNav(); renderGrid(); renderRecent(); renderTray(); paintSaved();
     var hidden = LAYOUT.hidden.length;
-    $('homeSub').textContent = visibleTools().length + ' tools' + (hidden ? ' · ' + hidden + ' hidden' : '') + ' · private, on your device';
+    $('homeSub').textContent = visibleTools().length + ' tools' + (hidden ? ' · ' + hidden + ' hidden' : '') + ' · Version 1.0';
     var active = netFilter !== 'all' ? 1 : 0;
     $('filterCount').hidden = !active; $('filterCount').textContent = active;
   }
