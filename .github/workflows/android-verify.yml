@@ -46,14 +46,13 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      # Android 17 / API 37 compatibility, including exact alarms and background notifications.
-      - name: Test HeyTools on Android 17 emulator
+      # Latest stable Android SDK image available on hosted runners; test alarms and background notifications.
+      - name: Test HeyTools on Android 16 emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          # Use the latest installed stable SDK platform to build, with the Android 17 system image for runtime testing.
           api-level: 36
-          system-image-api-level: '37.0'
-          channel: canary
+          system-image-api-level: 36
+          channel: stable
           target: google_apis
           arch: x86_64
           profile: pixel_2
@@ -74,10 +73,10 @@ jobs:
             adb shell uiautomator dump /sdcard/window.xml >/dev/null
             adb shell cat /sdcard/window.xml | grep -q 'HeyTools'
             if adb logcat -d -t 5000 | grep -E 'FATAL EXCEPTION.*main|Process: com.heytools.app'; then
-              echo "HeyTools crashed during Android 17 launch smoke test."
+              echo "HeyTools crashed during Android 16 launch smoke test."
               exit 1
             fi
-            echo "Android 17 install, exact-alarm instrumentation, launch and UI checks passed."
+            echo "Android 16 install, exact-alarm instrumentation, launch and UI checks passed."
         env:
           # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
           ANDROID_I_WANT_MY_TCG: 'yes'
