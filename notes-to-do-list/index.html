@@ -762,12 +762,12 @@ main { padding-top: 4px; }
       task.done = true; task.doneAt = Date.now(); save(); renderTodos(); renderAlerts(); checkReminders();
     } else if (action === 'snooze') {
       HeyNotify.schedule([{ id: baseId, title: 'Task reminder', body: task.text,
-        at: Date.now() + 60 * 60000, group: 'todo', kind: 'task' }]);
+        at: Date.now() + 60 * 60000, group: 'todo-snooze', kind: 'task' }]);
     }
   }
   function receiveTodoAction(e) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'heytools:notification-action' ||
-        !e.data.payload || e.data.payload.group !== 'todo') return;
+        !e.data.payload || !['todo','todo-snooze'].includes(e.data.payload.group)) return;
     handleTodoNotificationAction(e.data.payload.action, e.data.payload.notification);
   }
   window.addEventListener('message', receiveTodoAction);
