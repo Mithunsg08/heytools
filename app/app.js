@@ -558,6 +558,7 @@
     }
     f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
   });
+  window.__HEYTOOLS_READY = true;
   setInterval(syncPlayback, 1500);
   $('nowpOpen').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) location.hash = '#/' + id; });
   $('nowpStop').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) dropFrame(id); syncPlayback(); });
