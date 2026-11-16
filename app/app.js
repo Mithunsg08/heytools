@@ -533,8 +533,9 @@
   }
   if (window.HeyNotify) HeyNotify.on('action', function (action, n) {
     var group = n && n.extra && n.extra.group;
-    var targets = { habit: 'habit-tracker', focus: 'focus-timer', todo: 'notes-to-do-list',
-      timers: 'countdown-timers', water: 'water-tracker' };
+    var targets = { habit: 'habit-tracker', 'habit-snooze': 'habit-tracker', focus: 'focus-timer',
+      todo: 'notes-to-do-list', 'todo-snooze': 'notes-to-do-list', timers: 'countdown-timers',
+      water: 'water-tracker', 'water-snooze': 'water-tracker' };
     var target = targets[group]; if (!target) return;
     var payload = { tool: target, group: group, action: action, notification: n, createdAt: Date.now() };
     var f = frames[target];
@@ -550,7 +551,7 @@
     if (!e.detail) return;
     var target = currentMediaControlId || get('heytools.media.active', 'music-player');
     var f = frames[target];
-    if (!f || !f.contentWindow) { pendingMediaAction = { target: target, action: e.detail.action }; return; }
+    if (!f || !f.contentWindow || f.dataset.ready !== '1') { pendingMediaAction = { target: target, action: e.detail.action }; return; }
     f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
   });
   setInterval(syncPlayback, 1500);
