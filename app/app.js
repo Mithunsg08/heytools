@@ -623,7 +623,7 @@
     'function b64(blob){return new Promise(function(r){var fr=new FileReader();fr.onload=function(){r(String(fr.result).split(",")[1]||"")};fr.readAsDataURL(blob)})}' +
     'function send(a){var href=a.href,name=a.getAttribute("download")||"file",id=String(Date.now())+Math.random();' +
     'fetch(href).then(function(r){return r.blob()}).then(function(blob){var n=Math.max(1,Math.ceil(blob.size/CH)),i=0;' +
-    '(function next(){b64(blob.slice(i*CH,(i+1)*CH)).then(function(d){parent.postMessage({type:"heytools:save",id:id,name:name,mime:blob.type||"",seq:i,last:i===n-1,data:d},"*");i++;if(i<n)setTimeout(next,0)})})()}).catch(function(){})}' +
+    '(function next(){b64(blob.slice(i*CH,(i+1)*CH)).then(function(d){parent.postMessage({type:"heytools:save",id:id,name:name,mime:blob.type||"",seq:i,last:i===n-1,data:d},location.origin);i++;if(i<n)setTimeout(next,0)})})()}).catch(function(){})}' +
     'function isFile(a){return a&&a.hasAttribute&&a.hasAttribute("download")&&/^(blob:|data:)/.test(a.href)}' +
     'document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[download]");if(isFile(a)){e.preventDefault();e.stopPropagation();send(a)}},true);' +
     'var oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(isFile(this)){send(this);return}return oc.apply(this,arguments)};' +
@@ -631,11 +631,33 @@
   function injectSaveBridge(f) {
     try { var d = f.contentDocument, sc = d.createElement('script'); sc.textContent = SAVE_SCRIPT; (d.head || d.documentElement).appendChild(sc); } catch (e) { /* ignore */ }
   }
-  var saves = {};
+  var saves = Object.create(null);
+  function isToolFrameSource(source) {
+    return Object.keys(frames).some(function (id) {
+      try { return !!frames[id] && frames[id].contentWindow === source; } catch (e) { return false; }
+    });
+  }
   window.addEventListener('message', function (e) {
+    // Only accept save requests from this site's own registered tool frames.
+    // Embedded third-party players and unrelated windows must never reach the native file-writing bridge.
+    if (e.origin !== location.origin || !isToolFrameSource(e.source)) return;
     var d = e.data;
     if (!d || d.type !== 'heytools:save' || !NATIVE.hasSave) return;
-    var sv = saves[d.id] || (saves[d.id] = { chain: Promise.resolve(), nid: null });
+    if (typeof d.id !== 'string' || !/^[A-Za-z0-9._-]{1,80}$/.test(d.id) ||
+        !Number.isSafeInteger(d.seq) || d.seq < 0 || d.seq > 500 ||
+        typeof d.name !== 'string' || d.name.length > 180 || /[\\x00-\\x1f]/.test(d.name) ||
+        typeof d.mime !== 'string' || d.mime.length > 120 ||
+        typeof d.data !== 'string' || d.data.length > 1600000 || !/^[A-Za-z0-9+/]*={0,2}$/.test(d.data) ||
+        typeof d.last !== 'boolean') return;
+    var sv = saves[d.id];
+    if (!sv) {
+      if (d.seq !== 0) return;
+      sv = saves[d.id] = { chain: Promise.resolve(), nid: null, nextSeq: 0, bytes: 0 };
+    }
+    if (d.seq !== sv.nextSeq) { delete saves[d.id]; return; }
+    sv.nextSeq++;
+    sv.bytes += Math.floor(d.data.length * 3 / 4);
+    if (sv.bytes > 536870912) { delete saves[d.id]; toast('File is too large to save'); return; }
     sv.chain = sv.chain.then(function () {
       if (d.seq === 0) return NATIVE.saveStart(d.name, d.mime).then(function (r) { sv.nid = r.id; });
     }).then(function () {
