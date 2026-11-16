@@ -748,14 +748,37 @@ main { padding-top: 4px; }
     window.HeyNotify.syncGroup('todo', items);
   }
 
-  if (window.HeyNotify) HeyNotify.on('action', function (action, n) {
-    if (!n || !n.extra || n.extra.group !== 'todo') return;
+  function handleTodoNotificationAction(action, n) {
+    if (!n || !n.id) return;
     var baseId = Math.floor(n.id / 10), task = null;
     state.todos.some(function (t) {
       return (t.remind || []).some(function (off) {
         if (hashId(t.id + '-' + off) === baseId) { task = t; return true; }
         return false;
       });
+    });
+    if (!task) return;
+    if (action === 'done') {
+      task.done = true; task.doneAt = Date.now(); save(); renderTodos(); renderAlerts(); checkReminders();
+    } else if (action === 'snooze') {
+      HeyNotify.schedule([{ id: baseId + 10000000, title: 'Task reminder', body: task.text,
+        at: Date.now() + 60 * 60000, group: 'todo', kind: 'task' }]);
+    }
+  }
+  function receiveTodoAction(e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'heytools:notification-action' ||
+        !e.data.payload || e.data.payload.group !== 'todo') return;
+    handleTodoNotificationAction(e.data.payload.action, e.data.payload.notification);
+  }
+  window.addEventListener('message', receiveTodoAction);
+  try {
+    var pending = JSON.parse(localStorage.getItem('heytools.pending.notification') || 'null');
+    if (pending && pending.tool === 'notes-to-do-list' && Date.now() - pending.createdAt < 86400000) {
+      localStorage.removeItem('heytools.pending.notification');
+      handleTodoNotificationAction(pending.action, pending.notification);
+    }
+  } catch (e) {}
+
     });
     if (!task) return;
     if (action === 'done') {
