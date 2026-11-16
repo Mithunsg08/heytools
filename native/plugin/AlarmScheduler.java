@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import com.getcapacitor.JSObject;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.Calendar;
@@ -132,10 +133,10 @@ final class AlarmScheduler {
     catch(Exception e){throw new IllegalStateException(e);}
   }
   static void reschedule(Context c) { scheduleAll(c); }
-  static JSONObject getState(Context c) {
-    JSONObject out=new JSONObject();JSONArray state=new JSONArray(),all=read(c);
+  static JSObject getState(Context c) {
+    JSObject out=new JSObject();JSONArray state=new JSONArray(),all=read(c);
     for(int i=0;i<all.length();i++){JSONObject a=all.optJSONObject(i);if(a==null)continue;
-      JSONObject x=new JSONObject();try{x.put("id",a.optInt("id"));x.put("on",a.optBoolean("on"));x.put("nextAt",a.optLong("nextAt"));x.put("snoozed",a.optBoolean("snoozed"));x.put("lastFiredAt",a.optLong("lastFiredAt"));state.put(x);}catch(Exception ignored){}
+      JSObject x=new JSObject();try{x.put("id",a.optInt("id"));x.put("on",a.optBoolean("on"));x.put("nextAt",a.optLong("nextAt"));x.put("snoozed",a.optBoolean("snoozed"));x.put("lastFiredAt",a.optLong("lastFiredAt"));state.put(x);}catch(Exception ignored){}
     }
     try{out.put("alarms",state);out.put("exactPermission",canScheduleExact(c));}catch(Exception ignored){}
     return out;
