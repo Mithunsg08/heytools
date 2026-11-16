@@ -518,6 +518,12 @@
     }
     if (!live.length && svcOn) { svcOn = false; NATIVE.stopPlayback && NATIVE.stopPlayback(); }
   }
+  if (window.HeyNotify) HeyNotify.on('action', function (action, n) {
+    var group = n && n.extra && n.extra.group;
+    if (group === 'habit' && action === 'open') location.hash = '#/habit-tracker';
+    if (group === 'focus' && action === 'next') location.hash = '#/focus-timer';
+    if (group === 'todo' && (action === 'done' || action === 'snooze')) location.hash = '#/notes-to-do-list';
+  });
   window.addEventListener('heytools:media-action', function (e) {
     var f = frames['music-player'];
     if (!f || !f.contentWindow || !e.detail) return;
