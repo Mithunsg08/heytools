@@ -106,9 +106,11 @@
     ids=ids||[];
     if(!native){ids.forEach(clearWebTimer);return Promise.resolve();}
     var all=[];ids.forEach(function(i){all.push({id:i*10});for(var w=1;w<=7;w++)all.push({id:i*10+w});});
-    var jobs=[LN.cancel({notifications:all}).catch(function(){})];
-    if(HA&&HA.cancelAlarms)jobs.push(HA.cancelAlarms({ids:ids}).catch(function(){}));
-    return Promise.all(jobs);
+    return LN.cancel({notifications:all}).catch(function(){});
+  }
+  function cancelAlarmIds(ids){
+    if(!native||!HA||!HA.cancelAlarms)return cancelIds(ids);
+    return HA.cancelAlarms({ids:ids||[]}).catch(function(){});
   }
   function cancelGroup(group){
     if(group==='alarm'&&native&&HA&&HA.syncAlarms)return HA.syncAlarms({alarms:[]}).then(function(){});
@@ -136,5 +138,5 @@
   });
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
-    cancelIds:cancelIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels};
+    cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels};
 })();
