@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java'])
+for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -24,13 +24,35 @@ const perms = [
   ['android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'],
   ['android.permission.POST_NOTIFICATIONS'],
   ['android.permission.SCHEDULE_EXACT_ALARM'],
-  ['android.permission.RECEIVE_BOOT_COMPLETED']
+  ['android.permission.RECEIVE_BOOT_COMPLETED'],
+  ['android.permission.USE_FULL_SCREEN_INTENT']
 ];
 const add = perms.filter(p => !m.includes('"' + p[0] + '"'))
   .map(p => `    <uses-permission android:name="${p[0]}"${p[1] || ''} />`).join('\n');
 m = m.replace('<application', add + '\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />\n\n    <application');
 if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '<application android:requestLegacyExternalStorage="true"');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
+const alarmComponents = [
+  '<service android:name=".AlarmRingingService" android:exported="false" android:foregroundServiceType="mediaPlayback" />',
+  '<receiver android:name=".AlarmReceiver" android:exported="false" />',
+  '<receiver android:name=".AlarmActionReceiver" android:exported="false" />',
+  '<receiver android:name=".AlarmBootReceiver" android:enabled="true" android:exported="true">',
+  '  <intent-filter>',
+  '    <action android:name="android.intent.action.BOOT_COMPLETED" />',
+  '    <action android:name="android.intent.action.TIME_SET" />',
+  '    <action android:name="android.intent.action.TIMEZONE_CHANGED" />',
+  '    <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />',
+  '    <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />',
+  '  </intent-filter>',
+  '</receiver>'
+];
+for (const component of alarmComponents) {
+  const match = component.match(/(?:service|receiver) android:name="([^"]+)/);
+  if (match && !m.includes('android:name="' + match[1] + '"')) {
+    m = m.replace('</application>', '    ' + component + '\n    </application>');
+  }
+}
+
 fs.writeFileSync(mp, m);
 
 /* App icon: the HeyTools logo from app/icons. Resized with ImageMagick when available, otherwise copied as is. */
