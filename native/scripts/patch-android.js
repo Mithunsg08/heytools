@@ -33,10 +33,10 @@ m = m.replace('<application', add + '\n    <uses-feature android:name="android.h
 if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '<application android:requestLegacyExternalStorage="true"');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
-  '<service android:name=".AlarmRingingService" android:exported="false" android:foregroundServiceType="mediaPlayback" />',
-  '<receiver android:name=".AlarmReceiver" android:exported="false" />',
-  '<receiver android:name=".AlarmActionReceiver" android:exported="false" />',
-  '<receiver android:name=".AlarmBootReceiver" android:enabled="true" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" /></intent-filter></receiver>'
+  '<service android:name=".AlarmRingingService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="mediaPlayback" />',
+  '<receiver android:name=".AlarmReceiver" android:exported="false" android:directBootAware="true" />',
+  '<receiver android:name=".AlarmActionReceiver" android:exported="false" android:directBootAware="true" />',
+  '<receiver android:name=".AlarmBootReceiver" android:enabled="true" android:exported="true" android:directBootAware="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" /></intent-filter></receiver>'
 ];
 for (const component of alarmComponents) {
   const match = component.match(/(?:service|receiver) android:name="([^"]+)/);
