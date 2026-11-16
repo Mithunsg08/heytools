@@ -7,10 +7,11 @@ import android.os.Build;
 
 public class AlarmReceiver extends BroadcastReceiver {
   @Override public void onReceive(Context context, Intent intent) {
-    int id=intent==null?-1:intent.getData()!=null?Integer.parseInt(intent.getData().getLastPathSegment()):-1;
+    int id=-1;
+    try { if(intent!=null&&intent.getData()!=null) id=Integer.parseInt(intent.getData().getLastPathSegment()); }
+    catch(Exception ignored) { return; }
     if(id<0)return;
     if(!AlarmScheduler.canScheduleExact(context))return;
-    android.content.SharedPreferences p=context.getSharedPreferences("heytools_native_alarms",0);
     // The scheduler validates that this ID is still active and advances repeating alarms before ringing.
     org.json.JSONObject alarm=AlarmScheduler.fired(context,id);
     if(alarm==null)return;
