@@ -13,7 +13,8 @@ public class HeyAlarmPlugin extends Plugin {
   @PluginMethod
   public void syncAlarms(PluginCall call) {
     try {
-      JSONArray alarms = call.getArray("alarms", new JSONArray());
+      JSONArray alarms = call.getData().optJSONArray("alarms");
+      if (alarms == null) alarms = new JSONArray();
       AlarmScheduler.sync(getContext(), alarms);
       JSObject result = new JSObject();
       result.put("scheduled", alarms.length());
@@ -50,7 +51,9 @@ public class HeyAlarmPlugin extends Plugin {
   @PluginMethod
   public void cancelAlarms(PluginCall call) {
     try {
-      AlarmScheduler.cancelIds(getContext(), call.getArray("ids", new JSONArray()));
+      JSONArray ids = call.getData().optJSONArray("ids");
+      if (ids == null) ids = new JSONArray();
+      AlarmScheduler.cancelIds(getContext(), ids);
       call.resolve();
     } catch (Exception e) { call.reject("Could not cancel alarms: " + e.getMessage(), e); }
   }
