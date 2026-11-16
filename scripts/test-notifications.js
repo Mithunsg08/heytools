@@ -42,6 +42,8 @@ async function nativeTests(){
   assert.equal(calls.scheduled.length,7);
   assert.equal(calls.scheduled[0].actionTypeId,'WATER');
   assert.equal(calls.scheduled[0].extra.group,'water');
+  await H.schedule([{id:801,title:'Task reminder',body:'Finish it',at:Date.now()+60000,group:'todo-snooze',kind:'task'}]);
+  assert.equal(calls.scheduled[calls.scheduled.length-1].actionTypeId,'TASK');
   let action='';
   H.on('action',(id)=>{action=id;});
   calls.listeners.localNotificationActionPerformed({actionId:'log',notification:{id:800001}});
