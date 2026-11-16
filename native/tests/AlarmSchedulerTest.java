@@ -18,12 +18,16 @@ public class AlarmSchedulerTest {
 
   @Before public void setUp() throws Exception {
     context=InstrumentationRegistry.getInstrumentation().getTargetContext();
-    context.getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
+    storageContext().getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
     assertTrue("Test device must grant exact-alarm access",AlarmScheduler.canScheduleExact(context));
   }
   @After public void tearDown() throws Exception {
     JSONArray ids=new JSONArray();ids.put(ID);AlarmScheduler.cancelIds(context,ids);
     context.getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
+  }
+
+  private Context storageContext() {
+    return android.os.Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
   }
 
   private JSONObject oneTime() throws Exception {
@@ -50,7 +54,7 @@ public class AlarmSchedulerTest {
     JSONObject state=AlarmScheduler.getState(context);
     assertTrue(state.optJSONArray("alarms").getJSONObject(0).optBoolean("snoozed"));
 
-    android.content.SharedPreferences prefs=context.getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE);
+    android.content.SharedPreferences prefs=storageContext().getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE);
     JSONArray stored=new JSONArray(prefs.getString("alarms","[]"));
     stored.getJSONObject(0).put("snoozeAt",System.currentTimeMillis()-1000L);
     prefs.edit().putString("alarms",stored.toString()).commit();
