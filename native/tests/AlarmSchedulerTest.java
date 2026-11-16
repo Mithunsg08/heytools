@@ -23,7 +23,7 @@ public class AlarmSchedulerTest {
   }
   @After public void tearDown() throws Exception {
     JSONArray ids=new JSONArray();ids.put(ID);AlarmScheduler.cancelIds(context,ids);
-    context.getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
+    storageContext().getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
   }
 
   private Context storageContext() {
