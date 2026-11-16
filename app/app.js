@@ -645,7 +645,7 @@
     if (!d || d.type !== 'heytools:save' || !NATIVE.hasSave) return;
     if (typeof d.id !== 'string' || !/^[A-Za-z0-9._-]{1,80}$/.test(d.id) ||
         !Number.isSafeInteger(d.seq) || d.seq < 0 || d.seq > 500 ||
-        typeof d.name !== 'string' || d.name.length > 180 || /[\\x00-\\x1f]/.test(d.name) ||
+        typeof d.name !== 'string' || d.name.length > 180 || /[\x00-\x1f]/.test(d.name) ||
         typeof d.mime !== 'string' || d.mime.length > 120 ||
         typeof d.data !== 'string' || d.data.length > 1600000 || !/^[A-Za-z0-9+/]*={0,2}$/.test(d.data) ||
         typeof d.last !== 'boolean') return;
