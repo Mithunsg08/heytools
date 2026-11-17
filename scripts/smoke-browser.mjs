@@ -41,6 +41,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
       toolPage.on('pageerror', error => errors.push(id + ': ' + error.message));
       const url = new URL(id + '/index.html', base).toString();
       const result = await toolPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      const rawHtml = result ? await result.text() : '';
       if (!result || !result.ok()) {
         errors.push(id + ': HTTP ' + (result && result.status()));
       } else {
@@ -51,11 +52,12 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
           bodyVisibility: document.body ? getComputedStyle(document.body).visibility : 'missing',
           bodyChildren: document.body ? document.body.children.length : 0,
           bodyHtmlLength: document.body ? document.body.innerHTML.length : 0,
+          rawHtmlLength: 0,
           domRemovals: window.__domRemovals || [],
           viewport: document.documentElement.scrollWidth <= window.innerWidth + 2 ||
             (getComputedStyle(document.documentElement).overflowX === 'hidden' && document.documentElement.clientWidth >= window.innerWidth - 2)
         }));
-        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ', display=' + info.bodyDisplay + ', visibility=' + info.bodyVisibility + ', children=' + info.bodyChildren + ', htmlLength=' + info.bodyHtmlLength + ', removals=' + JSON.stringify(info.domRemovals.slice(-20)) + ')');
+        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ', display=' + info.bodyDisplay + ', visibility=' + info.bodyVisibility + ', children=' + info.bodyChildren + ', htmlLength=' + info.bodyHtmlLength + ', removals=' + JSON.stringify(info.domRemovals.slice(-20)) + ', responseLength=' + rawHtml.length + ', responseBodyIndex=' + rawHtml.indexOf('<body') + ', responseBodySnippet=' + JSON.stringify(rawHtml.slice(rawHtml.indexOf('<body'), rawHtml.indexOf('<body') + 250)) + ')');
         if (!info.viewport) errors.push(id + ': horizontal overflow at 390px viewport');
       }
       await toolPage.close();
