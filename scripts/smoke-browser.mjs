@@ -45,10 +45,14 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
         const info = await toolPage.evaluate(() => ({
           title: document.title,
           body: (document.body && document.body.innerText || '').trim(),
+          bodyDisplay: document.body ? getComputedStyle(document.body).display : 'missing',
+          bodyVisibility: document.body ? getComputedStyle(document.body).visibility : 'missing',
+          bodyChildren: document.body ? document.body.children.length : 0,
+          bodyHtmlLength: document.body ? document.body.innerHTML.length : 0,
           viewport: document.documentElement.scrollWidth <= window.innerWidth + 2 ||
             (getComputedStyle(document.documentElement).overflowX === 'hidden' && document.documentElement.clientWidth >= window.innerWidth - 2)
         }));
-        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ')');
+        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ', display=' + info.bodyDisplay + ', visibility=' + info.bodyVisibility + ', children=' + info.bodyChildren + ', htmlLength=' + info.bodyHtmlLength + ')');
         if (!info.viewport) errors.push(id + ': horizontal overflow at 390px viewport');
       }
       await toolPage.close();
