@@ -25,7 +25,9 @@ h1{font-size:clamp(2rem,7vw,2.75rem);letter-spacing:-.035em;line-height:1.05;mar
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:10px}
-.next{background:var(--panel);border-radius:22px;padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 12px 32px -18px rgba(0,0,0,.25)}
+.next{background:linear-gradient(135deg,var(--panel),color-mix(in srgb,var(--accent) 9%,var(--panel)));border:1px solid color-mix(in srgb,var(--accent) 16%,var(--line));border-radius:24px;padding:22px;margin-bottom:20px;box-shadow:0 12px 36px -22px rgba(0,0,0,.32)}
+.al{border:1px solid color-mix(in srgb,var(--accent) 9%,var(--line));transition:transform .18s ease,box-shadow .18s ease}.al:active{transform:scale(.99)}
+.fab{font-weight:750;letter-spacing:-.01em}
 .next b{display:block;font-size:1.15rem;letter-spacing:-.01em}
 .next span{color:var(--muted);font-size:.92rem}
 .perm{display:flex;gap:12px;align-items:center;justify-content:space-between;background:#FFF4D6;color:#3A2E00;border-radius:16px;padding:12px 14px;margin-bottom:16px;font-size:.92rem}
@@ -52,7 +54,7 @@ ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .field{background:var(--panel);border-radius:16px;padding:12px 14px;margin-bottom:12px}
 .field label{display:block;font-size:.8rem;color:var(--muted);font-weight:600;margin-bottom:4px}
 .field input[type=time]{font-size:2.4rem;font-weight:300;letter-spacing:-.03em;border:0;background:none;width:100%;font-variant-numeric:tabular-nums}
-.field input[type=text],.field select{width:100%;border:0;background:none;font-size:1.05rem;padding:2px 0}
+.field input[type=text],.field input[type=date],.field select{width:100%;border:0;background:none;font-size:1.05rem;padding:2px 0}
 .days{display:flex;gap:6px;justify-content:space-between}
 .days button{flex:1;aspect-ratio:1;max-width:46px;border-radius:50%;border:0;background:var(--bg);font-weight:650;font-size:.85rem}
 .days button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
@@ -94,6 +96,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
 <div class="scrim" id="scrim" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
   <h2 id="sTitle">New alarm</h2>
   <div class="field"><label for="fTime">Time</label><input id="fTime" type="time" value="07:00"></div>
+  <div class="field"><label for="fDate">Specific date (optional)</label><input id="fDate" type="date"><small style="display:block;color:var(--muted);margin-top:5px">Choose a future date for a one-time alarm. Leave blank to use repeat days.</small></div>
   <div class="field"><label for="fLabel">Label</label><input id="fLabel" type="text" maxlength="40" placeholder="Wake up"></div>
   <div class="field"><label>Repeat</label><div class="days" id="fDays" role="group" aria-label="Repeat on"></div></div>
   <div class="field"><label>Tone</label><div class="tones" id="fTones" role="radiogroup" aria-label="Alarm tone"></div></div>
@@ -122,25 +125,26 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   function fmt(t) { var p = parts(t), d = new Date(2000, 0, 1, p.h, p.m); var s = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); var m = s.match(/^(.*?)\s?(AM|PM|am|pm)$/); return m ? { t: m[1], ap: m[2].toUpperCase() } : { t: s, ap: '' }; }
   function nextAt(a) {
     var p = parts(a.time), now = new Date(), best = Infinity;
+    if (a.date) { var bits = a.date.split("-").map(Number); var once = new Date(bits[0], bits[1] - 1, bits[2], p.h, p.m, 0, 0); return once > now ? +once : Infinity; }
     var days = a.days.length ? a.days : [0, 1, 2, 3, 4, 5, 6];
     days.forEach(function (wd) { var d = new Date(now); d.setHours(p.h, p.m, 0, 0); d.setDate(d.getDate() + ((wd - d.getDay() + 7) % 7)); if (d <= now) d.setDate(d.getDate() + 7); if (+d < best) best = +d; });
     return best;
   }
   /* one-time alarms switch themselves off after they have rung */
-  alarms.forEach(function (a) { if (a.on && !a.days.length && a.fireAt && a.fireAt < Date.now() - 60000) a.on = false; });
+  alarms.forEach(function (a) { if (a.on && a.date && !isFinite(nextAt(a))) a.on = false; else if (a.on && !a.date && !a.days.length && a.fireAt && a.fireAt < Date.now() - 60000) a.on = false; });
 
   function sync() {
     return HeyNotify.alarmState().then(function (nativeState) {
       var savedAlarms = nativeState.alarms || [];
       savedAlarms.forEach(function (saved) {
         var local = alarms.filter(function (a) { return a.id === saved.id; })[0];
-        if (local && local.on && !local.days.length && !saved.snoozed &&
+        if (local && local.on && (!local.days.length || local.date) && !saved.snoozed &&
             saved.lastFiredAt && local.fireAt && saved.lastFiredAt >= local.fireAt) local.on = false;
       });
       var items = [];
       alarms.filter(function (a) { return a.on; }).forEach(function (a) {
         var p = parts(a.time), it = { id: a.id, title: a.label || 'Alarm', body: fmt(a.time).t + ' ' + fmt(a.time).ap, tone: a.tone, alarm: true, snooze: a.snooze };
-        if (a.days.length) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
+        if (a.days.length && !a.date) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
         else {
           var saved = savedAlarms.filter(function (x) { return x.id === a.id; })[0];
           if (!saved || !saved.snoozed) a.fireAt = nextAt(a);
@@ -161,10 +165,10 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     if (d) out.push(d + ' day' + (d > 1 ? 's' : '')); if (h) out.push(h + ' h'); if (mm || !out.length) out.push(mm + ' min');
     return out.join(' ');
   }
-  function repeatText(a) { if (!a.days.length) return 'Once'; if (a.days.length === 7) return 'Every day'; if (a.days.join() === '1,2,3,4,5') return 'Weekdays'; if (a.days.join() === '0,6') return 'Weekends'; return a.days.map(function (d) { return DAYNAMES[d]; }).join(' '); }
+  function repeatText(a) { if (a.date) return new Date(a.date + "T00:00:00").toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" }); if (!a.days.length) return "Once"; if (a.days.length === 7) return "Every day"; if (a.days.join() === "1,2,3,4,5") return "Weekdays"; if (a.days.join() === "0,6") return "Weekends"; return a.days.map(function (d) { return DAYNAMES[d]; }).join(" "); }
   function render() {
     var list = $('list'); list.textContent = '';
-    alarms.slice().sort(function (a, b) { return a.time.localeCompare(b.time); }).forEach(function (a) {
+    alarms.slice().sort(function (a, b) { return nextAt(a) - nextAt(b); }).forEach(function (a) {
       var f = fmt(a.time), li = document.createElement('li'); li.className = 'al' + (a.on ? '' : ' off');
       var t = document.createElement('button'); t.type = 'button'; t.className = 't'; t.setAttribute('aria-label', 'Edit alarm at ' + f.t + ' ' + f.ap); t.innerHTML = f.t + (f.ap ? '<small>' + f.ap + '</small>' : '');
       t.onclick = function () { openSheet(a); };
@@ -174,7 +178,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       li.appendChild(t); li.appendChild(meta); li.appendChild(sw); list.appendChild(li);
     });
     $('empty').hidden = alarms.length > 0;
-    var on = alarms.filter(function (a) { return a.on; });
+    var on = alarms.filter(function (a) { return a.on && isFinite(nextAt(a)); });
     if (on.length) { var soon = Math.min.apply(null, on.map(nextAt)); $('nextT').textContent = 'Next alarm in ' + until(soon - Date.now()); $('nextS').textContent = new Date(soon).toLocaleString([], { weekday: 'long', hour: 'numeric', minute: '2-digit' }); }
     else { $('nextT').textContent = 'No alarm set'; $('nextS').textContent = 'Tap New alarm to add one.'; }
   }
@@ -223,15 +227,19 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   }
   function openSheet(a) {
     editing = a || null; $('sTitle').textContent = a ? 'Edit alarm' : 'New alarm';
-    $('fTime').value = a ? a.time : '07:00'; $('fLabel').value = a ? a.label : ''; formDays = a ? a.days.slice() : []; formTone = a ? a.tone : 'classic';
+    $('fTime').value = a ? a.time : '07:00'; $('fDate').value = a ? (a.date || '') : ''; $('fLabel').value = a ? a.label : ''; formDays = a ? a.days.slice() : []; formTone = a ? a.tone : 'classic';
     $('fSnooze').value = String(a ? a.snooze : 10); $('delRow').hidden = !a; buildDays(); buildTones(); $('scrim').hidden = false; $('fTime').focus();
   }
   function closeSheet() { if (stopPreview) stopPreview(); $('scrim').hidden = true; }
   $('add').onclick = function () { openSheet(null); };
   $('sCancel').onclick = closeSheet;
   $('scrim').addEventListener('click', function (e) { if (e.target === $('scrim')) closeSheet(); });
+  $('fDate').addEventListener('change', function () { if ($('fDate').value) { formDays = []; buildDays(); } });
   $('sSave').onclick = function () {
-    var data = { time: $('fTime').value || '07:00', label: $('fLabel').value.trim(), days: formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true, fireAt: 0 };
+    var chosenDate = $('fDate').value;
+    var today = new Date(), todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    if (chosenDate && chosenDate <= todayKey) { alert("Choose a future date."); return; }
+    var data = { time: $('fTime').value || '07:00', date: chosenDate || '', label: $('fLabel').value.trim(), days: chosenDate ? [] : formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true, fireAt: 0 };
     if (editing) Object.assign(editing, data); else alarms.push(Object.assign({ id: uid() }, data));
     closeSheet(); ensurePerm(); sync(); render();
   };

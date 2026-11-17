@@ -65,6 +65,7 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 .tot{font-size:2.2rem;font-weight:800}.bar{height:12px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--ok)}.bar i.over{background:var(--bad)}ul.list{list-style:none;margin:0;padding:0}ul.list li{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}ul.list li:last-child{border:0}.amt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}.cat{font-size:1.3rem}.sub{color:var(--muted);font-size:.85rem}.cb{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;margin:6px 0;font-size:.9rem}.cb .bar{margin:0;height:10px}
 </style>
 <script src="../install-prompt.js" defer></script>
+<script src="../heynotify.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -88,11 +89,21 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 (function(){
 const $=id=>document.getElementById(id),K='heytools.expenses.v1';
 const CATS=[['🍽️','Food'],['🛒','Groceries'],['🚌','Transport'],['🏠','Home & bills'],['🛍️','Shopping'],['🎬','Fun'],['💊','Health'],['📚','Learning'],['✨','Other']];
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.items=st.items||[];st.budget=st.budget||'';st.cur=st.cur||'₹';
+let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.items=st.items||[];st.budget=st.budget||'';st.cur=st.cur||'₹';st.alerts=st.alerts||{};
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
 const today=()=>new Date().toISOString().slice(0,10),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=n=>st.cur+(+n).toLocaleString(undefined,{maximumFractionDigits:2});
 $('cat').innerHTML=CATS.map(c=>`<option>${c[0]} ${c[1]}</option>`).join('');$('date').value=today();$('month').value=today().slice(0,7);$('budget').value=st.budget;$('cur').value=st.cur;
+function budgetAlerts(){
+ const m=$('month').value||today().slice(0,7),budget=+st.budget;
+ if(!(budget>0)||!window.HeyNotify||m!==today().slice(0,7))return;
+ const total=st.items.filter(x=>x.d.startsWith(m)).reduce((n,x)=>n+x.a,0),ratio=total/budget;
+ st.alerts[m]=st.alerts[m]||{};
+ const jobs=[],levels=[];
+ if(ratio>=.8&&!st.alerts[m].eighty){levels.push('eighty');jobs.push({id:920081,title:'Budget update · 80% used',body:'You have used '+Math.round(ratio*100)+'% of your '+m+' budget.',at:Date.now()+1500,group:'expense'});}
+ if(ratio>=1&&!st.alerts[m].full){levels.push('full');jobs.push({id:920082,title:'Monthly budget reached',body:'Your spending has reached or passed the '+m+' budget by '+money(total-budget)+'.',at:Date.now()+2500,group:'expense'});}
+ if(jobs.length){HeyNotify.requestPermission().then(function(p){if(p!=='granted')return;return HeyNotify.schedule(jobs).then(function(){levels.forEach(function(level){st.alerts[m][level]=true});save()})}).catch(function(){});}
+}
 function draw(){
  const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m)).sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id),tot=rows.reduce((s,x)=>s+x.a,0);
  $('tot').textContent=money(tot);const b=+st.budget;
@@ -101,9 +112,9 @@ function draw(){
  $('cats').innerHTML=Object.keys(by).length?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="cb"><span>${esc(c)}</span><div class="bar"><i style="width:${v/mx*100}%"></i></div><b>${money(v)}</b></div>`).join(''):'<p class="sub">No expenses this month.</p>';
  $('list').innerHTML=rows.length?rows.map(x=>`<li><span class="cat">${esc(x.c.split(' ')[0])}</span><div><div>${esc(x.n||x.c.split(' ').slice(1).join(' '))}</div><div class="sub">${esc(x.d)}</div></div><span class="amt">${money(x.a)}</span><button class="alt x" data-d="${x.id}" aria-label="Delete expense">✕</button></li>`).join(''):'<li class="sub">Nothing added yet.</li>'}
 $('add').onclick=()=>{const a=parseFloat($('amt').value);if(!(a>0)){$('msg').textContent='Enter an amount above 0.';return}
- st.items.push({id:Date.now(),a,c:$('cat').value,n:$('note').value.trim(),d:$('date').value||today()});save();$('amt').value='';$('note').value='';$('msg').textContent='Added.';$('month').value=($('date').value||today()).slice(0,7);draw()};
+ st.items.push({id:Date.now(),a,c:$('cat').value,n:$('note').value.trim(),d:$('date').value||today()});save();$('amt').value='';$('note').value='';$('msg').textContent='Added.';$('month').value=($('date').value||today()).slice(0,7);draw();budgetAlerts()};
 $('list').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;st.items=st.items.filter(x=>x.id!=b.dataset.d);save();draw()};
-$('month').oninput=draw;$('budget').oninput=e=>{st.budget=e.target.value;save();draw()};$('cur').oninput=e=>{st.cur=e.target.value||'₹';save();draw()};
+$('month').oninput=draw;$('budget').oninput=e=>{st.budget=e.target.value;save();draw()};$('budget').onchange=budgetAlerts;$('cur').oninput=e=>{st.cur=e.target.value||'₹';save();draw()};
 $('clr').onclick=()=>{if(confirm('Delete every expense in this month?')){const m=$('month').value;st.items=st.items.filter(x=>!x.d.startsWith(m));save();draw()}};
 $('csv').onclick=()=>{const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m));const csv='Date,Category,Note,Amount\n'+rows.map(x=>[x.d,x.c,'"'+(x.n||'').replace(/"/g,'""')+'"',x.a].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='expenses-'+m+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 draw();

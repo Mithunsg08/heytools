@@ -33,7 +33,11 @@
     try{return Promise.resolve(typeof Notification==='undefined'?'denied':Notification.permission==='default'?'prompt':Notification.permission);}catch(e){return Promise.resolve('denied');}
   }
   function exactPermission(){
-    if(!native||!LN.checkExactNotificationSetting)return Promise.resolve('not-applicable');
+    if(!native)return Promise.resolve('not-applicable');
+    // HeyAlarm is the source of truth for AlarmManager's exact-alarm permission.
+    // LocalNotifications may not expose this setting on every plugin version.
+    if(HA&&HA.getState)return HA.getState().then(function(r){return r&&r.exactPermission?'granted':'denied';}).catch(function(){return 'unknown';});
+    if(!LN.checkExactNotificationSetting)return Promise.resolve('unknown');
     return LN.checkExactNotificationSetting().then(function(r){return r&&typeof r.exact_alarm==='string'?r.exact_alarm:'unknown';}).catch(function(){return 'unknown';});
   }
   function requestPermission(){

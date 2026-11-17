@@ -91,6 +91,16 @@
   .empty{color:var(--mute)}
   button:focus-visible,input:focus-visible,select:focus-visible{outline-color:var(--accent)}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  body{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  .stage{min-height:min(72vh,720px);background:radial-gradient(ellipse at 50% 45%,#222 0%,#080808 72%);overflow:hidden}
+  #video{object-fit:cover}
+  #shot{position:relative}
+  #shot:active{transform:scale(.94)}
+  #zoomrow,#status{backdrop-filter:blur(16px)}
+  #panel{border:1px solid var(--line)}
+  #preview{max-width:720px;margin:18px auto 0}
+  #gallery{padding-top:16px}
+  @media(min-width:760px){body{max-width:920px;margin:0 auto}.stage{min-height:640px}}
 </style>
 </head>
 <body>

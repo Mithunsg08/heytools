@@ -139,6 +139,9 @@ footer{margin-top:80px;padding:28px 0 40px;border-top:1px solid var(--line);colo
       <button class="btn" data-case="title" type="button">Title Case</button>
       <button class="btn" data-case="sentence" type="button">Sentence case</button>
       <button class="btn" id="clean" type="button">Remove extra spaces</button>
+      <button class="btn" id="sortLines" type="button">Sort lines</button>
+      <button class="btn" id="uniqueLines" type="button">Remove duplicates</button>
+      <button class="btn" id="reverseLines" type="button">Reverse lines</button>
       <span class="sp"></span>
       <button class="btn" id="upload" type="button">Open file</button>
       <button class="btn" id="download" type="button">Download</button>
@@ -294,6 +297,16 @@ document.querySelectorAll('[data-case]').forEach(function(b){b.addEventListener(
   set(v);
 })});
 $('clean').addEventListener('click',function(){set(ta.value.replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').replace(/\n{3,}/g,'\n\n').trim());toast('Extra spaces removed')});
+function transformLines(mode){
+  var lines=ta.value.split(/\r?\n/);
+  if(mode==='sort')lines.sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'})});
+  else if(mode==='unique'){var seen=new Set();lines=lines.filter(function(line){var key=line.trim().toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true})}
+  else if(mode==='reverse')lines.reverse();
+  set(lines.join('\n'));toast(mode==='sort'?'Lines sorted':mode==='unique'?'Duplicate lines removed':'Line order reversed');
+}
+$('sortLines').addEventListener('click',function(){transformLines('sort')});
+$('uniqueLines').addEventListener('click',function(){transformLines('unique')});
+$('reverseLines').addEventListener('click',function(){transformLines('reverse')});
 $('clear').addEventListener('click',function(){set('');toast('Text cleared')});
 $('copy').addEventListener('click',function(){
   if(!ta.value)return toast('Nothing to copy');

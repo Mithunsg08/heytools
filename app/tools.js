@@ -54,7 +54,6 @@ window.HEY_TOOLS = [
   { id: 'tally-counter', name: 'Tally Counter', cat: 'daily', icon: '🔢', net: 'offline', isNew: true, themed: true, desc: 'Big tap counter with targets like 33, 99, 108.', hide: '.seo,footer,.lead' },
   { id: 'split-bills', name: 'Split Bills', cat: 'daily', icon: '🧾', net: 'offline', isNew: true, themed: true, desc: 'Share group expenses and see who pays whom.', hide: '.seo,footer,.lead' },
   { id: 'date-calculator', name: 'Date Calculator', cat: 'utility', icon: '📅', net: 'offline', isNew: true, themed: true, desc: 'Days between dates, add time, exact age.', hide: '.seo,footer,.lead' },
-  { id: 'text-toolkit', name: 'Text Toolkit', cat: 'dev', icon: '🔤', net: 'offline', isNew: true, themed: true, desc: 'Change case, sort lines, remove duplicates.', hide: '.seo,footer,.lead' },
   { id: 'encoder-hash', name: 'Encode & Hash', cat: 'dev', icon: '🔐', net: 'offline', isNew: true, themed: true, desc: 'Base64, URL encoding, SHA hashes, UUIDs.', hide: '.seo,footer,.lead' },
   { id: 'markdown-editor', name: 'Markdown Editor', cat: 'dev', icon: '📝', net: 'offline', isNew: true, themed: true, desc: 'Write Markdown with live preview.', hide: '.seo,footer,.lead' },
   { id: 'image-resizer', name: 'Image Resizer', cat: 'image', icon: '🖼️', net: 'offline', isNew: true, themed: true, desc: 'Resize, rotate, flip and convert images.', hide: '.seo,footer,.lead' },

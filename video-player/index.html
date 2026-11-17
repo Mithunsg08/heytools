@@ -436,7 +436,8 @@ window.addEventListener('message',e=>{
  else if(a==='previous')go(-1);
 });
 const skip=s=>{if(!isFinite(v.duration))return;v.currentTime=Math.max(0,Math.min(v.duration,v.currentTime+s));const e=$(s>0?'#fxR':'#fxL');e.classList.remove('go');void e.offsetWidth;e.classList.add('go')};
-v.onplay=v.onpause=()=>{$('#bP').textContent=v.paused?'▶':'⏸';pl.classList.toggle('play',!v.paused)};
+v.onplay=v.onpause=()=>{$('#bP').textContent=v.paused?'▶':'⏸';pl.classList.toggle('play',!v.paused);try{if(v.paused&&cur&&cur.src==='local'&&isFinite(v.currentTime))store.set('vp4t'+cur.hk,v.currentTime);const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative){if(v.paused)n.updatePlayback(cur?.title||'HeyTools','Video Player',false);else n.startPlayback(cur?.title||'HeyTools','Video Player',true)}}catch(e){}};
+addEventListener('pagehide',()=>{try{if(cur&&cur.src==='local'&&isFinite(v.currentTime))store.set('vp4t'+cur.hk,v.currentTime)}catch(e){}});
 v.onwaiting=()=>load(true);v.oncanplay=v.onplaying=()=>load(false);
 v.onerror=()=>{if(cur&&cur.kind!=='hls')fail('This format isn’t supported by your browser. MP4 (H.264), WebM and MP3 work everywhere.')};
 v.onloadedmetadata=()=>{if(S.res&&cur&&cur.src==='local'&&isFinite(v.duration)){const p=store.get('vp4t'+cur.hk,0);if(p>5&&p<v.duration-8){v.currentTime=p;toast('Resumed at '+fmt(p))}}};

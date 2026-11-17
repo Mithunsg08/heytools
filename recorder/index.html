@@ -195,6 +195,15 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:30px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media (max-width:480px){.seo .grid{grid-template-columns:1fr}.acts button{width:34px;height:34px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Full-frame video recording mode with distraction-free preview. */
+.app.fs{width:100vw;height:100dvh;display:flex;align-items:center;justify-content:center}
+.app.fs>.app-in{width:min(100%,900px)}
+.app.fs .stage{height:min(68dvh,760px);border-radius:26px;overflow:hidden;background:#05060a}
+.app.fs #preview.rect{width:100%;height:100%;max-width:none;max-height:none;aspect-ratio:auto;border-radius:0;object-fit:contain}
+.app.fs .top{margin-top:0}
+.app.fs .controls{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+@media(max-width:600px){.app.fs{padding-left:0!important;padding-right:0!important}.app.fs>.app-in{width:100%}.app.fs .stage{height:64dvh;border-radius:0}.app.fs .card{border-radius:0}}
 </style>
 <script src="../install-prompt.js" defer></script>
 </head>
@@ -400,8 +409,8 @@ async function loadMics(){
 loadMics();
 
 /* mode switch */
-const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-if(isMobile||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))$('#screenBtn').remove();
+const screenCaptureAvailable=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+if(!screenCaptureAvailable)$('#screenBtn').remove();
 const segBtns=$$('#seg button'),pill=$('#seg .pill');
 function placePill(){const i=segBtns.findIndex(b=>b.dataset.m===mode),n=segBtns.length;
   pill.style.width=`calc((100% - 10px) / ${n})`;pill.style.transform=`translateX(${i*100}%)`;
@@ -533,15 +542,37 @@ function stop(){
   releaseAll();setUI();
 }
 const ORIG=document.title;
+async function saveToPhone(blob,name,type){
+  let bridge=null;
+  try{bridge=window.parent&&window.parent.HeyNative}catch(e){}
+  if(!bridge||!bridge.isNative||!bridge.hasSave)return false;
+  let id=null;
+  try{
+    const started=await bridge.saveStart(name,type);id=started&&started.id;
+    if(!id)throw new Error('Could not create a file on the phone.');
+    const bytes=new Uint8Array(await blob.arrayBuffer()),step=24*1024;
+    for(let at=0;at<bytes.length;at+=step){
+      const part=bytes.subarray(at,Math.min(bytes.length,at+step));
+      let binary='';for(let i=0;i<part.length;i++)binary+=String.fromCharCode(part[i]);
+      await bridge.saveChunk(id,btoa(binary));
+    }
+    const result=await bridge.saveFinish(id);return result&&result.where||true;
+  }catch(e){if(id)try{await bridge.saveAbort(id)}catch(_){}throw e}
+}
 async function save(recMode){
   const type=mr.mimeType||(recMode==='voice'?'audio/webm':'video/webm');
   const blob=new Blob(chunks,{type});
   if(!blob.size){statusEl.textContent='Nothing was recorded';return}
   const d=new Date(),label={voice:'Voice',video:'Video',screen:'Screen'}[recMode];
-  const name=label+' '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  const stamp=d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  const ext=type.includes('mp4')?'mp4':type.includes('ogg')?'ogg':'webm';
+  const name=label+' '+stamp+'.'+ext;
   try{
     await addRec({name,kind:recMode,type,blob,dur:acc/1000,size:blob.size,date:Date.now(),markers:markers.slice()});
-    statusEl.textContent='Saved on your device ✓';toast('Saved ✓');
+    let phoneSaved=false;
+    try{phoneSaved=await saveToPhone(blob,name,type)}catch(e){console.warn('Phone save failed',e)}
+    statusEl.textContent=phoneSaved?'Saved to your phone ✓':'Saved on this device ✓';
+    toast(phoneSaved?'Saved to '+(typeof phoneSaved==='string'?phoneSaved:'your phone'):'Saved in Recorder');
     if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
   }catch(e){statusEl.textContent='Could not save – storage full?';toast('Could not save')}
   timerEl.textContent='00:00';chunks=[];loadAll();

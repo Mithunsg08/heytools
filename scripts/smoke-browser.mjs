@@ -21,9 +21,10 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   const errors = [];
   try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
     page.on('pageerror', error => errors.push('homepage: ' + error.message));
     const response = await page.goto(new URL('app/index.html', base).toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
     if (!response || !response.ok()) throw new Error('Homepage failed to load: ' + (response && response.status()));
@@ -35,20 +36,28 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
     console.log('PASS homepage loads and registers ' + count + ' local tools');
 
     for (const id of local) {
-      const toolPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      const toolPage = await context.newPage();
+      await toolPage.addInitScript(() => { window.__domRemovals = []; new MutationObserver(records => records.forEach(r => { if (r.removedNodes.length) window.__domRemovals.push({ target: r.target.nodeName + (r.target.id ? '#' + r.target.id : ''), removed: Array.from(r.removedNodes).map(n => n.nodeName + (n.id ? '#' + n.id : '') + (n.className && typeof n.className === 'string' ? '.' + n.className : '')).slice(0, 8) }); })).observe(document, { childList: true, subtree: true }); });
       toolPage.on('pageerror', error => errors.push(id + ': ' + error.message));
       const url = new URL(id + '/index.html', base).toString();
       const result = await toolPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      const rawHtml = result ? await result.text() : '';
       if (!result || !result.ok()) {
         errors.push(id + ': HTTP ' + (result && result.status()));
       } else {
         const info = await toolPage.evaluate(() => ({
           title: document.title,
           body: (document.body && document.body.innerText || '').trim(),
+          bodyDisplay: document.body ? getComputedStyle(document.body).display : 'missing',
+          bodyVisibility: document.body ? getComputedStyle(document.body).visibility : 'missing',
+          bodyChildren: document.body ? document.body.children.length : 0,
+          bodyHtmlLength: document.body ? document.body.innerHTML.length : 0,
+          rawHtmlLength: 0,
+          domRemovals: window.__domRemovals || [],
           viewport: document.documentElement.scrollWidth <= window.innerWidth + 2 ||
             (getComputedStyle(document.documentElement).overflowX === 'hidden' && document.documentElement.clientWidth >= window.innerWidth - 2)
         }));
-        if (!info.title || !info.body) errors.push(id + ': empty title or body');
+        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ', display=' + info.bodyDisplay + ', visibility=' + info.bodyVisibility + ', children=' + info.bodyChildren + ', htmlLength=' + info.bodyHtmlLength + ', removals=' + JSON.stringify(info.domRemovals.slice(-20)) + ', responseLength=' + rawHtml.length + ', responseBodyIndex=' + rawHtml.indexOf('<body') + ', responseBodySnippet=' + JSON.stringify(rawHtml.slice(rawHtml.indexOf('<body'), rawHtml.indexOf('<body') + 250)) + ')');
         if (!info.viewport) errors.push(id + ': horizontal overflow at 390px viewport');
       }
       await toolPage.close();
@@ -60,6 +69,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
       console.log('PASS all ' + local.length + ' tool pages load without uncaught JavaScript errors or mobile-width overflow');
     }
   } finally {
+    await context.close();
     await browser.close();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

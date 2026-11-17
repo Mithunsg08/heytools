@@ -350,6 +350,7 @@ $$('[data-i]').forEach(e=>{e.innerHTML=svg(ICON[e.dataset.i]);if(e.style.width)e
 const S={q:[],i:-1,playing:false,shuffle:false,repeat:0,vol:+ls.get('mp_vol',.8),muted:false,time:0,dur:0,hue:268,rate:1,ab:[null,null],sel:new Set(),selMode:false,clr:false};
 let uid=0,active=null,dragging=false;
 const cur=()=>S.q[S.i];
+const trackKey=it=>it?(it.fid?'fid:'+it.fid:it.vid?'vid:'+it.vid:it.uri?'uri:'+it.uri:it.orig?'orig:'+it.orig:it.title||'') : '';
 const grad=h=>`conic-gradient(from 200deg,hsl(${h} 85% 58%),hsl(${(h+70)%360} 85% 52%),hsl(${(h+150)%360} 75% 42%),hsl(${h} 85% 58%))`;
 const mk=o=>Object.assign({dur:0,artist:'',cover:'',hue:hash(o.title||'x')%360},o,{id:++uid});
 const bg=it=>it.cover?`url('${it.cover}') center/cover`:grad(it.hue);
@@ -502,15 +503,15 @@ async function playIndex(i){
  const next=P[it.kind];
  if(active&&active!==next){try{active.stop()}catch(e){}}
  abReset();S.i=i;S.time=0;S.dur=it.dur||0;active=next;setMode(it.kind);applyItem(it);renderQueue();
- try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);await next.play();if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp')console.warn(e);setPlaying(false)}
+ try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);try{const saved=JSON.parse(ls.get('mp_position','null'));if(saved&&saved.key===trackKey(it)&&saved.time>3&&(!it.dur||saved.time<it.dur-5)){next.seek(saved.time);S.time=saved.time}}catch(e){}await next.play();if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp')console.warn(e);setPlaying(false)}
 }
-function setPlaying(v){const was=S.playing;S.playing=v;if(v&&!was)sayHi();document.body.classList.toggle('playing',v);if('mediaSession'in navigator)navigator.mediaSession.playbackState=v?'playing':'paused'}
+function setPlaying(v){const was=S.playing;S.playing=v;if(v&&!was)sayHi();document.body.classList.toggle('playing',v);if('mediaSession'in navigator)navigator.mediaSession.playbackState=v?'playing':'paused';try{const it=cur()||{};if(!v&&active&&trackKey(it))ls.set('mp_position',JSON.stringify({key:trackKey(it),time:active.time()||S.time||0}));const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative){if(v)n.startPlayback(it.title||'HeyTools',it.artist||'Music Player',true);else n.updatePlayback(it.title||'HeyTools',it.artist||'Music Player',false)}}catch(e){}}
 function toggle(){
  if(!active){if(S.q.length)playIndex(S.i<0?0:S.i);else toast('Add some music first, or try the demo');return}
  if(cur()&&cur().kind==='embed')return;
  S.playing?active.pause():active.play();
 }
-function onEnded(){if(S.repeat===2&&active){active.seek(0);active.play()}else next(true)}
+function onEnded(){try{const it=cur();if(it)ls.set('mp_position',JSON.stringify({key:trackKey(it),time:0}))}catch(e){}if(S.repeat===2&&active){active.seek(0);active.play()}else next(true)}
 function next(auto){
  const c=cur();
  if(!auto&&c&&c.isList&&active&&active.step&&active.step(1))return;
@@ -997,8 +998,11 @@ function drawFx(t){
  const sway=reduce?0:Math.sin(t*.0006)*(S.playing?2:3.5);
  tilt.style.transform=`rotateX(${rx+sway*.4+8}deg) rotateY(${ry+sway}deg) scale(${1+bass*.018})`;
 }
+addEventListener('pagehide',()=>{try{if(active&&trackKey(cur()))ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:active.time()||S.time||0}))}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){try{if(active&&trackKey(cur()))ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:active.time()||S.time||0}))}catch(e){}}});
+let lastPositionSave=0;
 function tick(t){
- if(active){S.time=active.time()||0;const d=active.dur();if(d&&isFinite(d))S.dur=d;else if(!cur()||cur().kind!=='demo')S.dur=cur()?cur().dur||0:0}
+ if(active){S.time=active.time()||0;const d=active.dur();if(d&&isFinite(d))S.dur=d;else if(!cur()||cur().kind!=='demo')S.dur=cur()?cur().dur||0:0;if(S.playing&&trackKey(cur())&&Date.now()-lastPositionSave>2500){lastPositionSave=Date.now();ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:S.time}))}}
  if(S.ab[1]!=null&&active&&S.time>=S.ab[1]){active.seek(S.ab[0]);S.time=S.ab[0]}updateProgress();drawFx(t);requestAnimationFrame(tick);
 }
 
@@ -1011,6 +1015,7 @@ function tick(t){
   if(qs.get('error'))toast('Spotify connection was cancelled');
   else{try{await spTokenReq({grant_type:'authorization_code',code:qs.get('code'),redirect_uri:redirectUri(),client_id:SP.cid,code_verifier:ls.get('mp_ver','')});ls.del('mp_ver');toast('Spotify connected 🎧');showTab('spotify')}catch(e){toast(e.message,5000)}}
  }else if(SP.tok)spBoot();
+ try{const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative&&S.i>=0&&S.q[S.i]&&S.q[S.i].kind==='local'&&S.q[S.i].fid){playIndex(S.i)}}catch(e){}
  requestAnimationFrame(tick);
 })();
 })();
