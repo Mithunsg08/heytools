@@ -64,6 +64,18 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 .wheelw{position:relative;width:min(88vw,340px);margin:6px auto}.wheelw canvas{width:100%;height:auto;display:block;border-radius:50%;box-shadow:0 12px 36px -12px rgba(0,0,0,.35)}
 .ptr{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:26px solid var(--ink);filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));z-index:2}
 .win{font-size:1.6rem;font-weight:760;letter-spacing:-.02em;margin:10px 0 2px}
+
+/* Premium wheel presentation */
+.card{border-radius:26px;padding:20px;border-color:color-mix(in srgb,var(--accent) 14%,var(--line));box-shadow:0 18px 44px -28px rgba(0,0,0,.42)}
+.wheelw{width:min(88vw,390px);padding:10px;border-radius:50%;background:conic-gradient(from 20deg,var(--accent),#9b5cff,#ff6b8a,#ffbd4a,#35c9a5,var(--accent));box-shadow:0 18px 42px -22px rgba(0,0,0,.55)}
+.wheelw canvas{border:7px solid var(--panel);box-shadow:inset 0 0 0 2px rgba(255,255,255,.4),0 12px 32px -16px rgba(0,0,0,.5)}
+.ptr{top:-1px;border-top-color:var(--accent);filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))}
+.win{margin:16px 0 4px;font-size:clamp(1.5rem,5vw,2rem);background:linear-gradient(90deg,var(--accent),#a45cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#spin{min-width:168px!important;border-radius:999px;padding:15px 30px!important;font-weight:800;letter-spacing:.01em;box-shadow:0 12px 28px -12px var(--accent)}
+#rm{border-radius:999px}
+#ops{min-height:180px;background:var(--panel2);border-radius:18px}
+.list li{padding:13px 8px}
+@media(prefers-reduced-motion:reduce){#spin{transition:none}}
 </style>
 <script src="../install-prompt.js" defer></script>
 </head>
