@@ -25,7 +25,6 @@ public class PlaybackService extends Service {
   private static final int NOTIFICATION_ID = 7001;
   public static volatile boolean isRunning = false;
   public static volatile boolean audioIsPlaying = false;
-  public static volatile boolean audioIsPlaying = false;
   private String title = "HeyTools";
   private String artist = "Now playing";
   private boolean playing = true;
@@ -84,7 +83,7 @@ public class PlaybackService extends Service {
   }
   private void pauseAudio() {
     if (audioPlayer != null) try { if (audioPlayer.isPlaying()) audioPlayer.pause(); } catch (Exception ignored) {}
-    audioIsPlaying=false; playing=false; audioIsPlaying=false; refreshControls();
+    audioIsPlaying=false; playing=false; refreshControls();
   }
   private void resumeAudio() {
     if (audioPlayer != null) try { audioPlayer.start(); playing=true; audioIsPlaying=true; refreshControls(); } catch (Exception ignored) {}
