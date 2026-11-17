@@ -504,7 +504,7 @@ async function playIndex(i){
  abReset();S.i=i;S.time=0;S.dur=it.dur||0;active=next;setMode(it.kind);applyItem(it);renderQueue();
  try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);await next.play();if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp')console.warn(e);setPlaying(false)}
 }
-function setPlaying(v){const was=S.playing;S.playing=v;if(v&&!was)sayHi();document.body.classList.toggle('playing',v);if('mediaSession'in navigator)navigator.mediaSession.playbackState=v?'playing':'paused'}
+function setPlaying(v){const was=S.playing;S.playing=v;if(v&&!was)sayHi();document.body.classList.toggle('playing',v);if('mediaSession'in navigator)navigator.mediaSession.playbackState=v?'playing':'paused';try{const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative){const it=cur()||{};if(v)n.startPlayback(it.title||'HeyTools',it.artist||'Music Player',true);else n.updatePlayback(it.title||'HeyTools',it.artist||'Music Player',false)}}catch(e){}}
 function toggle(){
  if(!active){if(S.q.length)playIndex(S.i<0?0:S.i);else toast('Add some music first, or try the demo');return}
  if(cur()&&cur().kind==='embed')return;
