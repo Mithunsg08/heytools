@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [heytools-v2-audit]
+    branches: [heytools-v2-audit, heytools-premium-notifications]
 
 permissions:
   contents: read
@@ -46,32 +46,28 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      # Android 17 (API 37) is the current stable Android platform.
-      - name: Install and launch HeyTools on Android 17 emulator
+      # Latest stable Android SDK image available on hosted runners; test alarms and background notifications.
+      - name: Test HeyTools on Android 16 emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 36
-          system-image-api-level: '37.0'
-          channel: canary
+          system-image-api-level: 36
+          channel: stable
           target: google_apis
           arch: x86_64
           profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: |
-            set -euo pipefail
-            adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
-            adb shell am force-stop com.heytools.app
-            adb shell monkey -p com.heytools.app 1
-            sleep 25
-            adb shell dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity' | grep -q 'com.heytools.app'
-            adb shell uiautomator dump /sdcard/window.xml >/dev/null
-            adb shell cat /sdcard/window.xml | grep -q 'HeyTools'
-            if adb logcat -d -t 5000 | grep -E 'FATAL EXCEPTION.*main|Process: com.heytools.app'; then
-              echo "HeyTools crashed during Android 17 launch smoke test."
-              exit 1
-            fi
-            echo "Android 17 install, launch, foreground and UI smoke checks passed."
+          script: bash native/scripts/android-emulator-test.sh
+      - name: Upload Android emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-emulator-diagnostics
+          path: |
+            android-instrumentation-logcat.txt
+            android-test-diagnostics/
+          if-no-files-found: ignore
         env:
           # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
           ANDROID_I_WANT_MY_TCG: 'yes'

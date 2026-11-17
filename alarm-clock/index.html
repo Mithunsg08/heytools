@@ -130,15 +130,31 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   alarms.forEach(function (a) { if (a.on && !a.days.length && a.fireAt && a.fireAt < Date.now() - 60000) a.on = false; });
 
   function sync() {
-    var items = [];
-    alarms.filter(function (a) { return a.on; }).forEach(function (a) {
-      var p = parts(a.time), it = { id: a.id, title: a.label || 'Alarm', body: fmt(a.time).t + ' ' + fmt(a.time).ap, tone: a.tone, alarm: true };
-      if (a.days.length) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
-      else { a.fireAt = nextAt(a); it.at = a.fireAt; }
-      items.push(it);
+    return HeyNotify.alarmState().then(function (nativeState) {
+      var savedAlarms = nativeState.alarms || [];
+      savedAlarms.forEach(function (saved) {
+        var local = alarms.filter(function (a) { return a.id === saved.id; })[0];
+        if (local && local.on && !local.days.length && !saved.snoozed &&
+            saved.lastFiredAt && local.fireAt && saved.lastFiredAt >= local.fireAt) local.on = false;
+      });
+      var items = [];
+      alarms.filter(function (a) { return a.on; }).forEach(function (a) {
+        var p = parts(a.time), it = { id: a.id, title: a.label || 'Alarm', body: fmt(a.time).t + ' ' + fmt(a.time).ap, tone: a.tone, alarm: true, snooze: a.snooze };
+        if (a.days.length) it.repeat = { weekdays: a.days.map(function (d) { return d + 1; }), hour: p.h, minute: p.m };
+        else {
+          var saved = savedAlarms.filter(function (x) { return x.id === a.id; })[0];
+          if (!saved || !saved.snoozed) a.fireAt = nextAt(a);
+          it.at = a.fireAt;
+        }
+        items.push(it);
+      });
+      save();
+      return HeyNotify.syncGroup('alarm', items);
+    }).catch(function (e) {
+      $('perm').hidden = false;
+      $('permTxt').textContent = 'Alarm not scheduled. Allow notifications and exact alarms in Android settings, then return to HeyTools and save again.';
+      return false;
     });
-    save();
-    return HeyNotify.syncGroup('alarm', items);
   }
   function until(ms) {
     var m = Math.max(1, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60, out = [];
@@ -154,7 +170,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       t.onclick = function () { openSheet(a); };
       var meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = (a.label ? a.label + ' · ' : '') + repeatText(a) + ' · ' + (HeyTones.byId[a.tone] || {}).name;
       var sw = document.createElement('input'); sw.type = 'checkbox'; sw.className = 'sw'; sw.checked = a.on; sw.setAttribute('aria-label', 'Alarm at ' + f.t + ' ' + f.ap + ' on or off');
-      sw.onchange = function () { a.on = sw.checked; if (a.on) ensurePerm(); sync(); render(); };
+      sw.onchange = function () { a.on = sw.checked; if (a.on) { a.fireAt = 0; ensurePerm(); } sync(); render(); };
       li.appendChild(t); li.appendChild(meta); li.appendChild(sw); list.appendChild(li);
     });
     $('empty').hidden = alarms.length > 0;
@@ -177,8 +193,11 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     });
   }
   $('permBtn').onclick = function () {
-    HeyNotify.requestPermission().then(function () {
-      // Android returns from the settings screen asynchronously; refresh again when the app/page resumes.
+    HeyNotify.requestPermission().then(function (display) {
+      if (display !== 'granted') return;
+      return HeyNotify.requestExactPermission ? HeyNotify.requestExactPermission() : null;
+    }).then(function () {
+      // Android returns from Alarms & reminders settings asynchronously.
       ensurePerm(); sync();
     }).catch(function () { ensurePerm(); });
   };
@@ -212,11 +231,11 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   $('sCancel').onclick = closeSheet;
   $('scrim').addEventListener('click', function (e) { if (e.target === $('scrim')) closeSheet(); });
   $('sSave').onclick = function () {
-    var data = { time: $('fTime').value || '07:00', label: $('fLabel').value.trim(), days: formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true };
+    var data = { time: $('fTime').value || '07:00', label: $('fLabel').value.trim(), days: formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true, fireAt: 0 };
     if (editing) Object.assign(editing, data); else alarms.push(Object.assign({ id: uid() }, data));
     closeSheet(); ensurePerm(); sync(); render();
   };
-  $('sDel').onclick = function () { if (!editing) return; HeyNotify.cancelIds([editing.id]); alarms = alarms.filter(function (a) { return a !== editing; }); closeSheet(); sync(); render(); };
+  $('sDel').onclick = function () { if (!editing) return; HeyNotify.cancelAlarmIds ? HeyNotify.cancelAlarmIds([editing.id]) : HeyNotify.cancelIds([editing.id]); alarms = alarms.filter(function (a) { return a !== editing; }); closeSheet(); sync(); render(); };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('scrim').hidden) closeSheet(); });
 
   /* ----- ringing: browser while the page is open, and Snooze / Stop buttons on the Android notification ----- */
@@ -235,12 +254,27 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   $('ringStop').onclick = endRing;
   $('ringSnooze').onclick = function () { snoozeFor(ringing); endRing(); };
   HeyNotify.on('fire', function (it) { if (it.group === 'alarm' && !HeyNotify.isNative) { it.id = it.id; showRing(it); } });
-  HeyNotify.on('action', function (id, n) {
+  function handleAlarmNotificationAction(id, n) {
+    if (!n || !n.id) return;
     var base = Math.floor(n.id / 10);
     var a = alarms.filter(function (x) { return x.id === base || x.id === base - 5000000; })[0] || null;
     if (id === 'snooze') snoozeFor(a);
     else if (id === 'stop' && a && !a.days.length) { a.on = false; sync(); render(); }
-  });
+  }
+  function receiveAlarmAction(e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'heytools:notification-action' ||
+        !e.data.payload || e.data.payload.group !== 'alarm-snooze') return;
+    handleAlarmNotificationAction(e.data.payload.action, e.data.payload.notification);
+  }
+  window.addEventListener('message', receiveAlarmAction);
+  try {
+    var pendingAlarmAction = JSON.parse(localStorage.getItem('heytools.pending.notification') || 'null');
+    if (pendingAlarmAction && pendingAlarmAction.tool === 'alarm-clock' && Date.now() - pendingAlarmAction.createdAt < 86400000) {
+      localStorage.removeItem('heytools.pending.notification');
+      handleAlarmNotificationAction(pendingAlarmAction.action, pendingAlarmAction.notification);
+    }
+  } catch (e) {}
+
 
   render(); ensurePerm(); sync();
   setInterval(render, 30000);

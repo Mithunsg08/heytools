@@ -475,7 +475,7 @@
   /* ---------- one frame per tool ----------
      Leaving a tool that is playing music or video keeps its frame alive (hidden), so the sound does not stop.
      Every other tool is unloaded when you leave it, which keeps the phone fast. */
-  var frames = {}, framesBox = $('frames'), svcOn = false;
+  var frames = {}, framesBox = $('frames'), svcOn = false, pendingMediaAction = null;
   function makeFrame(t) {
     var f = document.createElement('iframe');
     f.className = 'tool-frame'; f.title = t.name; f.setAttribute('data-id', t.id); f.setAttribute('allow', framesBox.getAttribute('data-allow') || ''); f.setAttribute('allowfullscreen', '');
@@ -485,6 +485,13 @@
   function showFrame(id) { Object.keys(frames).forEach(function (k) { frames[k].hidden = (k !== id); }); }
   function dropFrame(id) { var f = frames[id]; if (!f) return; try { f.src = 'about:blank'; } catch (e) { /* ignore */ } f.remove(); delete frames[id]; }
   function activeFrame() { return current ? frames[current] : null; }
+  function mediaAvailable(f) {
+    try {
+      var d = f.contentDocument; if (!d) return false;
+      if (d.body && d.body.classList.contains('playing')) return true;
+      return d.body && d.body.dataset.mediaReady === 'true';
+    } catch (e) { return false; }
+  }
   function mediaPlaying(f) {
     try {
       var d = f.contentDocument; if (!d) return false;
@@ -496,20 +503,62 @@
   }
   function leave(id) {
     var t = byId[id], f = frames[id]; if (!f) return;
-    if (t && t.media && mediaPlaying(f)) { f.hidden = true; syncPlayback(); }
+    if (t && t.media && mediaAvailable(f)) { f.hidden = true; syncPlayback(); }
     else { dropFrame(id); syncPlayback(); }
   }
   /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
-  function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaPlaying(frames[k]); }); }
+  function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); }); }
+  var currentMediaControlId = null;
   function syncPlayback() {
     var live = playingFrames();
+    currentMediaControlId = live.length ? live[0] : null;
+    if (currentMediaControlId) put('heytools.media.active', currentMediaControlId);
     Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].media && live.indexOf(k) === -1) dropFrame(k); });   // paused and out of sight: free the memory
     var other = live.filter(function (k) { return k !== current; });
     var bar = $('nowp');
     if (other.length) { var t = byId[other[0]]; $('nowpName').textContent = t.name; $('nowpIco').textContent = t.icon; bar.setAttribute('data-id', t.id); bar.hidden = false; } else bar.hidden = true;
-    if (live.length && !svcOn) { svcOn = true; NATIVE.startPlayback && NATIVE.startPlayback(byId[live[0]].name); }
+    if (live.length) {
+      var mediaId = live[0], mediaFrame = frames[mediaId], mediaDoc = null;
+      try { mediaDoc = mediaFrame && mediaFrame.contentDocument; } catch (e) {}
+      var titleNode = mediaDoc && mediaDoc.getElementById(mediaId === 'music-player' ? 'nTitle' : 'tt');
+      var artistNode = mediaDoc && mediaDoc.getElementById(mediaId === 'music-player' ? 'nArtist' : 'mt');
+      var mediaTitle = titleNode ? titleNode.textContent : byId[mediaId].name;
+      var mediaArtist = artistNode ? artistNode.textContent : 'Now playing';
+      var mediaVideo = mediaDoc && mediaDoc.querySelector('video');
+      var mediaIsPlaying = !!(mediaDoc && mediaDoc.body && mediaDoc.body.classList.contains('playing')) || !!(mediaVideo && !mediaVideo.paused && !mediaVideo.ended);
+      if (!svcOn) { svcOn = true; NATIVE.startPlayback && NATIVE.startPlayback(mediaTitle, mediaArtist, mediaIsPlaying); }
+      else { NATIVE.updatePlayback && NATIVE.updatePlayback(mediaTitle, mediaArtist, mediaIsPlaying); }
+    }
     if (!live.length && svcOn) { svcOn = false; NATIVE.stopPlayback && NATIVE.stopPlayback(); }
   }
+  if (window.HeyNotify) HeyNotify.on('action', function (action, n) {
+    var group = n && n.extra && n.extra.group;
+    var targets = { habit: 'habit-tracker', 'habit-snooze': 'habit-tracker', focus: 'focus-timer',
+      todo: 'notes-to-do-list', 'todo-snooze': 'notes-to-do-list', timers: 'countdown-timers', 'alarm-snooze': 'alarm-clock',
+      water: 'water-tracker', 'water-snooze': 'water-tracker' };
+    var target = targets[group]; if (!target) return;
+    var payload = { tool: target, group: group, action: action, notification: n, createdAt: Date.now() };
+    var f = frames[target];
+    if (f && f.contentWindow && f.dataset.ready === '1') {
+      f.contentWindow.postMessage({ type: 'heytools:notification-action', payload: payload }, location.origin);
+      if (current !== target) location.hash = '#/' + target;
+    } else {
+      put('heytools.pending.notification', payload);
+      location.hash = '#/' + target;
+    }
+  });
+  window.addEventListener('heytools:media-action', function (e) {
+    if (!e.detail) return;
+    var target = currentMediaControlId || get('heytools.media.active', 'music-player');
+    var f = frames[target];
+    if (!f || !f.contentWindow || f.dataset.ready !== '1') {
+      pendingMediaAction = { target: target, action: e.detail.action };
+      if (current !== target) location.hash = '#/' + target;
+      return;
+    }
+    f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
+  });
+  window.__HEYTOOLS_READY = true;
   setInterval(syncPlayback, 1500);
   $('nowpOpen').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) location.hash = '#/' + id; });
   $('nowpStop').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) dropFrame(id); syncPlayback(); });
@@ -605,9 +654,20 @@
   }
   function onFrameLoad(t, f) {
     if (f.getAttribute('src') === 'about:blank') return;
+    f.dataset.ready = '1';
     applyHide(t, f); pushTheme(t, f);
     try { interceptLinks(f.contentDocument); } catch (err) { /* ignore */ }
     if (NATIVE.hasSave) injectSaveBridge(f);
+    if (pendingMediaAction && t.id === pendingMediaAction.target) {
+      try { f.contentWindow.postMessage({ type: 'heytools:media-action', action: pendingMediaAction.action }, location.origin); pendingMediaAction = null; } catch (e) {}
+    }
+    var pendingAction = get('heytools.pending.notification', null);
+    if (pendingAction && pendingAction.tool === t.id && Date.now() - pendingAction.createdAt < 86400000) {
+      try {
+        localStorage.removeItem('heytools.pending.notification');
+        f.contentWindow.postMessage({ type: 'heytools:notification-action', payload: pendingAction }, location.origin);
+      } catch (e) {}
+    }
     if (current === t.id && $('gate').hidden) loading.classList.add('done');
     if (pendingFiles && pendingFiles.length && t.id === 'music-player') {
       try { f.contentWindow.postMessage({ type: 'heytools:files', files: pendingFiles }, location.origin); } catch (err) { /* ignore */ }

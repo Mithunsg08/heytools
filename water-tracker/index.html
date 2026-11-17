@@ -113,7 +113,15 @@ function remind(){
 $('goal').value=st.goal;$('ev').value=st.ev;$('st').value=st.st;$('en').value=st.en;
 $('goal').onchange=()=>{st.goal=Math.max(500,Math.min(8000,+$('goal').value||2500));$('goal').value=st.goal;save();draw()};
 ['ev','st','en'].forEach(i=>$(i).onchange=()=>{st.ev=+$('ev').value;st.st=$('st').value;st.en=$('en').value;save();remind()});
-draw();if(+st.ev&&window.HeyNotify&&HeyNotify.isNative)remind();else $('rmsg').textContent=+st.ev?'Reminders are set.':'Reminders are off.';
+function handleWaterAction(action,n){
+  if(!n||!n.extra||n.extra.group!=='water')return;
+  if(action==='log'){const d=new Date();log().push({ml:250,t:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')});save();draw();}
+  else if(action==='snooze')HeyNotify.schedule([{id:899999,title:'Time for some water 💧',body:'Tap to log a glass in HeyTools.',at:Date.now()+3600000,group:'water-snooze',kind:'water'}]);
+ }
+ function receiveWaterAction(e){if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:notification-action'||!e.data.payload||!['water','water-snooze'].includes(e.data.payload.group))return;handleWaterAction(e.data.payload.action,e.data.payload.notification)}
+ window.addEventListener('message',receiveWaterAction);
+ try{const p=JSON.parse(localStorage.getItem('heytools.pending.notification')||'null');if(p&&p.tool==='water-tracker'&&Date.now()-p.createdAt<86400000){localStorage.removeItem('heytools.pending.notification');handleWaterAction(p.action,p.notification)}}catch(e){}
+ draw();if(+st.ev&&window.HeyNotify&&HeyNotify.isNative)remind();else $('rmsg').textContent=+st.ev?'Reminders are set.':'Reminders are off.';
 })();
 </script>
 </body>

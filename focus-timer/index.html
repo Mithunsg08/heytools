@@ -105,6 +105,14 @@ document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.dataset
 [['mw','work'],['ms','short'],['ml','long']].forEach(([i,k])=>$(i).oninput=e=>{const v=Math.max(1,Math.min(180,parseInt(e.target.value)||1));cfg[k]=v;save();if(!tm&&mode===k){left=total();show()}});
 document.addEventListener('visibilitychange',()=>{if(tm)tick()});
 show();
+function handleFocusAction(action,n){
+  if(action==='next'){
+   const nextMode=n&&/Break is over/i.test(n.title||'')?'work':'short';setMode(nextMode);end=Date.now()+left*1000;tm=setInterval(tick,250);$('go').textContent='Pause';ping(true);save();
+  }
+ }
+ function receiveFocusAction(e){if(e.origin!==location.origin||!e.data||e.data.type!=='heytools:notification-action'||!e.data.payload||e.data.payload.group!=='focus')return;handleFocusAction(e.data.payload.action,e.data.payload.notification)}
+ window.addEventListener('message',receiveFocusAction);
+ try{const p=JSON.parse(localStorage.getItem('heytools.pending.notification')||'null');if(p&&p.tool==='focus-timer'&&Date.now()-p.createdAt<86400000){localStorage.removeItem('heytools.pending.notification');handleFocusAction(p.action,p.notification)}}catch(e){}
 })();
 </script>
 </body>
