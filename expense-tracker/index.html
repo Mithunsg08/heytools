@@ -96,13 +96,13 @@ const money=n=>st.cur+(+n).toLocaleString(undefined,{maximumFractionDigits:2});
 $('cat').innerHTML=CATS.map(c=>`<option>${c[0]} ${c[1]}</option>`).join('');$('date').value=today();$('month').value=today().slice(0,7);$('budget').value=st.budget;$('cur').value=st.cur;
 function budgetAlerts(){
  const m=$('month').value||today().slice(0,7),budget=+st.budget;
- if(!(budget>0)||!window.HeyNotify)return;
+ if(!(budget>0)||!window.HeyNotify||m!==today().slice(0,7))return;
  const total=st.items.filter(x=>x.d.startsWith(m)).reduce((n,x)=>n+x.a,0),ratio=total/budget;
  st.alerts[m]=st.alerts[m]||{};
- const jobs=[];
- if(ratio>=.8&&!st.alerts[m].eighty){st.alerts[m].eighty=true;jobs.push({id:920081,title:'Budget update · 80% used',body:'You have used '+Math.round(ratio*100)+'% of your '+m+' budget.',at:Date.now()+1500,group:'expense'});}
- if(ratio>=1&&!st.alerts[m].full){st.alerts[m].full=true;jobs.push({id:920082,title:'Monthly budget reached',body:'Your spending has reached or passed the '+m+' budget by '+money(total-budget)+'.',at:Date.now()+2500,group:'expense'});}
- if(jobs.length){save();HeyNotify.requestPermission().then(function(p){if(p==='granted')return HeyNotify.schedule(jobs)}).catch(function(){});}
+ const jobs=[],levels=[];
+ if(ratio>=.8&&!st.alerts[m].eighty){levels.push('eighty');jobs.push({id:920081,title:'Budget update · 80% used',body:'You have used '+Math.round(ratio*100)+'% of your '+m+' budget.',at:Date.now()+1500,group:'expense'});}
+ if(ratio>=1&&!st.alerts[m].full){levels.push('full');jobs.push({id:920082,title:'Monthly budget reached',body:'Your spending has reached or passed the '+m+' budget by '+money(total-budget)+'.',at:Date.now()+2500,group:'expense'});}
+ if(jobs.length){HeyNotify.requestPermission().then(function(p){if(p!=='granted')return;return HeyNotify.schedule(jobs).then(function(){levels.forEach(function(level){st.alerts[m][level]=true});save()})}).catch(function(){});}
 }
 function draw(){
  const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m)).sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id),tot=rows.reduce((s,x)=>s+x.a,0);
@@ -114,7 +114,7 @@ function draw(){
 $('add').onclick=()=>{const a=parseFloat($('amt').value);if(!(a>0)){$('msg').textContent='Enter an amount above 0.';return}
  st.items.push({id:Date.now(),a,c:$('cat').value,n:$('note').value.trim(),d:$('date').value||today()});save();$('amt').value='';$('note').value='';$('msg').textContent='Added.';$('month').value=($('date').value||today()).slice(0,7);draw();budgetAlerts()};
 $('list').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;st.items=st.items.filter(x=>x.id!=b.dataset.d);save();draw()};
-$('month').oninput=draw;$('budget').oninput=e=>{st.budget=e.target.value;save();draw()};$('cur').oninput=e=>{st.cur=e.target.value||'₹';save();draw()};
+$('month').oninput=draw;$('budget').oninput=e=>{st.budget=e.target.value;save();draw()};$('budget').onchange=budgetAlerts;$('cur').oninput=e=>{st.cur=e.target.value||'₹';save();draw()};
 $('clr').onclick=()=>{if(confirm('Delete every expense in this month?')){const m=$('month').value;st.items=st.items.filter(x=>!x.d.startsWith(m));save();draw()}};
 $('csv').onclick=()=>{const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m));const csv='Date,Category,Note,Amount\n'+rows.map(x=>[x.d,x.c,'"'+(x.n||'').replace(/"/g,'""')+'"',x.a].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='expenses-'+m+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 draw();
