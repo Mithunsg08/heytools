@@ -87,6 +87,7 @@ public class AlarmSchedulerTest {
     alarm.put("at",System.currentTimeMillis()+4000L);
     JSONArray list=new JSONArray();list.put(alarm);
     AlarmScheduler.sync(context,list);
+    try { android.os.ParcelFileDescriptor p=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("am kill "+context.getPackageName()); p.close(); } catch(Exception ignored) {}
 
     NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
     boolean ringing=false;
