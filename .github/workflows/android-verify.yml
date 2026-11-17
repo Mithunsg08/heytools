@@ -26,9 +26,7 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: gradle
-          cache-dependency-path: |
-            native/android/**/*.gradle*
-            native/android/gradle/wrapper/gradle-wrapper.properties
+          cache-dependency-path: native/package.json
       - name: Install Capacitor dependencies
         working-directory: native
         run: npm install --no-audit --no-fund
