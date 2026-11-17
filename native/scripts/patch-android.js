@@ -48,6 +48,8 @@ const testSource = path.resolve(__dirname, '../tests/AlarmSchedulerTest.java');
 const testTargetDir = path.join(root, 'app/src/androidTest/java/com/heytools/app');
 fs.mkdirSync(testTargetDir, { recursive: true });
 fs.copyFileSync(testSource, path.join(testTargetDir, 'AlarmSchedulerTest.java'));
+const playbackTestSource = path.resolve(__dirname, '../tests/PlaybackServiceTest.java');
+fs.copyFileSync(playbackTestSource, path.join(testTargetDir, 'PlaybackServiceTest.java'));
 fs.writeFileSync(mp, m);
 
 /* App icon: the HeyTools logo from app/icons. Resized with ImageMagick when available, otherwise copied as is. */
