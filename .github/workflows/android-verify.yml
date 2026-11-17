@@ -61,12 +61,12 @@ jobs:
           echo "Android Gradle build failed after four attempts."
           exit 1
 
-      # Latest stable Android SDK image available on hosted runners; test alarms and background notifications.
-      - name: Test HeyTools on Android 16 emulator
+      # Android 15 emulator for focused alarm and locked-screen audio behaviour.
+      - name: Run focused alarm and background-audio tests
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 36
-          system-image-api-level: 36
+          api-level: 35
+          system-image-api-level: 35
           channel: stable
           target: google_apis
           arch: x86_64
