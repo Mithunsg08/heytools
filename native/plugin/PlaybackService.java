@@ -25,6 +25,7 @@ public class PlaybackService extends Service {
   private static final int NOTIFICATION_ID = 7001;
   public static volatile boolean isRunning = false;
   public static volatile boolean audioIsPlaying = false;
+  public static volatile boolean audioIsPlaying = false;
   private String title = "HeyTools";
   private String artist = "Now playing";
   private boolean playing = true;
@@ -70,6 +71,7 @@ public class PlaybackService extends Service {
 
 
   private void releaseAudio() {
+    audioIsPlaying = false;
     if (audioPlayer != null) {
       try { audioPlayer.setOnPreparedListener(null); audioPlayer.setOnErrorListener(null); audioPlayer.stop(); } catch (Exception ignored) {}
       try { audioPlayer.release(); } catch (Exception ignored) {}
@@ -82,7 +84,7 @@ public class PlaybackService extends Service {
   }
   private void pauseAudio() {
     if (audioPlayer != null) try { if (audioPlayer.isPlaying()) audioPlayer.pause(); } catch (Exception ignored) {}
-    playing=false; audioIsPlaying=false; refreshControls();
+    audioIsPlaying=false; playing=false; audioIsPlaying=false; refreshControls();
   }
   private void resumeAudio() {
     if (audioPlayer != null) try { audioPlayer.start(); playing=true; audioIsPlaying=true; refreshControls(); } catch (Exception ignored) {}
@@ -94,7 +96,7 @@ public class PlaybackService extends Service {
     try {
       audioPlayer=new MediaPlayer();
       audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
-      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);mp.start();playing=true;refreshControls();} });
+      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);mp.start();playing=true;audioIsPlaying=true;refreshControls();} });
       audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();sendAction("NEXT",7103);});
       audioPlayer.setOnErrorListener((mp,what,extra)->{playing=false;audioIsPlaying=false;refreshControls();return true;});
       audioPlayer.setDataSource(this,Uri.parse(source));
@@ -169,7 +171,7 @@ public class PlaybackService extends Service {
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
     releaseAudio(); audioSource="";
-    isRunning = false;
+    isRunning = false; audioIsPlaying = false;
     if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; }
     super.onDestroy();
   }
