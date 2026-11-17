@@ -220,3 +220,18 @@ body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe U
 .getapp div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px}
 .getapp span{color:var(--muted);font-size:.84rem}
 .updatebar .btn:not(.primary){background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 40%,transparent)}
+
+
+/* Premium finish: consistent depth, touch feedback and calm surfaces across the app. */
+:root{--shadow:0 2px 5px rgba(0,0,0,.045),0 18px 42px -24px rgba(0,0,0,.22)}
+.home{background:radial-gradient(ellipse at 8% 0%,color-mix(in srgb,var(--accent) 6%,transparent),transparent 42%),var(--bg)}
+.tool{border:1px solid color-mix(in srgb,var(--line) 72%,transparent);box-shadow:var(--shadow);border-radius:22px}
+.tool:hover{box-shadow:0 12px 34px -18px rgba(0,0,0,.28);border-color:color-mix(in srgb,var(--accent) 26%,var(--line))}
+.tool:active{transform:scale(.992)}
+.ico{box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.btn,.chip-btn,.icon-btn{transition:transform .16s ease,background .16s ease,box-shadow .16s ease}
+.btn:active,.chip-btn:active,.icon-btn:active{transform:scale(.96)}
+.btn.primary{box-shadow:0 6px 16px -9px var(--accent)}
+.tool-frame{background:var(--bg)}
+.nowp{backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-color:color-mix(in srgb,var(--line) 72%,transparent)}
+@media(prefers-reduced-motion:reduce){.tool,.btn,.chip-btn,.icon-btn{transition:none}}
