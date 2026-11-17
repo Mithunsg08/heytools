@@ -63,7 +63,14 @@ jobs:
             adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
             adb shell appops set com.heytools.app SCHEDULE_EXACT_ALARM allow
             adb shell pm grant com.heytools.app android.permission.POST_NOTIFICATIONS || true
-            (cd native/android && ./gradlew connectedDebugAndroidTest --no-daemon)
+            adb logcat -c
+            if ! (cd native/android && ./gradlew connectedDebugAndroidTest --no-daemon); then
+              echo "Instrumentation failed; collecting emulator diagnostics."
+              adb logcat -d -v threadtime > android-instrumentation-logcat.txt || true
+              mkdir -p android-test-diagnostics
+              find native/android/app/build/outputs native/android/app/build/reports -type f \\( -name '*.xml' -o -name '*.txt' -o -name '*.html' \\) -exec cp --parents {} android-test-diagnostics/ \\; 2>/dev/null || true
+              exit 1
+            fi
             adb shell appops set com.heytools.app SCHEDULE_EXACT_ALARM allow
             adb shell pm grant com.heytools.app android.permission.POST_NOTIFICATIONS || true
             adb shell am force-stop com.heytools.app
@@ -77,6 +84,15 @@ jobs:
               exit 1
             fi
             echo "Android 16 install, exact-alarm instrumentation, launch and UI checks passed."
+      - name: Upload Android emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-emulator-diagnostics
+          path: |
+            android-instrumentation-logcat.txt
+            android-test-diagnostics/
+          if-no-files-found: ignore
         env:
           # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
           ANDROID_I_WANT_MY_TCG: 'yes'
