@@ -409,8 +409,8 @@ async function loadMics(){
 loadMics();
 
 /* mode switch */
-const screenCaptureAvailable=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
-if(!screenCaptureAvailable){$('#screenBtn').remove();}
+const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if(isMobile||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))$('#screenBtn').remove();
 const segBtns=$$('#seg button'),pill=$('#seg .pill');
 function placePill(){const i=segBtns.findIndex(b=>b.dataset.m===mode),n=segBtns.length;
   pill.style.width=`calc((100% - 10px) / ${n})`;pill.style.transform=`translateX(${i*100}%)`;
