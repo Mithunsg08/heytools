@@ -204,8 +204,8 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:30px}
 .app.fs .top{margin-top:0}
 .app.fs .controls{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
 @media(max-width:600px){.app.fs{padding-left:0!important;padding-right:0!important}.app.fs>.app-in{width:100%}.app.fs .stage{height:64dvh;border-radius:0}.app.fs .card{border-radius:0}}
-
-
+</style>
+<script src="../install-prompt.js" defer></script>
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
@@ -409,8 +409,8 @@ async function loadMics(){
 loadMics();
 
 /* mode switch */
-const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-if(isMobile||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))$('#screenBtn').remove();
+const screenCaptureAvailable=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+if(!screenCaptureAvailable)$('#screenBtn').remove();
 const segBtns=$$('#seg button'),pill=$('#seg .pill');
 function placePill(){const i=segBtns.findIndex(b=>b.dataset.m===mode),n=segBtns.length;
   pill.style.width=`calc((100% - 10px) / ${n})`;pill.style.transform=`translateX(${i*100}%)`;
