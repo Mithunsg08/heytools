@@ -1,18 +1,26 @@
 package com.heytools.app;
 
+import android.Manifest;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
 import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.ExistingWorkPolicy;
 import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import com.getcapacitor.BridgeActivity;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends BridgeActivity {
+  private static final int NOTIFICATION_PERMISSION_REQUEST = 9101;
+
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
@@ -55,22 +63,49 @@ public class MainActivity extends BridgeActivity {
     runWhenHeyToolsReady("window.dispatchEvent(new CustomEvent('heytools:media-action',{detail:{action:'" + action + "'}}))");
   }
 
+  private void requestNotificationPermissionIfNeeded() {
+    if (Build.VERSION.SDK_INT >= 33 &&
+        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+      ActivityCompat.requestPermissions(this,
+        new String[] { Manifest.permission.POST_NOTIFICATIONS },
+        NOTIFICATION_PERMISSION_REQUEST);
+    }
+  }
+
+  private void scheduleUpdateChecks() {
+    Constraints network = new Constraints.Builder()
+      .setRequiredNetworkType(NetworkType.CONNECTED)
+      .build();
+
+    // Run once shortly after launch so users do not wait for the first 3-hour interval.
+    OneTimeWorkRequest immediate = new OneTimeWorkRequest.Builder(UpdateWorker.class)
+      .setConstraints(network)
+      .build();
+    WorkManager.getInstance(this).enqueueUniqueWork(
+      "heytools-update-check-now", ExistingWorkPolicy.KEEP, immediate);
+
+    // Keep checking periodically while the app is not open.
+    PeriodicWorkRequest periodic = new PeriodicWorkRequest.Builder(UpdateWorker.class, 3, TimeUnit.HOURS)
+      .setConstraints(network)
+      .build();
+    WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+      "heytools-update-check", ExistingPeriodicWorkPolicy.KEEP, periodic);
+  }
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(MediaLibraryPlugin.class);
     registerPlugin(HeyAlarmPlugin.class);
     super.onCreate(savedInstanceState);
-    // let the video and music players start playing without an extra tap
     getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
-    // look for a newer build every few hours, even when the app is closed
+
     try {
-      PeriodicWorkRequest check = new PeriodicWorkRequest.Builder(UpdateWorker.class, 3, TimeUnit.HOURS)
-        .setConstraints(new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-        .build();
-      WorkManager.getInstance(this).enqueueUniquePeriodicWork("heytools-update-check", ExistingPeriodicWorkPolicy.KEEP, check);
+      requestNotificationPermissionIfNeeded();
+      scheduleUpdateChecks();
     } catch (Throwable ignored) {
-      // never stop the app from opening because of this
+      // Update checks and permission handling must never prevent the app from opening.
     }
+
     dispatchMediaAction(getIntent());
     dispatchAlarmOpen(getIntent());
   }
