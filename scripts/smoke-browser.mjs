@@ -48,7 +48,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
           viewport: document.documentElement.scrollWidth <= window.innerWidth + 2 ||
             (getComputedStyle(document.documentElement).overflowX === 'hidden' && document.documentElement.clientWidth >= window.innerWidth - 2)
         }));
-        if (!info.title || !info.body) errors.push(id + ': empty title or body');
+        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ')');
         if (!info.viewport) errors.push(id + ': horizontal overflow at 390px viewport');
       }
       await toolPage.close();
