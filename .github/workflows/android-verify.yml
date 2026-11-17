@@ -27,7 +27,7 @@ jobs:
           java-version: 17
       - name: Install Capacitor dependencies
         working-directory: native
-        run: npm install
+        run: npm ci
       - name: Bundle website assets
         working-directory: native
         run: node scripts/prepare-web.js
@@ -40,11 +40,24 @@ jobs:
       - name: Sync Capacitor
         working-directory: native
         run: npx cap sync android
-      - name: Compile Android debug APK (no signing secrets required)
+      - name: Compile Android debug APK (retry transient Maven rate limits)
         working-directory: native/android
+        shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          for attempt in 1 2 3 4; do
+            echo "Android Gradle build attempt ${attempt}/4"
+            if ./gradlew assembleDebug --no-daemon --max-workers=2; then
+              exit 0
+            fi
+            if [ "${attempt}" -lt 4 ]; then
+              delay=$((attempt * 30))
+              echo "Gradle dependency resolution failed; waiting ${delay}s before retry."
+              sleep "${delay}"
+            fi
+          done
+          echo "Android Gradle build failed after four attempts."
+          exit 1
 
       # Latest stable Android SDK image available on hosted runners; test alarms and background notifications.
       - name: Test HeyTools on Android 16 emulator
