@@ -37,6 +37,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
 
     for (const id of local) {
       const toolPage = await context.newPage();
+      await toolPage.addInitScript(() => { window.__domRemovals = []; new MutationObserver(records => records.forEach(r => { if (r.removedNodes.length) window.__domRemovals.push({ target: r.target.nodeName + (r.target.id ? '#' + r.target.id : ''), removed: Array.from(r.removedNodes).map(n => n.nodeName + (n.id ? '#' + n.id : '') + (n.className && typeof n.className === 'string' ? '.' + n.className : '')).slice(0, 8) }); })).observe(document, { childList: true, subtree: true }); });
       toolPage.on('pageerror', error => errors.push(id + ': ' + error.message));
       const url = new URL(id + '/index.html', base).toString();
       const result = await toolPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -50,10 +51,11 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
           bodyVisibility: document.body ? getComputedStyle(document.body).visibility : 'missing',
           bodyChildren: document.body ? document.body.children.length : 0,
           bodyHtmlLength: document.body ? document.body.innerHTML.length : 0,
+          domRemovals: window.__domRemovals || [],
           viewport: document.documentElement.scrollWidth <= window.innerWidth + 2 ||
             (getComputedStyle(document.documentElement).overflowX === 'hidden' && document.documentElement.clientWidth >= window.innerWidth - 2)
         }));
-        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ', display=' + info.bodyDisplay + ', visibility=' + info.bodyVisibility + ', children=' + info.bodyChildren + ', htmlLength=' + info.bodyHtmlLength + ')');
+        if (!info.title || !info.body) errors.push(id + ': empty title or body (title=' + JSON.stringify(info.title) + ', bodyLength=' + info.body.length + ', bodyStart=' + JSON.stringify(info.body.slice(0,160)) + ', display=' + info.bodyDisplay + ', visibility=' + info.bodyVisibility + ', children=' + info.bodyChildren + ', htmlLength=' + info.bodyHtmlLength + ', removals=' + JSON.stringify(info.domRemovals.slice(-20)) + ')');
         if (!info.viewport) errors.push(id + ': horizontal overflow at 390px viewport');
       }
       await toolPage.close();
