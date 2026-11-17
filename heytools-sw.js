@@ -15,7 +15,7 @@ const TOOLS = [
   'video-player', 'word-counter', 'world-clock',
   'unit-converter', 'qr-scanner', 'spirit-level', 'json-formatter', 'color-picker',
   'expense-tracker', 'habit-tracker', 'focus-timer', 'geo-camera', 'alarm-clock',
-  'flashlight', 'countdown-timers', 'water-tracker', 'sleep-calculator', 'breathing', 'tally-counter', 'split-bills', 'date-calculator', 'text-toolkit', 'encoder-hash', 'markdown-editor', 'image-resizer', 'spin-wheel', 'typing-test'
+  'flashlight', 'countdown-timers', 'water-tracker', 'sleep-calculator', 'breathing', 'tally-counter', 'split-bills', 'date-calculator', 'encoder-hash', 'markdown-editor', 'image-resizer', 'spin-wheel', 'typing-test'
 ];
 
 const SHELL = [
