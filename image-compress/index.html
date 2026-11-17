@@ -257,23 +257,46 @@ $('#again').onclick=()=>{files=[];go(1)};
 const webpOK=document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
 async function cImg(file,target,mime){
   if(mime==='image/webp'&&!webpOK)mime='image/jpeg';
-  const bmp=await createImageBitmap(file);
-  const c=document.createElement('canvas'),x=c.getContext('2d');
-  const blob=q=>new Promise(r=>c.toBlob(r,mime,q));
-  let s=1,last=null;
-  for(let i=0;i<60;i++){
-    c.width=Math.max(1,Math.round(bmp.width*s));c.height=Math.max(1,Math.round(bmp.height*s));
-    x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(bmp,0,0,c.width,c.height);
-    let lo=.02,hi=.95,b=await blob(lo);last=b;
-    if(b.size<=target){
-      let best=b;
-      for(let j=0;j<8;j++){const m=(lo+hi)/2,t=await blob(m);if(t.size<=target){best=t;lo=m}else hi=m}
-      return best;
+  // Android System WebView versions differ: prefer createImageBitmap, then fall back
+  // to an HTMLImageElement so ordinary JPEG/PNG uploads still work.
+  let source=null,objectUrl=null,width=0,height=0;
+  try{
+    if(typeof createImageBitmap==='function'){
+      try{source=await createImageBitmap(file);width=source.width;height=source.height}catch(e){}
     }
-    if(c.width===1&&c.height===1)break;
-    s*=Math.min(.85,Math.sqrt(target/b.size)*.97);
+    if(!source){
+      objectUrl=URL.createObjectURL(file);
+      source=await new Promise((resolve,reject)=>{
+        const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('This image format cannot be decoded on this device. Try JPG or PNG.'));
+        img.src=objectUrl;
+      });
+      width=source.naturalWidth;height=source.naturalHeight;
+    }
+    if(!width||!height)throw new Error('Could not read image dimensions.');
+    const c=document.createElement('canvas'),x=c.getContext('2d');
+    if(!x)throw new Error('Image processing is unavailable in this app version.');
+    const blob=q=>new Promise((resolve,reject)=>{
+      if(!c.toBlob){reject(new Error('Canvas export is unavailable in this app version.'));return}
+      c.toBlob(result=>result?resolve(result):reject(new Error('The image could not be exported. Try JPG or PNG.')),mime,q);
+    });
+    let scale=1,last=null;
+    for(let i=0;i<60;i++){
+      c.width=Math.max(1,Math.round(width*scale));c.height=Math.max(1,Math.round(height*scale));
+      x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(source,0,0,c.width,c.height);
+      let lo=.02,hi=.95,out=await blob(lo);last=out;
+      if(out.size<=target){
+        let best=out;
+        for(let j=0;j<8;j++){const mid=(lo+hi)/2,test=await blob(mid);if(test.size<=target){best=test;lo=mid}else hi=mid}
+        return best;
+      }
+      if(c.width===1&&c.height===1)break;
+      scale*=Math.min(.85,Math.sqrt(target/out.size)*.97);
+    }
+    return last;
+  }finally{
+    if(source&&typeof source.close==='function')source.close();
+    if(objectUrl)URL.revokeObjectURL(objectUrl);
   }
-  return last;
 }
 
 /* ---------- Video ---------- */
