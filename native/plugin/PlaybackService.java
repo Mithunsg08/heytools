@@ -24,6 +24,7 @@ public class PlaybackService extends Service {
   public static final String CHANNEL = "heytools_playback";
   private static final int NOTIFICATION_ID = 7001;
   public static volatile boolean isRunning = false;
+  public static volatile boolean audioIsPlaying = false;
   private String title = "HeyTools";
   private String artist = "Now playing";
   private boolean playing = true;
@@ -81,10 +82,10 @@ public class PlaybackService extends Service {
   }
   private void pauseAudio() {
     if (audioPlayer != null) try { if (audioPlayer.isPlaying()) audioPlayer.pause(); } catch (Exception ignored) {}
-    playing=false; refreshControls();
+    playing=false; audioIsPlaying=false; refreshControls();
   }
   private void resumeAudio() {
-    if (audioPlayer != null) try { audioPlayer.start(); playing=true; refreshControls(); } catch (Exception ignored) {}
+    if (audioPlayer != null) try { audioPlayer.start(); playing=true; audioIsPlaying=true; refreshControls(); } catch (Exception ignored) {}
   }
   private void startAudio(String source) {
     if (source == null || !(source.startsWith("https://") || source.startsWith("http://") || source.startsWith("file://") || source.startsWith("content://"))) { pauseAudio(); return; }
@@ -94,8 +95,8 @@ public class PlaybackService extends Service {
       audioPlayer=new MediaPlayer();
       audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
       audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);mp.start();playing=true;refreshControls();} });
-      audioPlayer.setOnCompletionListener(mp -> {playing=false;refreshControls();sendAction("NEXT",7103);});
-      audioPlayer.setOnErrorListener((mp,what,extra)->{playing=false;refreshControls();return true;});
+      audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();sendAction("NEXT",7103);});
+      audioPlayer.setOnErrorListener((mp,what,extra)->{playing=false;audioIsPlaying=false;refreshControls();return true;});
       audioPlayer.setDataSource(this,Uri.parse(source));
       audioPlayer.prepareAsync();
     } catch(Exception e) { releaseAudio(); playing=false; refreshControls(); }
@@ -103,7 +104,7 @@ public class PlaybackService extends Service {
   public void controlAudio(String action) {
     if ("play".equals(action)) resumeAudio();
     else if ("pause".equals(action)) pauseAudio();
-    else if ("stop".equals(action)) { pauseAudio(); releaseAudio(); audioSource=""; }
+    else if ("stop".equals(action)) { pauseAudio(); releaseAudio(); audioIsPlaying=false; audioSource=""; }
   }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
