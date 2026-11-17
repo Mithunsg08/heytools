@@ -234,9 +234,11 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   $('add').onclick = function () { openSheet(null); };
   $('sCancel').onclick = closeSheet;
   $('scrim').addEventListener('click', function (e) { if (e.target === $('scrim')) closeSheet(); });
+  $('fDate').addEventListener('change', function () { if ($('fDate').value) { formDays = []; buildDays(); } });
   $('sSave').onclick = function () {
     var chosenDate = $('fDate').value;
-    if (chosenDate && chosenDate <= new Date().toISOString().slice(0, 10)) { alert("Choose a future date."); return; }
+    var today = new Date(), todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    if (chosenDate && chosenDate <= todayKey) { alert("Choose a future date."); return; }
     var data = { time: $('fTime').value || '07:00', date: chosenDate || '', label: $('fLabel').value.trim(), days: chosenDate ? [] : formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true, fireAt: 0 };
     if (editing) Object.assign(editing, data); else alarms.push(Object.assign({ id: uid() }, data));
     closeSheet(); ensurePerm(); sync(); render();
