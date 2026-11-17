@@ -21,9 +21,10 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   const errors = [];
   try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
     page.on('pageerror', error => errors.push('homepage: ' + error.message));
     const response = await page.goto(new URL('app/index.html', base).toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
     if (!response || !response.ok()) throw new Error('Homepage failed to load: ' + (response && response.status()));
@@ -35,7 +36,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
     console.log('PASS homepage loads and registers ' + count + ' local tools');
 
     for (const id of local) {
-      const toolPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      const toolPage = await context.newPage();
       toolPage.on('pageerror', error => errors.push(id + ': ' + error.message));
       const url = new URL(id + '/index.html', base).toString();
       const result = await toolPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -64,6 +65,7 @@ const base = process.env.HEYTOOLS_BASE_URL || 'http://127.0.0.1:8000/';
       console.log('PASS all ' + local.length + ' tool pages load without uncaught JavaScript errors or mobile-width overflow');
     }
   } finally {
+    await context.close();
     await browser.close();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
