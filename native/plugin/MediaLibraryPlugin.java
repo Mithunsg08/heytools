@@ -141,6 +141,30 @@ public class MediaLibraryPlugin extends Plugin {
     });
   }
 
+
+  /** Native foreground playback for direct audio streams; independent of the WebView lifecycle. */
+  @PluginMethod public void startNativeAudio(PluginCall call) {
+    try {
+      String source=call.getString("source", "");
+      if (!(source.startsWith("https://") || source.startsWith("http://") || source.startsWith("file://") || source.startsWith("content://"))) { call.reject("Only direct audio URLs and Android media URIs support native background playback."); return; }
+      Intent i=new Intent(getContext(),PlaybackService.class).setAction("com.heytools.PLAY_URL");
+      i.putExtra("source",source); i.putExtra("title",call.getString("title","HeyTools")); i.putExtra("artist",call.getString("artist","Now playing"));
+      if(Build.VERSION.SDK_INT>=26)getContext().startForegroundService(i);else getContext().startService(i);
+      call.resolve();
+    } catch(Exception e) { call.reject("Could not start native audio: "+e.getMessage(),e); }
+  }
+  @PluginMethod public void controlNativeAudio(PluginCall call) {
+    try {
+      String action=call.getString("action","pause");
+      Intent i=new Intent(getContext(),PlaybackService.class);
+      if("stop".equals(action))i.setAction("com.heytools.STOP_URL");
+      else if("play".equals(action))i.setAction("com.heytools.RESUME_URL");
+      else i.setAction("com.heytools.PAUSE_URL");
+      if(Build.VERSION.SDK_INT>=26)getContext().startForegroundService(i);else getContext().startService(i);
+      call.resolve();
+    } catch(Exception e) { call.reject("Could not control native audio: "+e.getMessage(),e); }
+  }
+
   /** Start the foreground service so playback keeps going when the app is in the background. */
   @PluginMethod
   public void startPlayback(PluginCall call) {

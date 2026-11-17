@@ -9,6 +9,9 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.media.MediaPlayer;
+import android.media.AudioAttributes;
+import android.net.Uri;
 import androidx.core.app.NotificationCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
 import android.graphics.BitmapFactory;
@@ -21,11 +24,15 @@ public class PlaybackService extends Service {
   public static final String CHANNEL = "heytools_playback";
   private static final int NOTIFICATION_ID = 7001;
   public static volatile boolean isRunning = false;
+  public static volatile boolean audioIsPlaying = false;
+  public static volatile boolean audioIsPlaying = false;
   private String title = "HeyTools";
   private String artist = "Now playing";
   private boolean playing = true;
   private String lastSignature = "";
   private MediaSessionCompat mediaSession;
+  private MediaPlayer audioPlayer;
+  private String audioSource = "";
 
   @Override public IBinder onBind(Intent intent) { return null; }
   @Override public void onCreate() {
@@ -33,11 +40,11 @@ public class PlaybackService extends Service {
     mediaSession = new MediaSessionCompat(this, "HeyToolsPlayback");
     mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
     mediaSession.setCallback(new MediaSessionCompat.Callback() {
-      @Override public void onPlay() { sendAction("PLAY", 7102); }
-      @Override public void onPause() { sendAction("PAUSE", 7102); }
+      @Override public void onPlay() { resumeAudio(); }
+      @Override public void onPause() { pauseAudio(); }
       @Override public void onSkipToNext() { sendAction("NEXT", 7103); }
       @Override public void onSkipToPrevious() { sendAction("PREVIOUS", 7101); }
-      @Override public void onStop() { sendAction("PAUSE", 7102); }
+      @Override public void onStop() { pauseAudio(); }
     });
     mediaSession.setActive(true);
   }
@@ -62,7 +69,58 @@ public class PlaybackService extends Service {
         PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, playing?1f:0f).build());
   }
 
+
+  private void releaseAudio() {
+    audioIsPlaying = false;
+    if (audioPlayer != null) {
+      try { audioPlayer.setOnPreparedListener(null); audioPlayer.setOnErrorListener(null); audioPlayer.stop(); } catch (Exception ignored) {}
+      try { audioPlayer.release(); } catch (Exception ignored) {}
+      audioPlayer = null;
+    }
+  }
+  private void refreshControls() {
+    updateMediaSession();
+    try { NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE); if(nm!=null)nm.notify(NOTIFICATION_ID,buildNotification()); } catch(Exception ignored) {}
+  }
+  private void pauseAudio() {
+    if (audioPlayer != null) try { if (audioPlayer.isPlaying()) audioPlayer.pause(); } catch (Exception ignored) {}
+    audioIsPlaying=false; playing=false; audioIsPlaying=false; refreshControls();
+  }
+  private void resumeAudio() {
+    if (audioPlayer != null) try { audioPlayer.start(); playing=true; audioIsPlaying=true; refreshControls(); } catch (Exception ignored) {}
+  }
+  private void startAudio(String source) {
+    if (source == null || !(source.startsWith("https://") || source.startsWith("http://") || source.startsWith("file://") || source.startsWith("content://"))) { pauseAudio(); return; }
+    if (source.equals(audioSource) && audioPlayer != null) { resumeAudio(); return; }
+    releaseAudio(); audioSource=source; playing=true; refreshControls();
+    try {
+      audioPlayer=new MediaPlayer();
+      audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
+      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);mp.start();playing=true;audioIsPlaying=true;refreshControls();} });
+      audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();sendAction("NEXT",7103);});
+      audioPlayer.setOnErrorListener((mp,what,extra)->{playing=false;audioIsPlaying=false;refreshControls();return true;});
+      audioPlayer.setDataSource(this,Uri.parse(source));
+      audioPlayer.prepareAsync();
+    } catch(Exception e) { releaseAudio(); playing=false; refreshControls(); }
+  }
+  public void controlAudio(String action) {
+    if ("play".equals(action)) resumeAudio();
+    else if ("pause".equals(action)) pauseAudio();
+    else if ("stop".equals(action)) { pauseAudio(); releaseAudio(); audioIsPlaying=false; audioSource=""; }
+  }
+
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
+
+    if (intent != null && "com.heytools.PLAY_URL".equals(intent.getAction())) {
+      String t=intent.getStringExtra("title"), a=intent.getStringExtra("artist");
+      if(t!=null&&!t.trim().isEmpty())title=t; if(a!=null)artist=a;
+      startForeground(NOTIFICATION_ID,buildNotification());
+      startAudio(intent.getStringExtra("source"));
+      lastSignature=title+"|"+artist+"|true"; return START_STICKY;
+    }
+    if (intent != null && "com.heytools.PAUSE_URL".equals(intent.getAction())) { pauseAudio(); return START_STICKY; }
+    if (intent != null && "com.heytools.RESUME_URL".equals(intent.getAction())) { resumeAudio(); return START_STICKY; }
+    if (intent != null && "com.heytools.STOP_URL".equals(intent.getAction())) { controlAudio("stop"); stopSelf(); return START_NOT_STICKY; }
     if (intent != null) {
       String t=intent.getStringExtra("title"), a=intent.getStringExtra("artist");
       if(t!=null&&!t.trim().isEmpty())title=t;
@@ -112,7 +170,8 @@ public class PlaybackService extends Service {
   @Override public void onDestroy(){
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
-    isRunning = false;
+    releaseAudio(); audioSource="";
+    isRunning = false; audioIsPlaying = false;
     if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; }
     super.onDestroy();
   }

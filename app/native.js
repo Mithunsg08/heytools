@@ -40,6 +40,8 @@
     saveAbort: function (id) { return P.saveAbort({ id: id }); },
     onResume: function (cb) { if (A && A.addListener) A.addListener('resume', cb); },
     /* keep music / video playing when the screen is left or the phone is locked */
+    startNativeAudio: function (source,title,artist) { return P.startNativeAudio({source:source,title:title||"HeyTools",artist:artist||"Now playing"}); },
+    controlNativeAudio: function (action) { return P.controlNativeAudio({action:action||"pause"}); },
     startPlayback: function (title, artist, playing) { if (P && P.startPlayback) P.startPlayback({ title: title || 'HeyTools', artist: artist || 'Now playing', playing: playing !== false }).catch(function () {}); },
     updatePlayback: function (title, artist, playing) { if (P && P.updatePlayback) P.updatePlayback({ title: title || 'HeyTools', artist: artist || 'Now playing', playing: playing !== false }).catch(function () {}); },
     stopPlayback: function () { if (P && P.stopPlayback) P.stopPlayback().catch(function () {}); },

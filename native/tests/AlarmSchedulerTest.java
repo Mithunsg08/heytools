@@ -1,6 +1,9 @@
 package com.heytools.app;
 
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.json.JSONArray;
@@ -15,14 +18,17 @@ import static org.junit.Assert.*;
 public class AlarmSchedulerTest {
   private Context context;
   private static final int ID = 17654321;
+  private static final int RINGING_NOTIFICATION_ID = 82001;
 
   @Before public void setUp() throws Exception {
     context=InstrumentationRegistry.getInstrumentation().getTargetContext();
     storageContext().getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
+    context.stopService(new Intent(context, AlarmRingingService.class));
     assertTrue("Test device must grant exact-alarm access",AlarmScheduler.canScheduleExact(context));
   }
   @After public void tearDown() throws Exception {
     JSONArray ids=new JSONArray();ids.put(ID);AlarmScheduler.cancelIds(context,ids);
+    context.stopService(new Intent(context, AlarmRingingService.class));
     storageContext().getSharedPreferences("heytools_native_alarms",Context.MODE_PRIVATE).edit().clear().commit();
   }
 
@@ -74,5 +80,36 @@ public class AlarmSchedulerTest {
     JSONObject after=AlarmScheduler.getState(context).optJSONArray("alarms").getJSONObject(0);
     assertTrue(after.optBoolean("on"));
     assertTrue(after.optLong("nextAt")>System.currentTimeMillis());
+  }
+
+  @Test public void scheduledAlarmActuallyStartsRingingService() throws Exception {
+    JSONObject alarm=oneTime();
+    alarm.put("at",System.currentTimeMillis()+4000L);
+    JSONArray list=new JSONArray();list.put(alarm);
+    AlarmScheduler.sync(context,list);
+    try { android.os.ParcelFileDescriptor p=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("am kill "+context.getPackageName()); p.close(); } catch(Exception ignored) {}
+
+    NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+    boolean ringing=false;
+    long deadline=System.currentTimeMillis()+20000L;
+    while(System.currentTimeMillis()<deadline&&!ringing){
+      if(android.os.Build.VERSION.SDK_INT>=23){
+        for(android.service.notification.StatusBarNotification n:manager.getActiveNotifications()){
+          if(n.getId()==RINGING_NOTIFICATION_ID){ringing=true;break;}
+        }
+      }
+      if(!ringing)Thread.sleep(250L);
+    }
+    assertTrue("AlarmManager did not deliver the alarm and start the ringing foreground service",
+      ringing || isRingingServiceRunning());
+  }
+
+  private boolean isRingingServiceRunning() {
+    android.app.ActivityManager am=(android.app.ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
+    if(am==null)return false;
+    for(android.app.ActivityManager.RunningServiceInfo info:am.getRunningServices(Integer.MAX_VALUE)){
+      if(AlarmRingingService.class.getName().equals(info.service.getClassName()))return true;
+    }
+    return false;
   }
 }
