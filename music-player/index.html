@@ -998,6 +998,8 @@ function drawFx(t){
  const sway=reduce?0:Math.sin(t*.0006)*(S.playing?2:3.5);
  tilt.style.transform=`rotateX(${rx+sway*.4+8}deg) rotateY(${ry+sway}deg) scale(${1+bass*.018})`;
 }
+addEventListener('pagehide',()=>{try{if(active&&trackKey(cur()))ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:active.time()||S.time||0}))}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){try{if(active&&trackKey(cur()))ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:active.time()||S.time||0}))}catch(e){}}});
 let lastPositionSave=0;
 function tick(t){
  if(active){S.time=active.time()||0;const d=active.dur();if(d&&isFinite(d))S.dur=d;else if(!cur()||cur().kind!=='demo')S.dur=cur()?cur().dur||0:0;if(S.playing&&trackKey(cur())&&Date.now()-lastPositionSave>2500){lastPositionSave=Date.now();ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:S.time}))}}
