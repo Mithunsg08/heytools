@@ -47,19 +47,18 @@ jobs:
           set -euo pipefail
           DIR="$HOME/heytools-signing"
           mkdir -p "$DIR"
-          if [ -n "$KS_B64" ] || [ -n "$KS_PASS" ]; then
-            if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then
-              echo "::error::Both ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD must be configured."
-              exit 1
-            fi
-            printf '%s' "$KS_B64" | base64 --decode > "$DIR/heytools.p12"
+          # Prefer the previously verified cached keystore. This prevents a malformed
+          # or stale repository secret from overwriting the working release identity.
+          if [ -s "$DIR/heytools.p12" ] && [ -s "$DIR/pass.txt" ]; then
+            PASS="$(cat "$DIR/pass.txt")"
+            echo "Using the restored HeyTools signing key."
+          elif [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            # Normalize whitespace/newlines before decoding a secret pasted from a terminal.
+            printf '%s' "$KS_B64" | tr -d '[:space:]' | base64 --decode > "$DIR/heytools.p12"
             PASS="$KS_PASS"
           else
-            if [ "$CACHE_HIT" != "true" ] || [ ! -s "$DIR/heytools.p12" ] || [ ! -s "$DIR/pass.txt" ]; then
-              echo "::error::The existing signing key was not restored. Do not generate a new key. Restore the original HeyTools keystore and configure repository secrets before publishing."
-              exit 1
-            fi
-            PASS="$(cat "$DIR/pass.txt")"
+            echo "::error::No usable existing HeyTools signing key was restored. Configure the original ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets. Do not generate a replacement key."
+            exit 1
           fi
           chmod 600 "$DIR/heytools.p12"
           keytool -list -keystore "$DIR/heytools.p12" -storetype PKCS12 -alias "$HEY_KEY_ALIAS" -storepass "$PASS" >/dev/null
