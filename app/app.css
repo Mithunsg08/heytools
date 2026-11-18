@@ -235,3 +235,36 @@ body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe U
 .tool-frame{background:var(--bg)}
 .nowp{backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-color:color-mix(in srgb,var(--line) 72%,transparent)}
 @media(prefers-reduced-motion:reduce){.tool,.btn,.chip-btn,.icon-btn{transition:none}}
+
+/* ---------- pinned, notifications, privacy, onboarding ---------- */
+.tool-main{padding-right:30px}
+.pin{position:absolute;top:12px;right:12px;width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:99px;background:transparent;color:var(--muted);font-size:1.15rem;cursor:pointer}
+.pin[aria-pressed="true"]{color:#F5A623}
+.pin:hover{background:var(--panel2)}
+body.editing .pin{display:none}
+.mini-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--line)}
+.mini-row label{font-weight:600;font-size:.9rem;line-height:1.3}
+.mini-row label small{display:block;font-weight:400;color:var(--muted);font-size:.76rem;margin-top:2px}
+.set > .mini-row:first-of-type{margin-top:8px}
+#nTypes.off{opacity:.45;pointer-events:none}
+.quiet-times{justify-content:flex-start}
+.quiet-times label{font-weight:500}
+.time{padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);font:inherit}
+.rel{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.rel-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;font-size:.88rem}
+.rel-row .ok{color:var(--ok,#1F8F4E)}
+.rel-row .warn{color:#C2410C}
+.btn.danger{background:transparent;color:#C0262D;box-shadow:inset 0 0 0 1.5px currentColor}
+.onb{max-width:460px;border-radius:26px;margin:0 auto 18px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.sheet-wrap#onbWrap{align-items:center;padding:16px}
+.onb-body{padding:26px 22px 18px;text-align:center}
+.onb-ico{font-size:2.6rem;line-height:1;margin-bottom:10px}
+.onb h2{margin:0 0 8px;font-size:1.45rem;letter-spacing:-.02em}
+.onb p{margin:0 0 10px;color:var(--ink)}
+.onb .mini-row{text-align:left;margin-top:14px}
+.onb-dots{display:flex;justify-content:center;gap:7px;margin:16px 0 14px}
+.onb-dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.onb-dots i.on{background:var(--accent)}
+.onb-actions{display:flex;justify-content:space-between;gap:10px}
+.onb-actions .btn.primary{min-width:120px}
+@media (forced-colors:active){.pin[aria-pressed="true"]{forced-color-adjust:none;color:Highlight}}

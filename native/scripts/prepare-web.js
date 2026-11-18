@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path');
 const src = path.resolve(__dirname, '../..'), out = path.resolve(__dirname, '../www');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
-const skip = new Set(['native', 'node_modules', 'dashboard', 'signing']);
+const skip = new Set(['native', 'node_modules', 'dashboard', 'signing', 'og', 'scripts']);
 for (const name of fs.readdirSync(src)) {
   if (skip.has(name) || name.startsWith('.')) continue;
   const p = path.join(src, name), st = fs.statSync(p);

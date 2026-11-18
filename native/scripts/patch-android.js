@@ -31,12 +31,16 @@ const add = perms.filter(p => !m.includes('"' + p[0] + '"'))
   .map(p => `    <uses-permission android:name="${p[0]}"${p[1] || ''} />`).join('\n');
 m = m.replace('<application', add + '\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />\n\n    <application');
 if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '<application android:requestLegacyExternalStorage="true"');
+/* Privacy and security: keep app data out of cloud / adb backups (notes, expenses and Spotify tokens live in it) and refuse plain-http traffic. */
+m = m.replace(/android:allowBackup="true"/, 'android:allowBackup="false"');
+if (!m.includes('android:allowBackup')) m = m.replace('<application', '<application android:allowBackup="false"');
+if (!m.includes('usesCleartextTraffic')) m = m.replace('<application', '<application android:usesCleartextTraffic="false"');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
   '<service android:name=".AlarmRingingService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="mediaPlayback" />',
   '<receiver android:name=".AlarmReceiver" android:exported="false" android:directBootAware="true" />',
   '<receiver android:name=".AlarmActionReceiver" android:exported="false" android:directBootAware="true" />',
-  '<receiver android:name=".AlarmBootReceiver" android:enabled="true" android:exported="true" android:directBootAware="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /><action android:name="android.intent.action.TIMEZONE_OFFSET_CHANGED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" /></intent-filter></receiver>'
+  '<receiver android:name=".AlarmBootReceiver" android:enabled="true" android:exported="false" android:directBootAware="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /><action android:name="android.intent.action.TIMEZONE_OFFSET_CHANGED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" /></intent-filter></receiver>'
 ];
 for (const component of alarmComponents) {
   const match = component.match(/(?:service|receiver) android:name="([^"]+)/);

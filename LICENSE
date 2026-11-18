@@ -1,0 +1,57 @@
+HeyTools Proprietary License
+Version 1.0
+
+Copyright (c) 2026 Mithunsg08 (HeyTools). All rights reserved.
+
+"HeyTools" means this repository and everything the owner created in it: the source code,
+HTML, CSS, JavaScript, Java and build scripts, the design and layout, the text, the icons,
+the share images, the name "HeyTools" and its logo, and the apps and websites built from them
+(together, the "Software").
+
+1. WHAT YOU MAY DO
+   You may use the official HeyTools website and the official HeyTools app for your own personal,
+   non-commercial use, and you may read the source code in this repository to understand it or to
+   report a problem. You may link to the official website.
+
+2. WHAT YOU MAY NOT DO
+   Without the owner's prior written permission you may not, in whole or in part:
+   a) copy, clone, fork for any purpose other than the personal reading allowed above, mirror,
+      or host the Software or any of its tools, pages or designs;
+   b) modify, adapt, translate, or create derivative works from the Software;
+   c) distribute, publish, upload, sublicense, rent, lend, or otherwise make the Software available
+      to anyone else, including in an app store, website, template, theme, course or code collection;
+   d) sell, resell, license, bundle, or charge for the Software or anything derived from it, or use it
+      in a product or service that is offered for money or advertising revenue;
+   e) remove or change any copyright, license, or attribution notice, or present the Software, a tool
+      from it, or a copy or imitation of it as your own work or under any other name, brand, logo,
+      package name, or domain;
+   f) reverse engineer, decompile, or extract assets from the apps, except where the law says you may
+      despite this restriction;
+   g) use the HeyTools name, logo, or look in a way that suggests your product is HeyTools or is
+      endorsed by HeyTools;
+   h) copy the Software, its text, or its design to train, fine-tune, or build a competing product or a
+      machine-learning dataset.
+
+3. THIRD-PARTY COMPONENTS
+   Some files are made by others and are covered by their own licenses, not by this one. They are
+   listed in vendor/README.md (libraries) and fonts/ (open-licensed fonts from Fontsource). You may use
+   those components only under their own license terms. This license does not take away any right those
+   licenses give you for those components, and it does not claim ownership of them.
+
+4. OWNERSHIP
+   The Software is licensed, not sold. The owner keeps all rights not expressly granted here.
+
+5. TERMINATION
+   Any breach of this license ends your permission to use the Software right away. On request you must
+   stop using the Software and delete every copy you made.
+
+6. NO WARRANTY, LIMITED LIABILITY
+   The Software is provided "as is", without any warranty. To the extent the law allows, the owner is not
+   liable for any loss or damage arising from its use.
+
+7. OBTAINING PERMISSION
+   To ask for permission (for example to reuse a tool), open an issue at
+   https://github.com/Mithunsg08/heytools/issues describing what you want to do.
+
+This is a custom notice written for this project. It is not legal advice; the owner should have it
+reviewed by a lawyer before relying on it in a dispute.

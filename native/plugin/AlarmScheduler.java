@@ -135,6 +135,32 @@ final class AlarmScheduler {
     try{a.put("snoozeAt",System.currentTimeMillis()+minutes*60000L);a.put("snoozed",true);write(c,all);scheduleOne(c,a);write(c,all);}
     catch(Exception e){throw new IllegalStateException(e);}
   }
+  /** A one-minute test alarm (reserved id) so a person can check that alarms really ring on this phone. It never touches saved alarms. */
+  static final int TEST_ID = 900001;
+  static void addTest(Context c) throws Exception {
+    if (!canScheduleExact(c)) throw new SecurityException("Exact alarm access is disabled");
+    JSONArray all = read(c);
+    int ix = indexOf(all, TEST_ID);
+    if (ix >= 0) all.remove(ix);
+    JSONObject a = new JSONObject();
+    a.put("id", TEST_ID);
+    a.put("title", "Alarm test");
+    a.put("body", "If you can hear this, your alarms will ring.");
+    a.put("label", "Alarm test");
+    a.put("tone", "classic");
+    a.put("at", System.currentTimeMillis() + 60000L);
+    a.put("time", "");
+    a.put("days", new JSONArray());
+    a.put("snooze", 1);
+    a.put("on", true);
+    a.put("snoozeAt", 0L);
+    a.put("snoozed", false);
+    a.put("lastFiredAt", 0L);
+    all.put(a);
+    write(c, all);
+    scheduleOne(c, a);
+    write(c, all);
+  }
   static void reschedule(Context c) { scheduleAll(c); }
   static JSObject getState(Context c) {
     JSObject out=new JSObject();JSONArray state=new JSONArray(),all=read(c);

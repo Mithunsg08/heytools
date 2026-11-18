@@ -1,0 +1,15 @@
+# Bundled libraries
+
+Everything here is served by HeyTools itself so tools work offline and nothing is loaded from a CDN. Update by exact version only, then run `node scripts/validate-repo.js`.
+
+| File | Library | Version | Licence | Used by |
+| --- | --- | --- | --- | --- |
+| fabric-5.3.0.min.js | fabric.js | 5.3.0 | MIT | Emulsion |
+| three-r128.min.js, OrbitControls-r128.js | three.js | r128 | MIT | Cyber Rush, Earth ZIP code |
+| JsBarcode.all-3.11.6.min.js | JsBarcode | 3.11.6 | MIT | Barcode & QR |
+| qrcode-generator-1.4.4.js | qrcode-generator | 1.4.4 | MIT | Barcode & QR |
+| jspdf-2.5.1.umd.min.js | jsPDF | 2.5.1 | MIT | Image to PDF |
+| jszip-3.10.1.min.js | JSZip | 3.10.1 | MIT or GPL-3.0 | Image to PDF |
+| lucide-0.468.0.min.js | Lucide icons | 0.468.0 | ISC | Earth ZIP code |
+
+Fonts in `../fonts/` come from the Fontsource packages (latin subset) and are open-licensed (SIL OFL or Apache 2.0).

@@ -1,11 +1,22 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script src="../install-prompt.js" defer></script>
+<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script src="../install-prompt.js" defer></script>
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/emulsion/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:title" content="Emulsion Studio">
+<meta property="og:description" content="Emulsion Studio is a free image and video editor that runs in your browser. Design posters and thumbnails, trim and caption video, then export. A Canva alternative with a real timeline and full screen mode.">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/emulsion/">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/emulsion.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emulsion Studio">
+<meta name="twitter:description" content="Emulsion Studio is a free image and video editor that runs in your browser. Design posters and thumbnails, trim and caption video, then export. A Canva alternative with a real timeline and full screen mode.">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/emulsion.jpg">
 </head><body>
 <title>Emulsion Studio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Emulsion Studio is a free image and video editor that runs in your browser. Design posters and thumbnails, trim and caption video, then export. A Canva alternative with a real timeline and full screen mode.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Bricolage+Grotesque:wght@400;600;800&family=Caveat:wght@600&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Lora:wght@500;700&family=Oswald:wght@500;700&family=Pacifico&family=Playfair+Display:wght@500;800&family=Montserrat:wght@400;700;800&family=Poppins:wght@400;600;700&family=Raleway:wght@400;700&family=Roboto+Slab:wght@400;700&family=Merriweather:wght@400;700&family=Abril+Fatface&family=Righteous&family=Lobster&family=Permanent+Marker&family=Bangers&family=Fredoka:wght@400;600&family=Space+Mono:wght@400;700&family=Cinzel:wght@400;700&family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Press+Start+2P&family=Alfa+Slab+One&family=Satisfy&display=swap">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <style>
 /* Layout: slim masthead, then the studio itself as the hero (rail | tool panel | stage | inspector), guide content below. */
 :root{
@@ -366,9 +377,12 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:v
   </div>
 </section>
 <footer><span>Emulsion Studio. Image and video editing in the browser.</span><a href="#studio">Back to the editor</a></footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../video-player/">Video Player</a> · <a href="../music-player/">Music Player</a> · <a href="../recorder/">Recorder</a> · <a href="../geo-camera/">Geo Camera</a> · <a href="../video-loop/">Video Loop</a> · <a href="../media-downloads/">Media Downloads</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 </div>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"Emulsion Studio","applicationCategory":"MultimediaApplication","operatingSystem":"Any (web browser)","description":"Free in-browser image and video editor with templates, layers, a video timeline and full screen mode.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Emulsion really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. There is no watermark, no sign-in and no paid tier."}},{"@type":"Question","name":"Where are my files stored?","acceptedAnswer":{"@type":"Answer","text":"In your browser while the page is open. Photos and video are processed on your device and never uploaded."}},{"@type":"Question","name":"Which browsers work best?","acceptedAnswer":{"@type":"Answer","text":"Current Chrome, Edge and Firefox support every feature including video export."}}]}]}</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="../vendor/fabric-5.3.0.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1363,5 +1377,8 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>render());
 window.addEventListener('resize',()=>{if(mode==='img')IMG.fit();else renderTL()});
 })();
 </script>
+
+
+
 
 </body></html>

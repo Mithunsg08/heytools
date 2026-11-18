@@ -7,16 +7,16 @@
 <meta name="description" content="Universal Converter is a free, private file converter that runs in your browser. Convert Image to PDF, JPG to PNG, MP4 to MOV, MP4 to MP3, Excel to PDF, PDF to Word and more. No upload, no signup.">
 <meta name="keywords" content="universal converter, file converter, image to pdf, jpg to png, png to jpg, webp to jpg, mp4 to mp3, mp4 to mov, excel to pdf, pdf to word, pdf to jpg, pdf to excel, pdf to ppt, online converter, free converter, browser converter">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://yourdomain.com/image-to-pdf-converter">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/image-to-pdf-converter/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Universal Converter – Convert Any File Free, Right in Your Browser">
-<meta property="og:description" content="Images, PDF, Word, Excel, PowerPoint, video and audio. 100% private: files never leave your device.">
-<meta property="og:url" content="https://yourdomain.com/image-to-pdf-converter">
+<meta property="og:title" content="Universal Converter – Free Online File Converter: Image to PDF, MP4 to MP3, PDF to Word">
+<meta property="og:description" content="Universal Converter is a free, private file converter that runs in your browser. Convert Image to PDF, JPG to PNG, MP4 to MOV, MP4 to MP3, Excel to PDF, PDF to Word and more. No upload, no signup.">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/image-to-pdf-converter/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b0b14">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"WebApplication","name":"Universal Converter","url":"https://yourdomain.com/image-to-pdf-converter","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free in-browser converter for images, PDF, documents, spreadsheets, video and audio."},
+{"@type":"WebApplication","name":"Universal Converter","url":"https://mithunsg08.github.io/heytools/image-to-pdf-converter/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free in-browser converter for images, PDF, documents, spreadsheets, video and audio."},
 {"@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"Are my files uploaded to a server?","acceptedAnswer":{"@type":"Answer","text":"No. Every conversion runs inside your browser, so your files never leave your device."}},
 {"@type":"Question","name":"How do I convert MP4 to MP3?","acceptedAnswer":{"@type":"Answer","text":"Drop your MP4 into Universal Converter, choose MP3, and the audio is extracted and downloaded automatically."}},
@@ -78,6 +78,13 @@ summary{cursor:pointer;font-weight:600}details p{color:var(--mu);margin-top:8px}
 footer{padding:30px 20px 50px;text-align:center;color:var(--mu);font-size:14px}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/image-to-pdf-converter.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:title" content="Universal Converter – Free Online File Converter: Image to PDF, MP4 to MP3, PDF to Word">
+<meta name="twitter:description" content="Universal Converter is a free, private file converter that runs in your browser. Convert Image to PDF, JPG to PNG, MP4 to MOV, MP4 to MP3, Excel to PDF, PDF to Word and more. No upload, no signup.">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/image-to-pdf-converter.jpg"><style id="hey-a11y">:focus-visible{outline:3px solid #5B3DF5;outline-offset:2px}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
 <header>
@@ -140,6 +147,9 @@ footer{padding:30px 20px 50px;text-align:center;color:var(--mu);font-size:14px}
 </section>
 </main>
 <footer>© <span id="y"></span> Universal Converter · <a href="/">Image Compress</a></footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../image-compress/">Image Compressor</a> · <a href="../background-removal/">Background Removal</a> · <a href="../barcode-generate/">Barcode &amp; QR Maker</a> · <a href="../image-resizer/">Image Resizer</a> · <a href="../video-player/">Video Player</a> · <a href="../music-player/">Music Player</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 
 <script>
 const $=s=>document.getElementById(s),CD='https://cdnjs.cloudflare.com/ajax/libs/',JD='https://cdn.jsdelivr.net/npm/';
@@ -194,12 +204,12 @@ const MIME={png:'image/png',jpg:'image/jpeg',webp:'image/webp'};
 const imgEl=f=>new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('This image could not be read'));i.src=URL.createObjectURL(f)});
 async function canvasOf(f){const i=await imgEl(f),c=document.createElement('canvas');c.width=i.naturalWidth||1024;c.height=i.naturalHeight||1024;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height);return c}
 const blobOf=(c,t)=>new Promise(r=>c.toBlob(r,MIME[t],.92));
-async function zip(items,name){await load(CD+'jszip/3.10.1/jszip.min.js');const z=new JSZip();items.forEach(i=>z.file(i.name,i.blob));const blob=await z.generateAsync({type:'blob'},m=>p(90+m.percent/10,'Packing ZIP…'));return{blob,name}}
+async function zip(items,name){await load('../vendor/jszip-3.10.1.min.js');const z=new JSZip();items.forEach(i=>z.file(i.name,i.blob));const blob=await z.generateAsync({type:'blob'},m=>p(90+m.percent/10,'Packing ZIP…'));return{blob,name}}
 async function pdfjs(){await load(CD+'pdf.js/3.11.174/pdf.min.js');if(!pdfjs.w){pdfjs.w=URL.createObjectURL(await(await fetch(CD+'pdf.js/3.11.174/pdf.worker.min.js')).blob());pdfjsLib.GlobalWorkerOptions.workerSrc=pdfjs.w}}
-async function jsp(){await load(CD+'jspdf/2.5.1/jspdf.umd.min.js');return window.jspdf.jsPDF}
+async function jsp(){await load('../vendor/jspdf-2.5.1.umd.min.js');return window.jspdf.jsPDF}
 function textPdf(J,text){const d=new J({unit:'pt',format:'a4'});let y=50;d.setFontSize(11);d.splitTextToSize(text,495).forEach(l=>{if(y>790){d.addPage();y=50}d.text(l,50,y);y+=15});return d.output('blob')}
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const wordBlob=t=>new Blob(['<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+t.split('\n').map(l=>'<p>'+esc(l)+'</p>').join('')+'</body></html>'],{type:'application/msword'});
+const wordBlob=t=>new Blob(['<html lang="en" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+t.split('\n').map(l=>'<p>'+esc(l)+'</p>').join('')+'</body></html>'],{type:'application/msword'});
 async function pdfLines(d,n){const pg=await d.getPage(n),c=await pg.getTextContent(),rows=[];let y=null,row=null;c.items.forEach(i=>{if(!i.str.trim())return;const yy=Math.round(i.transform[5]);if(y===null||Math.abs(yy-y)>3){row=[];rows.push(row);y=yy}row.push(i.str.trim())});return rows}
 
 const C={};

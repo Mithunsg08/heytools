@@ -42,6 +42,7 @@
     TOOLS.forEach(function (t) { if (!seen[t.id]) order.push(t.id); });       // new tools land at the end
     LAYOUT.order = order;
     LAYOUT.hidden = (LAYOUT.hidden || []).filter(function (id) { return byId[id]; });
+    LAYOUT.pinned = (LAYOUT.pinned || []).filter(function (id, i, a) { return byId[id] && a.indexOf(id) === i; }).slice(0, 8);
   }
   normalizeLayout();
   RECENT = RECENT.filter(function (r) { return r && byId[r.id]; }).slice(0, 12);
@@ -148,6 +149,29 @@
     });
   }
   $('clearRecent').addEventListener('click', clearRecent);
+
+  /* ---------- pinned tools: the few you open every day, one tap from the top ---------- */
+  function isPinned(id) { return (LAYOUT.pinned || []).indexOf(id) !== -1; }
+  function togglePin(id) {
+    LAYOUT.pinned = LAYOUT.pinned || [];
+    var i = LAYOUT.pinned.indexOf(id);
+    if (i === -1) {
+      if (LAYOUT.pinned.length >= 8) { toast('You can pin up to 8 tools'); return; }
+      LAYOUT.pinned.push(id); toast('Pinned to the top');
+    } else { LAYOUT.pinned.splice(i, 1); toast('Unpinned'); }
+    saveLayout(); render();
+    var b = grid.querySelector('[data-id="' + id + '"] .pin'); if (b) b.focus();
+  }
+  function renderPinned() {
+    var box = $('pinned'), row = $('pinnedRow');
+    row.textContent = '';
+    var list = (LAYOUT.pinned || []).filter(function (id) { return !isHidden(id); }).map(function (id) { return byId[id]; });
+    var show = list.length && !editing && !q.value.trim() && netFilter === 'all' && cat === 'all';
+    box.hidden = !show; if (!show) return;
+    list.forEach(function (t) {
+      row.appendChild(el('a', linkAttrs(t, 'rcard'), [ico(t), el('span', {}, [el('span', { 'class': 'nm', text: t.name })])]));
+    });
+  }
   $('sheetClearRecent').addEventListener('click', function () { clearRecent(); });
 
   /* ---------- offline "saved" status ---------- */
@@ -191,7 +215,7 @@
 
   /* ---------- rendering ---------- */
   function render() {
-    renderCats(); renderNav(); renderGrid(); renderRecent(); renderTray(); paintSaved();
+    renderCats(); renderNav(); renderGrid(); renderPinned(); renderRecent(); renderTray(); paintSaved();
     var hidden = LAYOUT.hidden.length;
     $('homeSub').textContent = visibleTools().length + ' tools' + (hidden ? ' · ' + hidden + ' hidden' : '') + ' · Version 1.0';
     var active = netFilter !== 'all' ? 1 : 0;
@@ -229,6 +253,10 @@
     var h = el('button', { 'class': 'handle', type: 'button', 'aria-label': 'Drag to reorder ' + t.name + '. With the keyboard, use arrow keys.', title: 'Drag to reorder' }); h.textContent = '⠿';
     var e = el('button', { 'class': 'eye', type: 'button', 'aria-label': 'Hide ' + t.name, title: 'Hide' }); e.textContent = 'Hide';
     a.appendChild(h); a.appendChild(e);
+    var pn = el('button', { 'class': 'pin', type: 'button', 'aria-pressed': String(isPinned(t.id)), 'aria-label': (isPinned(t.id) ? 'Unpin ' : 'Pin ') + t.name, title: isPinned(t.id) ? 'Unpin' : 'Pin to the top' });
+    pn.textContent = isPinned(t.id) ? '★' : '☆';
+    pn.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); togglePin(t.id); });
+    a.appendChild(pn);
     return a;
   }
   function renderGrid() {
@@ -333,7 +361,7 @@
   $('doneEdit').addEventListener('click', function () { setEditing(false); });
   $('resetLayout').addEventListener('click', function () {
     if (!confirm('Reset to the default order and show all tools?')) return;
-    LAYOUT = { order: TOOLS.map(function (t) { return t.id; }), hidden: [] }; saveLayout(); applyPrefs(); render();
+    LAYOUT = { order: TOOLS.map(function (t) { return t.id; }), hidden: [], pinned: LAYOUT.pinned || [] }; normalizeLayout(); saveLayout(); applyPrefs(); render();
   });
   $('sheetReset').addEventListener('click', function () { $('resetLayout').click(); });
 
@@ -353,7 +381,7 @@
 
   /* ---------- settings sheet ---------- */
   function sheetOpen() { return !$('sheetWrap').hidden; }
-  function openSheet() { applyPrefs(); renderThemes(); $('sheetWrap').hidden = false; $('closeSheet').focus(); }
+  function openSheet() { applyPrefs(); renderThemes(); if (window.paintSettingsExtras) window.paintSettingsExtras(); $('sheetWrap').hidden = false; $('closeSheet').focus(); }
   function closeSheet() { $('sheetWrap').hidden = true; }
   $('openSettings').addEventListener('click', openSheet);
   $('topSettings').addEventListener('click', openSheet);
@@ -618,7 +646,7 @@
       var d = f && f.contentDocument; if (!d || !d.head || !t) return;
       var old = d.getElementById('hey-hide'); if (old) old.remove();
       if (PREFS.text) return;
-      var css = (t.hide || 'footer').split(',').map(function (x) { return x.trim(); }).filter(Boolean).map(function (x) { return x + '{display:none!important}'; }).join('\n');
+      var css = ((t.hide || 'footer') + ',.hey-related').split(',').map(function (x) { return x.trim(); }).filter(Boolean).map(function (x) { return x + '{display:none!important}'; }).join('\n');
       var st = d.createElement('style'); st.id = 'hey-hide'; st.textContent = css; d.head.appendChild(st);
     } catch (e) { /* cross-origin */ }
   }
@@ -796,16 +824,25 @@
   }
   window.addEventListener('online', net); window.addEventListener('offline', net); net();
   if (!NATIVE.isNative && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    window.addEventListener('load', function () { navigator.serviceWorker.register('../heytools-sw.js', { scope: '../' }).catch(function () {}); });
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('../heytools-sw.js', { scope: '../' }).catch(function () {});
+      /* once the app is up, save every tool for offline use in the background (not on Data Saver) */
+      navigator.serviceWorker.ready.then(function (reg) {
+        var saver = navigator.connection && navigator.connection.saveData;
+        if (reg.active && !saver) setTimeout(function () { try { reg.active.postMessage('precache-tools'); setTimeout(checkSaved, 15000); } catch (e) { /* ignore */ } }, 4000);
+      });
+    });
   }
 
   /* ---------- back up and restore ----------
      Saves the things you made (notes, to-dos, habits, expenses, alarms, settings) to a file, so a new install or a new phone can pick up where you stopped. */
-  var SKIP = /^(heytools\.(update|notif|perm|iid|last))/;
+  /* Never written to a backup file or restored from one: login tokens, install ids and notification plumbing. */
+  var SKIP = /^(heytools\.(update|notif|perm|iid|last|pending|track|onboarded)|mp_sp|mp_sp_cid|mp_ver|__probe)/;
+  var BACKUP_VERSION = 2, KEY_OK = /^[A-Za-z0-9_.:\-]{1,120}$/, MAX_VALUE = 1500000, MAX_TOTAL = 6000000, MAX_KEYS = 600;
   function collectBackup() {
     var data = {};
-    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (!SKIP.test(k)) data[k] = localStorage.getItem(k); }
-    return { app: 'heytools', v: 1, saved: new Date().toISOString(), data: data };
+    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (KEY_OK.test(k) && !SKIP.test(k)) data[k] = localStorage.getItem(k); }
+    return { app: 'heytools', v: BACKUP_VERSION, saved: new Date().toISOString(), build: BUILD.run || 0, data: data };
   }
   function saveTextFile(name, text) {
     var b64 = btoa(unescape(encodeURIComponent(text)));
@@ -824,14 +861,21 @@
   $('restoreBtn').addEventListener('click', function () { $('restoreFile').click(); });
   $('restoreFile').addEventListener('change', function (e) {
     var f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (f.size > 12 * 1024 * 1024) { toast('That file is too large to be a HeyTools backup'); return; }
     var fr = new FileReader();
     fr.onload = function () {
       var j; try { j = JSON.parse(fr.result); } catch (err) { toast('That is not a HeyTools backup'); return; }
-      if (!j || j.app !== 'heytools' || !j.data) { toast('That is not a HeyTools backup'); return; }
-      var n = Object.keys(j.data).length;
-      if (!confirm('Restore ' + n + ' saved items from the backup of ' + (j.saved ? j.saved.slice(0, 10) : 'an earlier day') + '? This replaces the matching data in this app.')) return;
-      Object.keys(j.data).forEach(function (k) { if (!SKIP.test(k)) { try { localStorage.setItem(k, j.data[k]); } catch (err) { /* full */ } } });
-      toast('Backup restored'); setTimeout(function () { location.reload(); }, 700);
+      if (!j || j.app !== 'heytools' || !j.data || typeof j.data !== 'object' || Array.isArray(j.data)) { toast('That is not a HeyTools backup'); return; }
+      if (typeof j.v === 'number' && j.v > BACKUP_VERSION) { toast('This backup is from a newer HeyTools. Update the app first.'); return; }
+      /* only plain text values under safe names are restored, so a edited or hostile file cannot overwrite login tokens or flood storage */
+      var keys = Object.keys(j.data).filter(function (k) { return KEY_OK.test(k) && !SKIP.test(k) && typeof j.data[k] === 'string' && j.data[k].length <= MAX_VALUE; });
+      var total = keys.reduce(function (s, k) { return s + j.data[k].length; }, 0);
+      if (!keys.length) { toast('Nothing to restore in that file'); return; }
+      if (keys.length > MAX_KEYS || total > MAX_TOTAL) { toast('That backup is larger than HeyTools allows'); return; }
+      if (!confirm('Restore ' + keys.length + ' saved items from the backup of ' + (j.saved ? String(j.saved).slice(0, 10) : 'an earlier day') + '? This replaces the matching data in this app.')) return;
+      var failed = 0;
+      keys.forEach(function (k) { try { localStorage.setItem(k, j.data[k]); } catch (err) { failed++; } });
+      toast(failed ? 'Restored with ' + failed + ' items skipped (storage full)' : 'Backup restored'); setTimeout(function () { location.reload(); }, 900);
     };
     fr.readAsText(f);
   });
@@ -884,14 +928,164 @@
     }).catch(function () { if (manual) toast('Could not check. Are you online?'); });
   }
   $('checkUpdate').addEventListener('click', function () { checkUpdate(true); });
-  function maybeCheckUpdate() { if (NATIVE.isNative && Date.now() - get('heytools.update.checked', 0) > 3600 * 1000) checkUpdate(false); }
+  function maybeCheckUpdate() { if (NATIVE.isNative && PREFS.autoUpdate !== false && Date.now() - get('heytools.update.checked', 0) > 3600 * 1000) checkUpdate(false); }
   NATIVE.onResume && NATIVE.onResume(function () { maybeCheckUpdate(); syncPlayback(); });
+
+
+  /* ---------- notifications, privacy and first-run (new) ---------- */
+  var HN = window.HeyNotify;
+  var REMINDER_TOOLS = ['alarm-clock', 'notes-to-do-list', 'water-tracker', 'habit-tracker', 'focus-timer', 'countdown-timers'];
+  var GROUPS = { alarm: ['alarm'], remind: ['todo', 'water', 'habit', 'focus'], timers: ['timers'] };
+
+  /* Tools schedule their own reminders when they load. After a setting changes, load them quietly so every reminder is rebuilt right away. */
+  function restoreReminders() {
+    var box = document.createElement('div');
+    box.setAttribute('aria-hidden', 'true'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden';
+    document.body.appendChild(box);
+    REMINDER_TOOLS.forEach(function (id) {
+      var t = byId[id]; if (!t) return;
+      if (frames[id]) { try { frames[id].contentWindow.location.reload(); } catch (e) { /* ignore */ } return; }
+      var f = document.createElement('iframe'); f.tabIndex = -1; f.title = ''; f.src = toolPath(t); box.appendChild(f);
+    });
+    setTimeout(function () { box.remove(); }, 5000);
+  }
+  function syncUpdateFlag() {
+    if (!HN || !HN.setAutoUpdate) return;
+    var p = HN.prefs(); HN.setAutoUpdate(PREFS.autoUpdate !== false && p.all && p.updates);
+  }
+  function setRel(id, label, state, btn) {
+    var n = $(id); n.textContent = label + ': ' + (state === 'ok' ? 'Ready' : state === 'unknown' ? 'Could not check' : 'Needs attention');
+    n.className = state === 'ok' ? 'ok' : state === 'bad' ? 'warn' : '';
+    if (btn) $(btn).hidden = (state === 'ok');
+  }
+  function paintReliability() {
+    if (!NATIVE.isNative || !HN) return;
+    HN.permission().then(function (r) { setRel('relNotif', 'Notifications', r === 'granted' ? 'ok' : 'bad', 'relNotifBtn'); });
+    HN.exactPermission().then(function (r) { setRel('relExact', 'Exact alarms', r === 'granted' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relExactBtn'); });
+    HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });
+  }
+  function paintNotif() {
+    var box = $('notifSet');
+    if (!HN) { box.hidden = true; return; }
+    var p = HN.prefs();
+    $('nAll').checked = p.all; $('nAlarm').checked = p.alarm; $('nRemind').checked = p.remind; $('nTimers').checked = p.timers; $('nUpdates').checked = p.updates; $('nQuiet').checked = p.quiet;
+    $('nFrom').value = p.qFrom; $('nTo').value = p.qTo;
+    $('nTypes').classList.toggle('off', !p.all); $('quietTimes').hidden = !(p.quiet && p.all);
+    $('relBox').hidden = !NATIVE.isNative;
+    paintReliability();
+  }
+  function paintPrivacy() {
+    var tracking = !!window.HEY_TRACK_URL;
+    $('optTrack').closest('.mini-row').hidden = !tracking;
+    $('optTrack').checked = localStorage.getItem('heytools.track.consent') === 'yes';
+    $('autoUpdRow').hidden = !NATIVE.isNative; $('optAutoUpd').checked = PREFS.autoUpdate !== false;
+    $('privLink').setAttribute('href', NATIVE.isNative ? '../privacy/index.html' : '../privacy/');
+  }
+  window.paintSettingsExtras = function () { paintNotif(); paintPrivacy(); $('nMsg').textContent = ''; };
+
+  /* turning one type off cancels what is already scheduled; turning it on (or changing quiet hours) rebuilds the reminders */
+  function notifChanged(patch, turnedOff) {
+    if (!HN) return;
+    var before = HN.prefs(), after = HN.setPrefs(patch);
+    if (!after.all) { HN.cancelAll(); }
+    else Object.keys(GROUPS).forEach(function (k) { if (before[k] && !after[k]) GROUPS[k].forEach(function (g) { HN.cancelGroup(g); }); });
+    var gotOn = (!before.all && after.all) || ['alarm', 'remind', 'timers'].some(function (k) { return !before[k] && after[k]; }) ||
+      before.quiet !== after.quiet || before.qFrom !== after.qFrom || before.qTo !== after.qTo;
+    if (gotOn && after.all) {
+      var go = function () { restoreReminders(); toast('Reminders updated'); };
+      if (!before.all) HN.requestPermission().then(go); else go();
+    }
+    syncUpdateFlag(); paintNotif();
+  }
+  $('nAll').addEventListener('change', function (e) {
+    if (!e.target.checked && !confirm('Turn off ALL notifications? Alarms will not ring and reminders will not appear until you turn this back on.')) { e.target.checked = true; return; }
+    notifChanged({ all: e.target.checked });
+  });
+  $('nAlarm').addEventListener('change', function (e) { notifChanged({ alarm: e.target.checked }); });
+  $('nRemind').addEventListener('change', function (e) { notifChanged({ remind: e.target.checked }); });
+  $('nTimers').addEventListener('change', function (e) { notifChanged({ timers: e.target.checked }); });
+  $('nUpdates').addEventListener('change', function (e) { notifChanged({ updates: e.target.checked }); });
+  $('nQuiet').addEventListener('change', function (e) { notifChanged({ quiet: e.target.checked }); });
+  $('nFrom').addEventListener('change', function (e) { if (e.target.value) notifChanged({ qFrom: e.target.value }); });
+  $('nTo').addEventListener('change', function (e) { if (e.target.value) notifChanged({ qTo: e.target.value }); });
+  $('nTest').addEventListener('click', function () {
+    if (!HN) return;
+    HN.sendTest().then(function (r) {
+      $('nMsg').textContent = r === 'sent' ? 'Test sent. It should appear in a few seconds.' : r === 'off' ? 'Notifications are switched off above. Turn them on first.' : 'Notifications are blocked. Allow them in your phone settings, then try again.';
+      paintReliability();
+    });
+  });
+  $('relNotifBtn').addEventListener('click', function () { HN.requestPermission().then(paintReliability); });
+  $('relExactBtn').addEventListener('click', function () { HN.requestExactPermission().then(paintReliability); });
+  $('relBattBtn').addEventListener('click', function () { HN.openBatterySettings(); });
+  $('relTest').addEventListener('click', function () {
+    HN.testAlarm().then(function (r) {
+      $('nMsg').textContent = r === 'scheduled' ? 'A test alarm will ring in 1 minute. Lock your phone and wait for it.' : r === 'unsupported' ? 'Alarm tests need the Android app.' : String(r);
+    });
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && sheetOpen()) paintReliability(); });
+  $('optTrack').addEventListener('change', function (e) { try { localStorage.setItem('heytools.track.consent', e.target.checked ? 'yes' : 'no'); } catch (err) { /* ignore */ } });
+  $('optAutoUpd').addEventListener('change', function (e) { PREFS.autoUpdate = e.target.checked; savePrefs(); syncUpdateFlag(); });
+  syncUpdateFlag();
+
+  /* delete everything HeyTools keeps on this device */
+  $('wipeBtn').addEventListener('click', function () {
+    if (!confirm('Delete ALL HeyTools data on this device? This removes notes, to-dos, habits, expenses, alarms, saved recordings, photos kept inside HeyTools, and every setting. It cannot be undone.')) return;
+    if (!confirm('Last check: really delete everything?')) return;
+    var jobs = [];
+    Object.keys(frames).forEach(function (k) { dropFrame(k); });
+    if (HN) jobs.push(HN.cancelAll());
+    if (NATIVE.isNative && NATIVE.stopPlayback) NATIVE.stopPlayback();
+    try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* ignore */ }
+    if (window.indexedDB && indexedDB.databases) {
+      jobs.push(indexedDB.databases().then(function (list) {
+        return Promise.all(list.map(function (d) {
+          return new Promise(function (res) { var r = indexedDB.deleteDatabase(d.name); r.onsuccess = r.onerror = r.onblocked = function () { res(); }; });
+        }));
+      }).catch(function () {}));
+    }
+    if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (n) { return caches.delete(n); })); }).catch(function () {}));
+    if (!NATIVE.isNative && navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }).catch(function () {}));
+    Promise.all(jobs).then(function () { location.replace(location.pathname); });
+  });
+
+  /* first-run: privacy in plain words, notification permission with a reason, and pinning */
+  function startOnboarding() {
+    if (get('heytools.onboarded.v1', false) || (location.hash || '').replace(/^#\/?/, '')) return;
+    var wrap = $('onbWrap'), step = 0, steps = [$('onb1'), $('onb2'), $('onb3')], dots = wrap.querySelectorAll('.onb-dots i');
+    var canAsk = !!(HN && (HN.isNative || typeof Notification !== 'undefined'));
+    $('onbTrack').closest('.mini-row').hidden = !window.HEY_TRACK_URL;
+    function show() {
+      steps.forEach(function (s, i) { s.hidden = i !== step; });
+      for (var i = 0; i < dots.length; i++) dots[i].className = i === step ? 'on' : '';
+      $('onbNext').textContent = step === 0 ? 'Next' : step === 1 ? (canAsk ? 'Allow notifications' : 'Next') : 'Get started';
+      $('onbSkip').hidden = step === 2;
+    }
+    function finish() {
+      put('heytools.onboarded.v1', true);
+      if (window.HEY_TRACK_URL) { try { localStorage.setItem('heytools.track.consent', $('onbTrack').checked ? 'yes' : 'no'); } catch (e) { /* ignore */ } }
+      wrap.hidden = true;
+    }
+    $('onbNext').onclick = function () {
+      if (step === 1 && canAsk) {
+        put('heytools.notif.asked', true);
+        try { HN.requestPermission(); } catch (e) { /* ignore */ }   // never wait on the system prompt, so onboarding can not get stuck
+        step++; show();
+        return;
+      }
+      if (step < 2) { step++; show(); return; }
+      finish();
+    };
+    $('onbSkip').onclick = finish;
+    wrap.hidden = false; show(); $('onbNext').focus();
+  }
+  startOnboarding();
 
   window.addEventListener('hashchange', route);
   applyPrefs(); syncFilterButtons(); checkSaved(); resumeLast(); route();
   loadBuild().then(function () { setVerInfo(); maybeCheckUpdate(); });
   /* ask once for permission to show notifications (alarms, reminders and update alerts need it) */
-  if (NATIVE.isNative && window.HeyNotify && !get('heytools.notif.asked', false)) {
+  if (NATIVE.isNative && window.HeyNotify && !get('heytools.notif.asked', false) && get('heytools.onboarded.v1', false) && HeyNotify.prefs().all) {
     setTimeout(function () { put('heytools.notif.asked', true); HeyNotify.requestPermission(); }, 4000);
   }
   setVerInfo();

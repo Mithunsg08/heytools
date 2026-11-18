@@ -77,6 +77,9 @@ public class MediaLibraryPlugin extends Plugin {
   @PluginMethod
   public void scan(final PluginCall call) {
     final String kind = call.getString("kind", "video");
+    // The list is read in pages so a phone with thousands of files never has to send one huge message.
+    final int offset = Math.max(0, call.getInt("offset", 0));
+    final int limit = Math.max(1, Math.min(call.getInt("limit", 1000), 5000));
     if (!granted(kind)) {
       call.reject("Permission not granted");
       return;
@@ -86,6 +89,8 @@ public class MediaLibraryPlugin extends Plugin {
       public void run() {
         try {
           boolean audio = "audio".equals(kind);
+          int total = 0;
+          int next = offset;
           Uri uri = audio ? MediaStore.Audio.Media.EXTERNAL_CONTENT_URI : MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
           String[] proj = audio
             ? new String[] {
@@ -111,7 +116,11 @@ public class MediaLibraryPlugin extends Plugin {
               int iArtist = audio ? c.getColumnIndexOrThrow(proj[5]) : -1;
               int iAlbum = audio ? c.getColumnIndexOrThrow(proj[6]) : -1;
               int count = 0;
-              while (c.moveToNext() && count < 30000) {
+              total = c.getCount();
+              next = offset;
+              if (next > 0 && !c.moveToPosition(next - 1)) next = total;
+              while (count < limit && c.moveToNext()) {
+                next++;
                 String path = c.getString(iData);
                 if (path == null) continue;
                 JSObject o = new JSObject();
@@ -133,6 +142,8 @@ public class MediaLibraryPlugin extends Plugin {
           }
           JSObject ret = new JSObject();
           ret.put("items", items);
+          ret.put("total", total);
+          ret.put("next", next);
           call.resolve(ret);
         } catch (Exception e) {
           call.reject("Could not read the media library: " + e.getMessage());

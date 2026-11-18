@@ -10,13 +10,13 @@
     <link rel="canonical" href="https://earthszipcode.com/">
 
     <!-- SEO OpenGraph & Twitter Cards -->
-    <meta property="og:title" content="Earth's Zipcode — Official Global Postal Code Engine">
-    <meta property="og:description" content="Find accurate postal codes across 240+ countries on an interactive 3D Earth with real-time official postal boundary verification.">
+    <meta property="og:title" content="Earth's Zipcode — Official Global Postal Code &amp; Location Finder">
+    <meta property="og:description" content="Search accurate ZIP codes, postal codes, and PIN codes for any location on Earth with our interactive 3D Globe visualization tool. 100% English verified search.">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Earth's Zipcode">
+    <meta property="og:site_name" content="HeyTools">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Earth's Zipcode — Interactive 3D Postal Search">
-    <meta name="twitter:description" content="Click anywhere on Earth to get instant, accurate postal codes and location details in English.">
+    <meta name="twitter:title" content="Earth's Zipcode — Official Global Postal Code &amp; Location Finder">
+    <meta name="twitter:description" content="Search accurate ZIP codes, postal codes, and PIN codes for any location on Earth with our interactive 3D Globe visualization tool. 100% English verified search.">
 
     <!-- JSON-LD Structured Data for SEO -->
     <script type="application/ld+json">
@@ -61,7 +61,7 @@
     </script>
 
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -87,14 +87,13 @@
     </script>
 
     <!-- Three.js & OrbitControls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="../vendor/three-r128.min.js"></script>
+    <script src="../vendor/OrbitControls-r128.js"></script>
     
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="../vendor/lucide-0.468.0.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap');
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -153,6 +152,12 @@
         }
     </style>
 <script src="../install-prompt.js" defer></script>
+    <link rel="stylesheet" href="../fonts/fonts.css">
+<meta property="og:url" content="https://earthszipcode.com/">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/earth-zipcode.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/earth-zipcode.jpg"><style id="hey-a11y">:focus-visible{outline:3px solid #5B3DF5;outline-offset:2px}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body class="bg-cyber-bg text-slate-900 dark:text-slate-100 min-h-screen relative transition-colors duration-300">
 
@@ -285,6 +290,9 @@
                 <span>English Standard</span>
             </div>
         </footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../calculator/">Calculator Suite</a> · <a href="../scientific-calculator/">Scientific Calculator</a> · <a href="../unit-converter/">Unit Converter</a> · <a href="../word-counter/">Word Counter</a> · <a href="../password-generator/">Password Generator</a> · <a href="../qr-scanner/">QR &amp; Barcode Scanner</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
     </div>
 
     <!-- SEO KNOWLEDGE HUB & FAQ MODAL OVERLAY -->
@@ -417,8 +425,8 @@
             // Earth Sphere
             const earthGeo = new THREE.SphereGeometry(100, 64, 64);
             const earthMat = new THREE.MeshStandardMaterial({
-                map: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
-                bumpMap: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
+                map: textureLoader.load('img/earth-day.jpg'),
+                bumpMap: textureLoader.load('img/earth-topology.png'),
                 bumpScale: 1.5,
                 roughness: 0.75,
                 metalness: 0.1
@@ -427,14 +435,7 @@
             scene.add(earthMesh);
 
             // Cloud Layer
-            const cloudGeo = new THREE.SphereGeometry(101.2, 64, 64);
-            const cloudMat = new THREE.MeshStandardMaterial({
-                map: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-clouds.png'),
-                transparent: true,
-                opacity: 0.35,
-                blending: THREE.AdditiveBlending
-            });
-            cloudsMesh = new THREE.Mesh(cloudGeo, cloudMat);
+            cloudsMesh = new THREE.Object3D(); // upstream cloud texture was removed; no overlay
             scene.add(cloudsMesh);
 
             // Atmosphere Glow Mesh
@@ -820,5 +821,8 @@
             initGlobe();
         };
     </script>
+
+
+
 </body>
 </html>

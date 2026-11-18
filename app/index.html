@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HeyTools | All your private tools in one app</title>
 <meta name="description" content="HeyTools is one app with 46 private tools: media players, editors, calculators, trackers and utilities. Everything runs on your device and your files never leave it.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#F5F5F7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -91,6 +93,11 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
             <div class="edit-actions"><button class="btn" id="resetLayout" type="button">Reset</button><button class="btn primary" id="doneEdit" type="button">Done</button></div>
           </div>
 
+          <section class="recent" id="pinned" hidden aria-labelledby="pinnedTitle">
+            <div class="sec-head"><h3 id="pinnedTitle"><span aria-hidden="true">★</span>Pinned</h3><span class="hint">Tap ☆ on a tool to pin it</span></div>
+            <div class="recent-row" id="pinnedRow"></div>
+          </section>
+
           <section class="recent" id="recent" hidden aria-labelledby="recentTitle">
             <div class="sec-head"><h3 id="recentTitle"><svg class="i"><use href="#i-clock"/></svg>Recently used</h3><button class="link" id="clearRecent" type="button">Clear</button></div>
             <div class="recent-row" id="recentRow"></div>
@@ -163,18 +170,80 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
           <button class="btn" id="checkUpdate" type="button" hidden>Check for updates</button>
         </div>
         <span class="set-l" style="margin-top:14px">Your data</span>
-        <p class="set-s">Back up your notes, to-dos, habits, expenses, alarms and settings to a file, and restore them on a new install or phone. Videos and music are read from your phone each time.</p>
+        <p class="set-s">Back up your notes, to-dos, habits, expenses, alarms and settings to a file, and restore them on a new install or phone. Not included: videos, music, recordings and Geo Camera photos (they are large, and Geo Camera photos are already in your Gallery), and your Spotify login.</p>
         <div class="row-btns">
           <button class="btn" id="backupBtn" type="button">Back up my data</button>
           <button class="btn" id="restoreBtn" type="button">Restore from backup</button>
           <input id="restoreFile" type="file" accept="application/json,.json" hidden>
         </div>
       </div>
+      <div class="set" id="notifSet">
+        <span class="set-l">Notifications</span>
+        <p class="set-s">Choose what HeyTools may notify you about. Reminders are created on your phone and are never sent through a server.</p>
+        <div class="mini-row"><label for="nAll">All notifications</label><input class="switch" type="checkbox" id="nAll"></div>
+        <div id="nTypes">
+          <div class="mini-row"><label for="nAlarm">Alarms</label><input class="switch" type="checkbox" id="nAlarm"></div>
+          <div class="mini-row"><label for="nRemind">Reminders <small>to-do, water, habits, focus</small></label><input class="switch" type="checkbox" id="nRemind"></div>
+          <div class="mini-row"><label for="nTimers">Timers</label><input class="switch" type="checkbox" id="nTimers"></div>
+          <div class="mini-row"><label for="nUpdates">App update alerts</label><input class="switch" type="checkbox" id="nUpdates"></div>
+          <div class="mini-row"><label for="nQuiet">Quiet hours <small>gentle reminders wait until morning. Alarms and timers still ring.</small></label><input class="switch" type="checkbox" id="nQuiet"></div>
+          <div class="mini-row quiet-times" id="quietTimes" hidden><label for="nFrom">From</label><input type="time" id="nFrom" class="time"><label for="nTo">to</label><input type="time" id="nTo" class="time"></div>
+        </div>
+        <div class="row-btns"><button class="btn" id="nTest" type="button">Send a test notification</button></div>
+        <p class="hint" id="nMsg" role="status"></p>
+        <div class="rel" id="relBox" hidden>
+          <span class="set-l">Make sure alarms ring</span>
+          <p class="set-s">Some phones stop apps in the background. These checks keep your alarms reliable.</p>
+          <div class="rel-row"><span id="relNotif">Notifications</span><button class="btn" id="relNotifBtn" type="button" hidden>Allow</button></div>
+          <div class="rel-row"><span id="relExact">Exact alarms</span><button class="btn" id="relExactBtn" type="button" hidden>Allow</button></div>
+          <div class="rel-row"><span id="relBatt">Battery</span><button class="btn" id="relBattBtn" type="button" hidden>Fix</button></div>
+          <div class="row-btns"><button class="btn primary" id="relTest" type="button">Test alarm in 1 minute</button></div>
+        </div>
+      </div>
+      <div class="set" id="privSet">
+        <span class="set-l">Privacy &amp; data</span>
+        <p class="set-s">Your notes, trackers, photos and files stay on this device. HeyTools has no accounts and no ads. A few tools use the internet only when you use them (maps, weather, streaming, downloads).</p>
+        <div class="mini-row"><label for="optTrack">Share anonymous download counts <small>device type only, no name, no files. Off unless you turn it on.</small></label><input class="switch" type="checkbox" id="optTrack"></div>
+        <div class="mini-row" id="autoUpdRow" hidden><label for="optAutoUpd">Check for app updates automatically <small>asks GitHub for the newest version number</small></label><input class="switch" type="checkbox" id="optAutoUpd"></div>
+        <div class="row-btns">
+          <a class="btn" id="privLink" href="../privacy/" target="_blank" rel="noopener">Read the privacy details</a>
+          <button class="btn danger" id="wipeBtn" type="button">Delete all my data</button>
+        </div>
+        <p class="hint">Delete removes notes, trackers, alarms, settings, saved recordings and photos kept inside HeyTools, and cancels every reminder. Photos already in your Gallery are not touched.</p>
+      </div>
       <div class="set">
         <button class="btn primary block install-btn" type="button" hidden>Install HeyTools app</button>
         <p class="hint ios-hint" hidden>On iPhone: tap Share, then Add to Home Screen.</p>
         <p class="hint net-state" role="status"></p>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="onbWrap" hidden>
+  <div class="sheet-scrim"></div>
+  <div class="sheet onb" role="dialog" aria-modal="true" aria-labelledby="onbTitle">
+    <div class="onb-body">
+      <div class="onb-step" id="onb1">
+        <div class="onb-ico" aria-hidden="true">🔒</div>
+        <h2 id="onbTitle">Private by design</h2>
+        <p>HeyTools has no accounts and no ads. Your notes, trackers, photos and files stay on this device.</p>
+        <p class="hint">Tools marked <em>Needs internet</em> or <em>Partly offline</em> use the internet only while you use them. The first time you open the app, let each tool save itself to the device.</p>
+      </div>
+      <div class="onb-step" id="onb2" hidden>
+        <div class="onb-ico" aria-hidden="true">🔔</div>
+        <h2>Stay on time</h2>
+        <p>Allow notifications so alarms, timers, to-do reminders, water and habit check-ins can reach you, even when the app is closed.</p>
+        <p class="hint">You can choose which kinds you get, set quiet hours, or switch everything off in Settings.</p>
+      </div>
+      <div class="onb-step" id="onb3" hidden>
+        <div class="onb-ico" aria-hidden="true">⭐</div>
+        <h2>Make it yours</h2>
+        <p>Tap ☆ on a tool to pin it to the top. Use Customize to reorder or hide the ones you do not need.</p>
+        <div class="mini-row"><label for="onbTrack">Share anonymous download counts <small>optional. Device type only. You can change this later.</small></label><input class="switch" type="checkbox" id="onbTrack"></div>
+      </div>
+      <div class="onb-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+      <div class="onb-actions"><button class="btn" id="onbSkip" type="button">Skip</button><button class="btn primary" id="onbNext" type="button">Next</button></div>
     </div>
   </div>
 </div>

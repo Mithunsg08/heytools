@@ -54,6 +54,54 @@
     return exactPermission();
   }
 
+  /* ---------- user notification settings (shared by the app and every tool) ----------
+     all: master switch, alarm / remind / timers / updates: per type, quiet: hold gentle reminders overnight.
+     Alarms and timers are never delayed by quiet hours, because the person set them for an exact time. */
+  var PREF_KEY='heytools.notif.prefs.v1';
+  var DEFAULTS={all:true,alarm:true,remind:true,timers:true,updates:true,quiet:false,qFrom:'22:00',qTo:'07:00'};
+  function prefs(){
+    var p={};try{p=JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{};}catch(e){}
+    var o={};Object.keys(DEFAULTS).forEach(function(k){o[k]=(typeof p[k]===typeof DEFAULTS[k])?p[k]:DEFAULTS[k];});
+    return o;
+  }
+  function setPrefs(patch){
+    var o=prefs();Object.keys(patch||{}).forEach(function(k){if(k in DEFAULTS&&typeof patch[k]===typeof DEFAULTS[k])o[k]=patch[k];});
+    try{localStorage.setItem(PREF_KEY,JSON.stringify(o));}catch(e){}
+    return o;
+  }
+  function kindOf(it){
+    if(it&&+it.id===99001)return 'updates';
+    var g=(it&&(it.group||it.kind))||'';
+    if(g==='alarm'||it&&it.alarm)return 'alarm';
+    if(g==='timers')return 'timers';
+    if(g==='test')return 'test';
+    return 'remind';
+  }
+  function allowedKind(k){
+    var p=prefs();if(!p.all)return false;
+    if(k==='alarm')return p.alarm;if(k==='timers')return p.timers;if(k==='updates')return p.updates;return k==='test'||p.remind;
+  }
+  function minutes(hm){var a=String(hm||'0:0').split(':');return (+a[0]||0)*60+(+a[1]||0);}
+  function inQuiet(mins,p){
+    var f=minutes(p.qFrom),e=minutes(p.qTo);if(f===e)return false;
+    return f<e?(mins>=f&&mins<e):(mins>=f||mins<e);
+  }
+  /* move a gentle reminder out of quiet hours: it fires when quiet hours end instead */
+  function quietShift(it){
+    var p=prefs();if(!p.quiet||kindOf(it)!=='remind')return it;
+    var c=Object.assign({},it);
+    if(c.repeat){
+      if(inQuiet(c.repeat.hour*60+c.repeat.minute,p)){var e=minutes(p.qTo);c.repeat=Object.assign({},c.repeat,{hour:Math.floor(e/60),minute:e%60});}
+      return c;
+    }
+    var d=new Date(c.at);if(isNaN(+d))return c;
+    if(inQuiet(d.getHours()*60+d.getMinutes(),p)){
+      var end=minutes(p.qTo),x=new Date(d);x.setHours(Math.floor(end/60),end%60,0,0);
+      if(x<=d)x.setDate(x.getDate()+1);c.at=+x;
+    }
+    return c;
+  }
+
   var timers=Object.create(null),timerGroups=Object.create(null);
   function clearWebTimer(id){if(timers[id]!=null)clearTimeout(timers[id]);delete timers[id];delete timerGroups[id];}
   function nextRepeat(r){
@@ -94,7 +142,7 @@
     return n;
   }
   function schedule(items){
-    items=(items||[]).filter(function(i){return i&&i.id!=null;});
+    items=(items||[]).filter(function(i){return i&&i.id!=null&&allowedKind(kindOf(i));}).map(quietShift);
     if(!native){items.forEach(webSchedule);return Promise.resolve(items.length);}
     var list=[];
     items.forEach(function(it){
@@ -132,10 +180,47 @@
   }
   function syncGroup(group,items){
     items=items||[];items.forEach(function(i){i.group=group;});
+    if(!allowedKind(kindOf({group:group}))){
+      if(group==='alarm'&&native&&HA&&HA.syncAlarms)return HA.syncAlarms({alarms:[]}).then(function(){return 0;}).catch(function(){return 0;});
+      return cancelGroup(group).then(function(){return 0;});
+    }
     if(group==='alarm'&&native&&HA&&HA.syncAlarms)return HA.syncAlarms({alarms:items.map(nativeAlarmItem)}).then(function(r){return r.scheduled||items.length;});
     return cancelGroup(group).then(function(){return schedule(items);});
   }
   function alarmState(){return native&&HA&&HA.getState?HA.getState():Promise.resolve({alarms:[],exactPermission:false});}
+  function cancelAll(){
+    var jobs=[];
+    if(native){
+      jobs.push(LN.getPending().then(function(r){var l=(r.notifications||[]).map(function(n){return {id:n.id};});return l.length?LN.cancel({notifications:l}):null;}).catch(function(){}));
+      if(HA&&HA.syncAlarms)jobs.push(HA.syncAlarms({alarms:[]}).catch(function(){}));
+    }else{Object.keys(timers).forEach(clearWebTimer);}
+    return Promise.all(jobs).then(function(){});
+  }
+  /* a notification a few seconds from now, so the person can check that sound, banner and permission all work */
+  function sendTest(){
+    if(!prefs().all)return Promise.resolve('off');
+    return requestPermission().then(function(r){
+      if(r!=='granted')return 'denied';
+      return schedule([{id:99002,title:'HeyTools test',body:'Notifications are working on this device.',at:Date.now()+3000,group:'test'}]).then(function(){return 'sent';});
+    });
+  }
+  /* a real alarm 60 seconds from now, using the same exact-alarm path as the Alarm Clock tool */
+  function testAlarm(){
+    if(!(native&&HA&&HA.testAlarm))return Promise.resolve('unsupported');
+    return HA.testAlarm().then(function(){return 'scheduled';}).catch(function(e){return (e&&e.message)||'failed';});
+  }
+  function batteryState(){
+    if(!(native&&HA&&HA.getBatteryState))return Promise.resolve('unknown');
+    return HA.getBatteryState().then(function(r){return r&&r.unrestricted?'ok':'restricted';}).catch(function(){return 'unknown';});
+  }
+  function openBatterySettings(){
+    if(!(native&&HA&&HA.openBatterySettings))return Promise.resolve();
+    return HA.openBatterySettings().catch(function(){});
+  }
+  function setAutoUpdate(on){
+    if(!(native&&HA&&HA.setAutoUpdate))return Promise.resolve();
+    return HA.setAutoUpdate({enabled:!!on}).catch(function(){});
+  }
   function on(evt,fn){
     (listeners[evt]=listeners[evt]||[]).push(fn);
     if(evt==='action'&&pendingActions.length){
@@ -150,5 +235,6 @@
   });
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
-    cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels};
+    cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
 })();
