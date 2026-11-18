@@ -92,6 +92,10 @@ python3 -m http.server 8000       # then open http://localhost:8000/app/
 
 **Release:** bump `VERSION` in `heytools-sw.js` whenever the app shell or a tool changes. Android builds run from GitHub Actions. Keep the signing key safe (see [SECURITY.md](SECURITY.md)).
 
+## License
+
+Copyright (c) 2026 Mithunsg08 (HeyTools). **All rights reserved.** You may use the official website and app for personal use. Copying, modifying, redistributing, hosting, selling, or rebranding HeyTools is not allowed without written permission. See [LICENSE](LICENSE). Third-party libraries and fonts keep their own licenses (see `vendor/README.md`).
+
 ## Security and privacy
 
 See [SECURITY.md](SECURITY.md) to report a problem and for how the app is hardened.

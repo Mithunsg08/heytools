@@ -111,11 +111,11 @@ const manifestPatch = androidPatch;
 if (fs.existsSync(path.join(root, 'native/tests/AlarmSchedulerTest.java'))) pass('Native alarm instrumentation tests are present');
 else fail('Native alarm instrumentation tests are missing');
 
-const trackingConfig = read('track-config.js');
-if (/window\.HEY_TRACK_URL\s*=\s*['"]https?:/.test(trackingConfig)) {
-  fail('Analytics endpoint is enabled by default; require an explicit consent design first');
+const trackingSource = read('heytrack.js');
+if (!/heytools\.track\.consent['"]\)\s*!==\s*'yes'/.test(trackingSource)) {
+  fail('heytrack.js must send nothing unless the person opted in (heytools.track.consent === yes)');
 } else {
-  pass('Analytics endpoint is disabled by default');
+  pass('Analytics is opt-in: nothing is sent without the person\'s consent');
 }
 
 const manifest = JSON.parse(read('app/manifest.webmanifest'));
