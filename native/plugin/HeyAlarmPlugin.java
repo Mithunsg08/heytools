@@ -51,6 +51,56 @@ public class HeyAlarmPlugin extends Plugin {
     } catch (Exception e) { call.reject("Could not open alarm permission settings: " + e.getMessage(), e); }
   }
 
+
+  @PluginMethod
+  public void testAlarm(PluginCall call) {
+    try {
+      AlarmScheduler.addTest(getContext());
+      call.resolve();
+    } catch (SecurityException e) {
+      call.reject("Allow HeyTools under Settings > Alarms & reminders first.", e);
+    } catch (Exception e) { call.reject("Could not start the test alarm: " + e.getMessage(), e); }
+  }
+
+  /** True when Android does not restrict HeyTools in the background. Some phones stop alarms for restricted apps. */
+  @PluginMethod
+  public void getBatteryState(PluginCall call) {
+    try {
+      android.os.PowerManager pm = (android.os.PowerManager) getContext().getSystemService(android.content.Context.POWER_SERVICE);
+      boolean ok = android.os.Build.VERSION.SDK_INT < 23 || (pm != null && pm.isIgnoringBatteryOptimizations(getContext().getPackageName()));
+      JSObject r = new JSObject();
+      r.put("unrestricted", ok);
+      call.resolve(r);
+    } catch (Exception e) { call.reject("Could not read battery state: " + e.getMessage(), e); }
+  }
+
+  /** Opens the system battery optimisation list (needs no special permission), falling back to the app's settings page. */
+  @PluginMethod
+  public void openBatterySettings(PluginCall call) {
+    try {
+      android.content.Intent list = new android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+      list.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+      try {
+        getContext().startActivity(list);
+      } catch (Exception unavailable) {
+        android.content.Intent details = new android.content.Intent(
+          android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+          android.net.Uri.parse("package:" + getContext().getPackageName()));
+        details.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(details);
+      }
+      call.resolve();
+    } catch (Exception e) { call.reject("Could not open battery settings: " + e.getMessage(), e); }
+  }
+
+  /** Lets the person switch background update checks off (Settings > Privacy & data). */
+  @PluginMethod
+  public void setAutoUpdate(PluginCall call) {
+    boolean on = call.getBoolean("enabled", true);
+    getContext().getSharedPreferences("heytools_prefs", 0).edit().putBoolean("auto_update", on).apply();
+    call.resolve();
+  }
+
   @PluginMethod
   public void getState(PluginCall call) {
     try { call.resolve(AlarmScheduler.getState(getContext())); }

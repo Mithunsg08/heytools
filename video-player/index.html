@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Video Player – Free Online Video Player for Local Files, Live TV, Captions & Streaming (Works Offline)</title>
 <meta name="description" content="Free private video player: import all videos from your device, watch live TV from 100+ countries with an offline channel list, search and download captions, stream YouTube, choose dark, light or colourful themes, and keep a watch history you control.">
-<link rel="canonical" id="cn" href="">
-<meta property="og:type" content="website"><meta property="og:title" content="Video Player – Local Files, Live TV, Captions & Streaming"><meta property="og:description" content="Play everything on your device. Local files, live TV and online streams in one elegant, private player that works offline.">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/video-player/">
+<meta property="og:type" content="website"><meta property="og:title" content="Video Player – Free Online Video Player for Local Files, Live TV, Captions &amp; Streaming (Works Offline)"><meta property="og:description" content="Free private video player: import all videos from your device, watch live TV from 100+ countries with an offline channel list, search and download captions, stream YouTube, choose dark, light or colourful themes, and keep a watch history you control.">
 <meta name="twitter:card" content="summary_large_image"><meta name="robots" content="index,follow,max-image-preview:large">
 <meta name="keywords" content="video player, online video player, offline video player, play local videos, import folder, live tv, iptv player, hls player, youtube player">
 <meta name="theme-color" content="#000000">
@@ -157,6 +157,14 @@ body.drag .drop{display:grid}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/video-player/">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/video-player.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:title" content="Video Player – Free Online Video Player for Local Files, Live TV, Captions &amp; Streaming (Works Offline)">
+<meta name="twitter:description" content="Free private video player: import all videos from your device, watch live TV from 100+ countries with an offline channel list, search and download captions, stream YouTube, choose dark, light or colourful themes, and keep a watch history you control.">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/video-player.jpg"><style id="hey-a11y">:focus-visible{outline:3px solid #5B3DF5;outline-offset:2px}</style>
 </head>
 <body>
 <div class="bgfx" aria-hidden="true"></div>
@@ -257,6 +265,9 @@ body.drag .drop{display:grid}
   <section class="rv"><h2>Frequently asked questions</h2><details><summary>What is Video Player?</summary><p>Video Player is a free media player that runs in your web browser. It plays videos stored on your device, streams live TV channels from around the world, searches YouTube, Dailymotion and the Internet Archive, finds captions online and keeps an optional watch history.</p></details><details><summary>Are my videos uploaded anywhere?</summary><p>No. Import all only asks your browser for permission to read a folder or to pick videos. Files play directly from your device and are never uploaded.</p></details><details><summary>How do I import all videos from a folder?</summary><p>Press the large Import all button. In Chrome and Edge on a computer you allow access to one folder and every video in it and its sub-folders appears in a searchable library, remembered for next time. On phones and other browsers the system video picker opens so you can select all the videos you want.</p></details><details><summary>Does Video Player work without internet?</summary><p>Yes. After the first visit the page, your imported library, history, settings, saved captions and the Live TV channel list work offline. Online streams such as YouTube need a connection.</p></details><details><summary>Can I watch live TV offline?</summary><p>The Live TV channel list is saved on your device so you can browse and search channels offline. The live broadcast itself comes from the TV station over the internet, so playing a channel needs a connection.</p></details><details><summary>How do I add captions or subtitles?</summary><p>Open the CC button. Online is the default: type the movie name, choose a language and pick a caption file. It is downloaded, stored on your device and played in the video. You can also load a local SRT or VTT file or reuse a saved caption.</p></details><details><summary>Where are downloaded captions stored?</summary><p>Captions are stored in your browser on your device. The next time you open the same video the saved caption loads automatically. You can delete saved captions in Settings.</p></details><details><summary>How do I turn off watch history?</summary><p>Use the Save history switch in the History tab or in Settings. When it is off nothing new is recorded, and you can clear existing history at any time.</p></details><details><summary>Which video formats are supported?</summary><p>MP4 (H.264/AAC), WebM, OGV, MOV, M4V, MP3, M4A, FLAC, WAV and Ogg play in major browsers. MKV depends on your browser. Live streams use HLS (.m3u8).</p></details><details><summary>Can I change the colour theme?</summary><p>Yes. Choose Midnight, Light, Aurora, Sunset, Ocean or Rose in Settings. Midnight, a black and white iPhone-style dark mode, is the default.</p></details></section>
 </div>
 <footer>Video Player is a free, private media player and does not host any channels or videos.<br>Space play · F fullscreen · T wide · M mute · C subtitles · S screenshot · ←/→ seek · N/P next/previous</footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../music-player/">Music Player</a> · <a href="../recorder/">Recorder</a> · <a href="../geo-camera/">Geo Camera</a> · <a href="../emulsion/">Emulsion</a> · <a href="../video-loop/">Video Loop</a> · <a href="../media-downloads/">Media Downloads</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 
 <!-- side panels live outside the stage so the sticky header and animations can never cover or trap them -->
 <div class="pop" id="pop" role="dialog" aria-label="Settings">
@@ -416,7 +427,7 @@ async function open(it){
       if(!navigator.onLine)return fail('Live TV needs internet to stream. Your library, history and channel list still work offline.');
       if(location.protocol==='https:'&&/^http:/i.test(src))src='https:'+src.slice(5);   // avoid mixed-content block
       if(v.canPlayType('application/vnd.apple.mpegurl')&&/Apple/.test(navigator.vendor))v.src=src;
-      else{await (hlsP||(hlsP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js';s.onload=res;s.onerror=()=>{hlsP=null;rej()};document.head.append(s)})));
+      else{await (hlsP||(hlsP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js';s.onload=res;s.onerror=()=>{hlsP=null;rej()};document.head.append(s)})));
         hls=new Hls({lowLatencyMode:true});hls.loadSource(src);hls.attachMedia(v);let r=0;
         hls.on(Hls.Events.ERROR,(e,d)=>{if(!d.fatal)return;if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&r++<1)return hls.startLoad();if(d.type===Hls.ErrorTypes.MEDIA_ERROR&&r++<2)return hls.recoverMediaError();fail('This stream is offline or blocks browser playback. Try another channel.')})}
     }else v.src=src;
@@ -660,5 +671,8 @@ if(location.protocol==='file:')setTimeout(()=>toast('Tip: open this page from ht
 const qp=new URLSearchParams(location.search);if(qp.get('url')){tab('st');const it=parseLink(qp.get('url'));if(it)setQ([it],0)}
 </script>
 <noscript><p style="padding:40px;text-align:center">Video Player needs JavaScript.</p></noscript>
+
+
+
 </body>
 </html>

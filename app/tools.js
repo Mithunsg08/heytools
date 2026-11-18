@@ -21,8 +21,8 @@ window.HEY_TOOLS = [
   { id: 'media-downloads', name: 'Media Downloads', cat: 'media', icon: '⬇️', net: 'online', desc: 'Download public media from a link.', hide: '#features,#faq,footer' },
 
   { id: 'image-compress', name: 'Image Compressor', cat: 'image', icon: '🗜️', net: 'offline', desc: 'Shrink images to a size you choose.', hide: '.hero,main>section.c,.cta,footer' },
-  { id: 'image-to-pdf-converter', name: 'Image to PDF', cat: 'image', icon: '📄', net: 'offline', desc: 'Combine images into one PDF.', hide: '.feat,#formats,.seo,footer' },
-  { id: 'background-removal', name: 'Background Removal', cat: 'image', icon: '✂️', net: 'partial', netNote: 'The AI model downloads on first use. After that it can work offline.', desc: 'Remove photo backgrounds without uploading.', hide: '.hero,#how,main>section.c,footer' },
+  { id: 'image-to-pdf-converter', name: 'Image to PDF', cat: 'image', icon: '📄', net: 'partial', netNote: 'Images to PDF and ZIP work offline. Word, Excel, PowerPoint and video conversions download a helper the first time.', desc: 'Combine images into one PDF.', hide: '.feat,#formats,.seo,footer' },
+  { id: 'background-removal', name: 'Background Removal', cat: 'image', icon: '✂️', net: 'partial', netNote: 'The AI model (tens of MB) downloads once. Use "Download the AI model now" on Wi-Fi, then it works offline.', desc: 'Remove photo backgrounds without uploading.', hide: '.hero,#how,main>section.c,footer' },
   { id: 'barcode-generate', name: 'Barcode & QR Maker', cat: 'image', icon: '🏷️', net: 'offline', desc: 'Make barcodes and QR codes as PNG or SVG.', hide: '#formats,#how,#faq,footer' },
 
   { id: 'expense-tracker', name: 'Expense Tracker', cat: 'daily', icon: '💸', net: 'offline', isNew: true, desc: 'Log spending, see it by category, track a monthly budget.', themed: true, hide: '.seo,footer,.lead' },

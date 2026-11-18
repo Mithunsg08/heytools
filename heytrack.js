@@ -23,6 +23,7 @@
   }
   function event(name, extra) {
     var url = window.HEY_TRACK_URL; if (!url) return;
+    try { if (localStorage.getItem('heytools.track.consent') !== 'yes') return; } catch (e) { return; }   // nothing is sent unless the person turned it on
     try {
       var body = JSON.stringify({ e: name, d: device(), app: isNativeApp() ? 1 : 0, iid: iid(), w: (extra && extra.where) || '', p: location.pathname.slice(0, 80), t: Date.now() });
       if (navigator.sendBeacon && navigator.sendBeacon(url, body)) return;

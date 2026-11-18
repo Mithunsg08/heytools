@@ -35,6 +35,7 @@ public class UpdateWorker extends Worker {
   @NonNull
   @Override
   public Result doWork() {
+    if (!getApplicationContext().getSharedPreferences("heytools_prefs", 0).getBoolean("auto_update", true)) return Result.success();
     try {
       HttpURLConnection c = (HttpURLConnection) new URL(RELEASE_API).openConnection();
       c.setRequestProperty("Accept", "application/vnd.github+json");

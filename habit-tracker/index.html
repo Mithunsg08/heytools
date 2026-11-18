@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#14213D">
 <link rel="canonical" href="https://mithunsg08.github.io/heytools/habit-tracker/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Free Habit Tracker – Daily Streaks & Weekly Progress, Private">
+<meta property="og:title" content="Free Habit Tracker – Daily Streaks &amp; Weekly Progress, Private">
 <meta property="og:description" content="Build daily habits with one-tap check-ins, streak counts and a 7-day view. Free, private and works offline.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314213D'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E✅%3C/text%3E%3C/svg%3E">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Habit Tracker","applicationCategory":"LifestyleApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Build daily habits with one-tap check-ins, streak counts and a 7-day view. Free, private and works offline."}</script>
@@ -65,6 +65,15 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 ul.h{list-style:none;margin:0;padding:0}.h li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}.h li:last-child{border:0}.chk{width:46px;height:46px;border-radius:50%;font-size:1.3rem;padding:0;background:var(--panel);color:var(--ink)}.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}.days{display:flex;gap:4px;margin-top:6px}.days i{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);font-style:normal;font-size:.65rem;display:grid;place-items:center;color:var(--muted)}.days i.on{background:var(--ok);border-color:var(--ok);color:#fff}.st{font-weight:700;font-size:.9rem;white-space:nowrap}.sub{color:var(--muted);font-size:.85rem}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/habit-tracker/">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/habit-tracker.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Free Habit Tracker – Daily Streaks &amp; Weekly Progress, Private">
+<meta name="twitter:description" content="Build daily habits with one-tap check-ins, streak counts and a 7-day view. Free, private and works offline.">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/habit-tracker.jpg"><style id="hey-a11y">@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
 <div class="wrap">
@@ -77,6 +86,9 @@ ul.h{list-style:none;margin:0;padding:0}.h li{display:grid;grid-template-columns
 <h2>Build habits that stick</h2><p>Add the habits you want to keep, check them off every day and watch your streak grow. A seven-day strip shows how consistent you have been. Your habits are saved on this device only.</p>
 </section>
 <footer>Part of <a href="../" style="color:inherit">HeyTools</a>. Your data stays on this device.</footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../expense-tracker/">Expense Tracker</a> · <a href="../focus-timer/">Focus Timer</a> · <a href="../alarm-clock/">Alarm Clock</a> · <a href="../notes-to-do-list/">Notes &amp; To Do</a> · <a href="../world-clock/">World Clock &amp; Stopwatch</a> · <a href="../countdown-timers/">Timers</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 </div>
 <script src="../tones.js"></script>
 <script src="../heynotify.js"></script>
@@ -116,5 +128,8 @@ function handleHabitAction(action){
  try{const p=JSON.parse(localStorage.getItem('heytools.pending.notification')||'null');if(p&&p.tool==='habit-tracker'&&Date.now()-p.createdAt<86400000){localStorage.removeItem('heytools.pending.notification');handleHabitAction(p.action)}}catch(e){}
 })();
 </script>
+
+
+
 </body>
 </html>

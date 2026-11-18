@@ -10,23 +10,21 @@
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#05070f">
 <meta name="color-scheme" content="dark">
-<link rel="canonical" id="canon" href="">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/cyber-rush/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2305070f'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%2300f0ff'/%3E%3C/svg%3E">
 
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Cyber Rush">
-<meta property="og:title" content="Cyber Rush – 3D Cyberpunk Endless Runner">
-<meta property="og:description" content="Survive sudden meteors, rogue jets and drone swarms. Earn every credit, then tune your ship in a 4D holographic garage. Free, no download.">
-<meta property="og:image" content="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80">
-<meta property="og:url" id="ogurl" content="">
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:title" content="Cyber Rush – Free 3D Cyberpunk Endless Runner Game (Play in Browser)">
+<meta property="og:description" content="Play Cyber Rush free in your browser: a high-speed 3D cyberpunk endless runner. Dodge sudden meteors, rogue jets, drone swarms and rock walls, chain combos, earn credits and upgrade ships in a 4D holographic garage.">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/cyber-rush.jpg">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/cyber-rush/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Cyber Rush – 3D Cyberpunk Endless Runner">
-<meta name="twitter:description" content="Dodge meteors, jets and drones. Earn credits. Upgrade in a 4D garage. Free browser game.">
-<meta name="twitter:image" content="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80">
+<meta name="twitter:title" content="Cyber Rush – Free 3D Cyberpunk Endless Runner Game (Play in Browser)">
+<meta name="twitter:description" content="Play Cyber Rush free in your browser: a high-speed 3D cyberpunk endless runner. Dodge sudden meteors, rogue jets, drone swarms and rock walls, chain combos, earn credits and upgrade ships in a 4D holographic garage.">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/cyber-rush.jpg">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../fonts/fonts.css">
 
 <script type="application/ld+json">
 {
@@ -269,6 +267,8 @@ footer{border-top:1px solid var(--line);text-align:center;padding:22px 14px;colo
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 </head>
 <body id="top">
 
@@ -470,8 +470,11 @@ footer{border-top:1px solid var(--line);text-align:center;padding:22px 14px;colo
 <footer>
   <p>© 2026 Cyber Rush · A free browser game built with WebGL, Three.js and the Web Audio API. Progress is stored locally in your browser.</p>
 </footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../spin-wheel/">Spin Wheel</a> · <a href="../typing-test/">Typing Test</a> · <a href="../dice-roller/">Dice Roller</a> · <a href="../video-player/">Video Player</a> · <a href="../music-player/">Music Player</a> · <a href="../recorder/">Recorder</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+
+<script src="../vendor/three-r128.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -1445,5 +1448,8 @@ try{
 window.__CR={G,save,H,C,startRun,get state(){return G.state;}}; // debug handle
 })();
 </script>
+
+
+
 </body>
 </html>

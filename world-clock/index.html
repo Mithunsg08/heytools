@@ -7,14 +7,13 @@
 <meta name="description" content="World Clock shows the live time in every country and city, USA time by default, with a time-travel slider for planning meetings and a precision online stopwatch with laps, copy and CSV export.">
 <meta name="keywords" content="world clock, current time, USA time, time zones, time zone converter, online stopwatch, lap timer, stop clock">
 <meta name="theme-color" content="#120b1f">
-<link rel="canonical" href="/">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/world-clock/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="World Clock – Live Time in Every Country">
-<meta property="og:description" content="Live world clock with USA time by default, time-travel slider and a precision lap stopwatch.">
-<meta name="twitter:card" content="summary">
+<meta property="og:title" content="World Clock – Current Time in Every Country &amp;amp; Online Stopwatch">
+<meta property="og:description" content="World Clock shows the live time in every country and city, USA time by default, with a time-travel slider for planning meetings and a precision online stopwatch with laps, copy and CSV export.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌍%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"World Clock","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Live world clock for every country with USA time by default, a time-travel slider and an online lap stopwatch."},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the current time in the USA?","acceptedAnswer":{"@type":"Answer","text":"World Clock shows New York (Eastern Time) by default, with live Central, Mountain, Pacific, Alaska and Hawaii clocks right below. Daylight saving time is handled automatically."}},{"@type":"Question","name":"Can I see the time in any country?","acceptedAnswer":{"@type":"Answer","text":"Yes. Search any country or city, add it to your list and it is saved in your browser."}},{"@type":"Question","name":"How do I plan a meeting across time zones?","acceptedAnswer":{"@type":"Answer","text":"Drag the time-travel slider to move every clock forward or backward and see the same moment in all your cities."}},{"@type":"Question","name":"How do I export stopwatch laps?","acceptedAnswer":{"@type":"Answer","text":"Press Lap while the stopwatch runs, then use Copy to copy the laps or CSV to download them as a spreadsheet file."}}]}]}</script>
 <style>
 :root{--bg1:#120b1f;--bg2:#2a1740;--g1:rgba(255,120,120,.28);--g2:rgba(90,110,255,.30);--card:rgba(255,255,255,.07);--bd:rgba(255,255,255,.13);--tx:#f6f2ff;--mu:#b3a8d1;--ac:linear-gradient(135deg,#ff9a8b,#8b7bff);--c1:#ff9a8b;--c2:#8b7bff;--go:linear-gradient(135deg,#2dd4bf,#38bdf8);--hand:#fff;--chip:rgba(255,255,255,.1);--best:#2dd4bf;--worst:#ff7a90;color-scheme:dark}
@@ -96,6 +95,14 @@ footer{text-align:center;color:var(--mu);font-size:.85rem;margin-top:40px}
 [hidden]{display:none!important}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/world-clock/">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/world-clock.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:title" content="World Clock – Current Time in Every Country &amp;amp; Online Stopwatch">
+<meta name="twitter:description" content="World Clock shows the live time in every country and city, USA time by default, with a time-travel slider for planning meetings and a precision online stopwatch with laps, copy and CSV export.">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/world-clock.jpg"><style id="hey-a11y">:focus-visible{outline:3px solid #5B3DF5;outline-offset:2px}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
 <div class="wrap">
@@ -153,6 +160,9 @@ footer{text-align:center;color:var(--mu);font-size:.85rem;margin-top:40px}
 </section>
 </main>
 <footer>© World Clock · Free, private, runs entirely in your browser.</footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../expense-tracker/">Expense Tracker</a> · <a href="../habit-tracker/">Habit Tracker</a> · <a href="../focus-timer/">Focus Timer</a> · <a href="../alarm-clock/">Alarm Clock</a> · <a href="../notes-to-do-list/">Notes &amp; To Do</a> · <a href="../countdown-timers/">Timers</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 </div>
 <div class="toast" id="toast"></div>
 
@@ -244,5 +254,8 @@ document.addEventListener("keydown",e=>{if($("#ps").hidden||/INPUT|SELECT|TEXTAR
  if(e.code=="Space"){e.preventDefault();sstart()}else if(e.key=="l"||e.key=="L")slap();else if(e.key=="r"||e.key=="R")sreset()});
 lapsdraw();sdraw();
 </script>
+
+
+
 </body>
 </html>

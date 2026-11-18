@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Privacy – HeyTools</title>
+<meta name="description" content="HeyTools privacy in plain words: no accounts, no ads, your notes, photos and files stay on your device. See exactly which tools use the internet and why.">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/privacy/">
+<meta name="robots" content="index,follow">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeyTools">
+<meta property="og:title" content="HeyTools privacy"><meta property="og:description" content="No accounts, no ads. Your data stays on your device.">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/privacy/">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{--bg:#F7F7FB;--panel:#fff;--ink:#14141F;--muted:#585872;--line:#E3E3EE;--accent:#5B3DF5;--ok:#15803D}
+@media (prefers-color-scheme:dark){:root{--bg:#0E0E16;--panel:#16161F;--ink:#F2F2F8;--muted:#A5A5BD;--line:#2A2A3A;--accent:#9D8CFF;--ok:#4ADE80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:820px;margin:0 auto;padding:28px 18px 56px}
+a{color:var(--accent)} a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1{font-size:clamp(1.9rem,5vw,2.6rem);line-height:1.15;letter-spacing:-.03em;margin:.2em 0 .3em}
+h2{font-size:1.25rem;margin:2.1em 0 .5em;letter-spacing:-.01em}
+.lead{font-size:1.1rem;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:14px 0}
+.promise{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:18px 0}
+.promise .card{margin:0}.promise strong{display:block;margin-bottom:2px}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+th,td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:1px 9px;border-radius:99px;border:1px solid var(--line);font-size:.78rem;color:var(--muted)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.92rem}
+small,.muted{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main>
+  <nav class="top" aria-label="Breadcrumb"><a href="../">← All tools</a><span class="muted">Last updated 18 November 2026</span></nav>
+  <h1>Your data stays yours</h1>
+  <p class="lead">HeyTools is a set of small tools that run on your phone or in your browser. This page says, in plain words, what the app can see, what stays on your device, and the few cases where something goes over the internet.</p>
+
+  <div class="promise" role="list">
+    <div class="card" role="listitem"><strong>No accounts</strong>There is no sign-up and no login to HeyTools.</div>
+    <div class="card" role="listitem"><strong>No ads, no trackers</strong>No advertising or third-party analytics code is inside the app.</div>
+    <div class="card" role="listitem"><strong>On-device by default</strong>Notes, to-dos, habits, expenses, alarms, recordings and photos are stored on your device only.</div>
+    <div class="card" role="listitem"><strong>You are in control</strong>Turn notifications off, export a backup, or delete everything from Settings at any time.</div>
+  </div>
+
+  <h2>What is stored on your device</h2>
+  <p>Each tool keeps its data in your browser or app storage on the device: for example your notes and to-do lists, habit and water logs, expenses, alarm times, timer presets, theme and layout choices, and files you pick in the media tools. HeyTools has no server that receives this information, so we cannot read it, recover it or share it.</p>
+  <p>Because the data lives only on your device, <strong>if you uninstall the app or clear its storage, it is gone</strong>. Use <em>Settings → Back up</em> to save a file of your notes, to-dos, trackers and settings. The backup does not include videos, music, recordings, Geo Camera photos or your Spotify login.</p>
+
+  <h2>Permissions the Android app may ask for</h2>
+  <p>Each permission is asked for only when a tool needs it, and you can refuse or withdraw it in your phone settings.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Permission</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td>Notifications</td><td>Alarms, timers and reminders (to-do, water, habits, focus). Created on your phone, never through a server.</td></tr>
+      <tr><td>Exact alarms, full-screen alerts, start after reboot, wake lock, vibrate</td><td>So an alarm rings on time, even with the screen off or after the phone restarts.</td></tr>
+      <tr><td>Photos, videos and music (media access)</td><td>Video Player and Music Player list the files on your phone. They are played locally and never uploaded.</td></tr>
+      <tr><td>Camera</td><td>Geo Camera, QR Scanner and Flashlight. Pictures stay on your phone.</td></tr>
+      <tr><td>Microphone</td><td>Recorder only. Recordings stay on your phone.</td></tr>
+      <tr><td>Location</td><td>Geo Camera (stamp on photos), Compass and Earth ZIP code, only when you tap the locate or camera buttons.</td></tr>
+      <tr><td>Motion and orientation sensors</td><td>Compass and Spirit Level.</td></tr>
+      <tr><td>Foreground service (media playback)</td><td>Keeps music and video playing with the screen off.</td></tr>
+      <tr><td>Internet and network state</td><td>For the tools listed below, and for update checks.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Where the internet is used</h2>
+  <p>Most tools work fully offline. These are the ones that contact other services, and only while you use that feature. The services receive your device’s IP address and the request itself, as any website would.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tool</th><th>Contacts</th><th>What is sent</th></tr></thead>
+    <tbody>
+      <tr><td>Geo Camera</td><td>Open-Meteo, OpenStreetMap Nominatim, Esri ArcGIS, timeapi.io / worldtimeapi.org, flagcdn.com</td><td>Approximate coordinates, to look up weather, place name, map image, time zone and country flag.</td></tr>
+      <tr><td>Earth ZIP code</td><td>OpenStreetMap Nominatim, earthszipcode.com</td><td>The place or ZIP code you search for.</td></tr>
+      <tr><td>Internet Speed</td><td>Cloudflare speed test, ipify.org</td><td>Test data, and a request that shows your public IP address.</td></tr>
+      <tr><td>Music Player</td><td>Spotify (only if you connect), Audius, Deezer, Internet Archive, Apple iTunes search, YouTube, SoundCloud, Apple Music embeds, public Piped servers</td><td>Your search words, or the song you open. Spotify uses a secure login (PKCE) and keeps its token on your device only.</td></tr>
+      <tr><td>Video Player</td><td>YouTube, Dailymotion, Vimeo, Twitch, Internet Archive, OpenSubtitles, public Piped servers, public live TV playlists</td><td>The link, search or channel you open.</td></tr>
+      <tr><td>Media Downloads</td><td>The website of the link you paste</td><td>A request straight from your device to that site. Nothing passes through HeyTools.</td></tr>
+      <tr><td>Background Removal</td><td>jsDelivr and IMG.LY (once)</td><td>Only the AI model files are downloaded. <strong>Your picture is never uploaded</strong>; it is processed on your device.</td></tr>
+      <tr><td>Image to PDF</td><td>cdnjs (only for Word, Excel, PowerPoint or video conversion)</td><td>Only helper code is downloaded. Your files stay on your device.</td></tr>
+      <tr><td>OpsReveal</td><td>opsreveal.preventloss.org</td><td>Opens a separate website with its own privacy policy.</td></tr>
+    </tbody>
+  </table></div>
+  <p><small>Fonts and the code libraries used by the offline tools are included in the app. They are not loaded from Google or any CDN.</small></p>
+
+  <h2>Update checks</h2>
+  <p>The Android app can look at the project’s public GitHub release page to see whether a newer version exists. This sends a normal web request to GitHub (which can see your IP address). Turn it off in <em>Settings → Privacy &amp; data</em>. Updates are never installed without you tapping the download. Android only accepts an update that is signed with the same key as the app you already have.</p>
+
+  <h2>Anonymous download counts (optional)</h2>
+  <p>If the project owner has switched on counting and <strong>you</strong> choose “Share anonymous download counts”, the app sends: an event name (for example <em>download_click</em>), your device type (such as “Android phone”), whether it came from the app or a browser, a random number made on your device, and the page name. It never sends your name, email, files, notes, location or contacts. It is off until you turn it on, and turning it off stops it immediately.</p>
+
+  <h2>Notifications</h2>
+  <p>Notifications are made locally by the app. In <em>Settings → Notifications</em> you can switch off everything, switch off one kind (alarms, reminders, timers, update alerts), set quiet hours for gentle reminders, send a test, and check that your phone lets alarms ring on time.</p>
+
+  <h2>Delete everything</h2>
+  <p><em>Settings → Privacy &amp; data → Delete all my data</em> removes everything HeyTools holds on the device, cancels every reminder and alarm, and resets the app. Photos that Geo Camera already saved to your Gallery belong to your phone’s Gallery and are not removed. Uninstalling the app also removes its data.</p>
+
+  <h2>Children</h2>
+  <p>HeyTools does not ask for personal information and has no accounts or chat, so there is nothing to collect from anyone, including children.</p>
+
+  <h2>Changes and contact</h2>
+  <p>If this page changes in a way that affects you, the date at the top changes too. Questions or security reports: please open an issue at <a href="https://github.com/Mithunsg08/heytools/issues" rel="noopener">github.com/Mithunsg08/heytools</a>. For a security problem, please read <a href="https://github.com/Mithunsg08/heytools/blob/main/SECURITY.md" rel="noopener">SECURITY.md</a> first.</p>
+</main>
+</body>
+</html>

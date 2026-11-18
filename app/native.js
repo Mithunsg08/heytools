@@ -20,14 +20,26 @@
     has: function (kind) {
       return P.checkAccess({ kind: kind }).then(function (r) { return !!(r && r.granted); }).catch(function () { return false; });
     },
-    /* List every video or song on the phone. */
-    scan: function (kind) {
-      return P.scan({ kind: kind }).then(function (r) {
-        return (r.items || []).map(function (i) {
-          return { id: i.id, title: i.title, path: i.path, size: i.size, duration: i.duration, artist: i.artist || '', album: i.album || '',
-                   folder: (i.path || '').split('/').slice(-2, -1)[0] || '', url: url(i.path) };
+    /* List every video or song on the phone. Read in pages of 1000 so big libraries never freeze the app.
+       onProgress(done, total) is optional. Older app builds answer in one piece and still work. */
+    scan: function (kind, onProgress) {
+      var all = [];
+      function map(i) {
+        return { id: i.id, title: i.title, path: i.path, size: i.size, duration: i.duration, artist: i.artist || '', album: i.album || '',
+                 folder: (i.path || '').split('/').slice(-2, -1)[0] || '', url: url(i.path) };
+      }
+      function page(offset) {
+        return P.scan({ kind: kind, offset: offset, limit: 1000 }).then(function (r) {
+          (r.items || []).forEach(function (i) { all.push(map(i)); });
+          if (onProgress) { try { onProgress(all.length, r.total || all.length); } catch (e) { /* ignore */ } }
+          var next = typeof r.next === 'number' ? r.next : 0;
+          if (r.items && r.items.length && next && next < (r.total || 0) && all.length < 60000) {
+            return new Promise(function (res) { setTimeout(res, 0); }).then(function () { return page(next); });
+          }
+          return all;
         });
-      });
+      }
+      return page(0);
     },
     /* Android back button. Once a listener is set the app fully controls what Back does. */
     onBack: function (cb) { if (A && A.addListener) A.addListener('backButton', cb); },

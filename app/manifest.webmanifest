@@ -1,7 +1,7 @@
 {
   "name": "HeyTools",
   "short_name": "HeyTools",
-  "description": "30 private tools in one app. Everything runs in your browser and your files never leave your device.",
+  "description": "45 free, private tools in one app. Your notes, photos and files stay on your device. No accounts, no ads.",
   "id": "./",
   "start_url": "./?source=pwa",
   "scope": "../",

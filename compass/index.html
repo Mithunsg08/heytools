@@ -10,16 +10,14 @@
 <meta name="theme-color" content="#2a170b">
 <link rel="canonical" href="https://mithunsg08.github.io/heytools/compass/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Galleonwick Compass – Pirate Compass with Bearing & Distance">
-<meta property="og:description" content="Live heading, course setting and distance to any coordinates. A free pirate-style compass that runs privately in your browser.">
+<meta property="og:title" content="Galleonwick Compass – Free Online Pirate Compass with Bearing &amp; Distance">
+<meta property="og:description" content="Galleonwick is a free online compass with an old pirate ship look. Get your live heading, set a course to any coordinates, and see bearing, distance and turn direction. 100% private, runs in your browser.">
 <meta property="og:url" content="https://mithunsg08.github.io/heytools/compass/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Galleonwick Compass">
-<meta name="twitter:description" content="Free pirate-style online compass with bearing and distance. Private, in-browser.">
+<meta name="twitter:title" content="Galleonwick Compass – Free Online Pirate Compass with Bearing &amp; Distance">
+<meta name="twitter:description" content="Galleonwick is a free online compass with an old pirate ship look. Get your live heading, set a course to any coordinates, and see bearing, distance and turn direction. 100% private, runs in your browser.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23b8862b'/%3E%3Cpath d='M50 12l9 38-9 38-9-38z' fill='%23fff3d6'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"WebApplication","name":"Galleonwick Compass","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A free pirate-themed online compass with live heading, bearing and distance to any coordinates. Runs entirely in your browser."},
@@ -91,6 +89,11 @@ footer{text-align:center;margin-top:40px;color:var(--parch2);font-size:.9rem}
 @media(prefers-reduced-motion:reduce){#rose{transition:none}html{scroll-behavior:auto}}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/compass.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/compass.jpg"><style id="hey-a11y">@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
 <div class="wrap">
@@ -190,6 +193,9 @@ footer{text-align:center;margin-top:40px;color:var(--parch2);font-size:.9rem}
 </section>
 
 <footer><p>© <span id="yr"></span> Galleonwick Compass · Fair winds and following seas.</p></footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../calculator/">Calculator Suite</a> · <a href="../scientific-calculator/">Scientific Calculator</a> · <a href="../unit-converter/">Unit Converter</a> · <a href="../word-counter/">Word Counter</a> · <a href="../password-generator/">Password Generator</a> · <a href="../qr-scanner/">QR &amp; Barcode Scanner</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 </div>
 <noscript><p style="text-align:center;padding:20px">Galleonwick Compass needs JavaScript to read your device's sensors. Please enable it, matey.</p></noscript>
 
@@ -264,6 +270,7 @@ function tiltHeading(al,be,ga){
 }
 function setSrc(kind,txt){$('dot').className='dot '+kind;$('srcTxt').textContent=txt}
 let gotAbs=false;
+const jumps=[];let lastCalHint=0;
 function onOrient(e){
   if(manual)return;
   const ang=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
@@ -276,6 +283,17 @@ function onOrient(e){
   if(h==null)return;
   h=norm(h+decl);
   lastEvt=Date.now();
+  /* calibration hint: a healthy compass moves smoothly. Several big jumps in a row mean the sensor needs calibrating or a magnet is near. */
+  if(smooth!=null){
+    const jump=Math.abs(((h-smooth+540)%360)-180);
+    const now=Date.now();
+    if(jump>35){jumps.push(now)}
+    while(jumps.length&&now-jumps[0]>3000)jumps.shift();
+    if(jumps.length>=4&&now-lastCalHint>15000){
+      lastCalHint=now;jumps.length=0;
+      $('msg').textContent='The compass looks unsteady. Move your phone in a figure 8 a few times and keep it away from magnets, cases with magnets and metal.';
+    }
+  }
   if(smooth==null)smooth=h;
   else{let d=((h-smooth+540)%360)-180;smooth=norm(smooth+d*0.2)}
   if(!sensorOn){sensorOn=true;setSrc('live','Live sensor · '+(decl?'true north':'magnetic north'));$('msg').textContent='Compass awake. Fair winds, captain!';go(2)}
@@ -361,5 +379,8 @@ $('newcourse').onclick=()=>{courseBearing=null;mark.setAttribute('visibility','h
 render(0);
 })();
 </script>
+
+
+
 </body>
 </html>

@@ -8,19 +8,19 @@
 <meta name="keywords" content="media downloader, download video link, download audio, direct link downloader, batch downloader, image converter, online file downloader, private downloader">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#0b0b1a">
-<link rel="canonical" href="https://YOUR-USERNAME.github.io/media-downloads/">
+<link rel="canonical" href="https://mithunsg08.github.io/heytools/media-downloads/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Media Downloads">
-<meta property="og:title" content="Media Downloads – Paste a link. Save the file.">
-<meta property="og:description" content="Premium in-browser media downloader with batch queue, live progress and image conversion. No uploads, no tracking.">
-<meta property="og:url" content="https://YOUR-USERNAME.github.io/media-downloads/">
+<meta property="og:site_name" content="HeyTools">
+<meta property="og:title" content="Media Downloads – Free Online Media File Downloader (Private, In-Browser)">
+<meta property="og:description" content="Media Downloads lets you paste direct links to videos, audio, images, PDFs and files and save them in seconds. Batch queue, live progress, image conversion, 100% private – everything runs in your browser.">
+<meta property="og:url" content="https://mithunsg08.github.io/heytools/media-downloads/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Media Downloads – Paste a link. Save the file.">
-<meta name="twitter:description" content="Batch queue, live progress, image conversion. Runs 100% in your browser.">
+<meta name="twitter:title" content="Media Downloads – Free Online Media File Downloader (Private, In-Browser)">
+<meta name="twitter:description" content="Media Downloads lets you paste direct links to videos, audio, images, PDFs and files and save them in seconds. Batch queue, live progress, image conversion, 100% private – everything runs in your browser.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236ee7ff'/%3E%3Cstop offset='1' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M32 14v26m0 0-10-10m10 10 10-10M18 48h28' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"WebApplication","name":"Media Downloads","url":"https://YOUR-USERNAME.github.io/media-downloads/","applicationCategory":"MultimediaApplication","operatingSystem":"Any (Web Browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Private in-browser downloader for direct media links with batch queue, progress tracking and image conversion."},
+{"@type":"WebApplication","name":"Media Downloads","url":"https://mithunsg08.github.io/heytools/media-downloads/","applicationCategory":"MultimediaApplication","operatingSystem":"Any (Web Browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Private in-browser downloader for direct media links with batch queue, progress tracking and image conversion."},
 {"@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"What links does Media Downloads support?","acceptedAnswer":{"@type":"Answer","text":"Direct file links such as .mp4, .webm, .mp3, .wav, .jpg, .png, .webp, .gif, .pdf and .zip, as long as the host allows browser downloads (CORS)."}},
 {"@type":"Question","name":"Is it private?","acceptedAnswer":{"@type":"Answer","text":"Yes. Everything runs in your browser. Links and files are never uploaded to our servers, and history stays on your device."}},
@@ -109,6 +109,10 @@ footer{text-align:center;color:var(--mut);font-size:.85rem;padding:60px 0 40px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <script src="../install-prompt.js" defer></script>
+<meta property="og:image" content="https://mithunsg08.github.io/heytools/og/media-downloads.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/media-downloads.jpg"><style id="hey-a11y">:focus-visible{outline:3px solid #5B3DF5;outline-offset:2px}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
 <div class="wrap">
@@ -174,6 +178,9 @@ footer{text-align:center;color:var(--mut);font-size:.85rem;padding:60px 0 40px}
 <footer>
   <p>© <span id="yr"></span> Media Downloads · Only download content you own or have permission to save.</p>
 </footer>
+<footer class="hey-related" style="max-width:960px;margin:28px auto 0;padding:18px 16px 28px;font:14px/1.7 system-ui,sans-serif;text-align:center;opacity:.85"><p style="margin:0 0 6px"><strong>More free tools from HeyTools</strong></p><p style="margin:0"><a href="../video-player/">Video Player</a> · <a href="../music-player/">Music Player</a> · <a href="../recorder/">Recorder</a> · <a href="../geo-camera/">Geo Camera</a> · <a href="../emulsion/">Emulsion</a> · <a href="../video-loop/">Video Loop</a></p><p style="margin:8px 0 0"><a href="../">All tools</a> · <a href="../privacy/">Privacy</a></p></footer>
+
+
 </div>
 <div id="toast" role="status"></div>
 
@@ -305,5 +312,8 @@ const drop=$('#drop');
 drop.addEventListener('drop',async e=>{const f=e.dataTransfer.files[0];let t=e.dataTransfer.getData('text')||'';if(f&&f.size<2e6)t+='\n'+await f.text();links.value+=(links.value?'\n':'')+parse(t).join('\n')});
 })();
 </script>
+
+
+
 </body>
 </html>
