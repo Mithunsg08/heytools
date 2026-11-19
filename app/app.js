@@ -552,8 +552,8 @@
     if (/^https?:\/\//.test(src) && src.indexOf(location.origin) !== 0) return src;
     return '';                                                   // blob and embedded players cannot be handed over
   }
-  function startHandoff() {
-    if (handoff || !NATIVE.isNative || !NATIVE.startNativeAudio || !document.hidden) return;
+  function startHandoff(force) {
+    if (handoff || !NATIVE.isNative || !NATIVE.startNativeAudio || (!force && !document.hidden)) return;
     var ids = playingFrames(); if (!ids.length) return;
     var id = ids[0], f = frames[id], el = f && playingElement(f); if (!el) return;
     var src = nativeSource(el.currentSrc || el.src); if (!src) return;
@@ -579,7 +579,7 @@
     if (document.hidden) setTimeout(startHandoff, 1800);        // the next song is a new file: hand that one over too
   }
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { hiddenAt = Date.now(); setTimeout(startHandoff, 300); } else { endHandoff(); }
+    if (document.hidden) { hiddenAt = Date.now(); startHandoff(); } else { endHandoff(); }
   });
   if (NATIVE.isNative) {
     if (NATIVE.onNativeAudioEnded) NATIVE.onNativeAudioEnded(function () { handoff = null; forwardMedia('next'); });
@@ -685,6 +685,9 @@
       toast('Screen recording finished. Open Recorder to find it.');
     });
   }
+  /* called by the Android activity itself as it pauses / resumes, which is earlier and more reliable than the page's own hidden event */
+  window.__heyPause = function () { hiddenAt = Date.now(); startHandoff(true); };
+  window.__heyResume = function () { endHandoff(); };
   window.__HEYTOOLS_READY = true;
   setInterval(syncPlayback, 1500);
   $('nowpToggle').addEventListener('click', function () {
@@ -1077,6 +1080,7 @@
       n.textContent = 'Scheduled reminders: ' + (d.pending >= 0 ? d.pending : 'unknown') + (d.lastError ? ' (last problem: ' + String(d.lastError).slice(0, 80) + ')' : '');
       n.className = d.lastError ? 'warn' : '';
     });
+    if (NATIVE.appInfo) NATIVE.appInfo().then(function (i) { $('relBuild').textContent = 'Build: ' + (i ? i.build + ' (v' + i.version + ')' : 'unknown'); }).catch(function () { $('relBuild').textContent = 'Build: unknown'; });
     HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });
   }
   function paintNotif() {
@@ -1128,6 +1132,7 @@
     if (!HN) return;
     HN.sendTest().then(function (r) {
       $('nMsg').textContent = r === 'sent' ? 'Test sent. It should appear in a few seconds.' : r === 'off' ? 'Notifications are switched off above. Turn them on first.' : 'Notifications are blocked. Allow them in your phone settings, then try again.';
+      if (r === 'denied' && HN.notificationState) HN.notificationState().then(function (s) { if (s) $('nMsg').textContent += ' (Android reports: notifications ' + (s.enabled ? 'on' : 'off') + ', permission ' + (s.runtime ? 'yes' : 'no') + ', Android ' + s.sdk + ')'; });
       paintReliability();
     });
   });

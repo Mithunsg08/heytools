@@ -66,6 +66,7 @@
     saveChunk: function (id, data) { return P.saveChunk({ id: id, data: data }); },
     saveFinish: function (id) { return P.saveFinish({ id: id }); },
     saveAbort: function (id) { return P.saveAbort({ id: id }); },
+    appInfo: function () { return A && A.getInfo ? A.getInfo() : Promise.resolve(null); },
     onResume: function (cb) { if (A && A.addListener) A.addListener('resume', cb); },
     /* keep music / video playing when the screen is left or the phone is locked */
     startNativeAudio: function (source,title,artist,position) { return P.startNativeAudio({source:source,title:title||"HeyTools",artist:artist||"Now playing",position:Math.max(0,Math.round(position||0))}); },

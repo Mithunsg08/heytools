@@ -21,6 +21,15 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends BridgeActivity {
   private static final int NOTIFICATION_PERMISSION_REQUEST = 9101;
 
+  private void callPage(String fn) {
+    try {
+      if (getBridge() != null && getBridge().getWebView() != null)
+        getBridge().getWebView().evaluateJavascript("window." + fn + "&&window." + fn + "()", null);
+    } catch (Throwable ignored) {}
+  }
+  @Override public void onPause() { callPage("__heyPause"); super.onPause(); }
+  @Override public void onResume() { super.onResume(); callPage("__heyResume"); }
+
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);

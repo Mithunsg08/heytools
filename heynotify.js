@@ -32,7 +32,7 @@
     if(native)return LN.checkPermissions().then(function(r){return r.display;}).catch(function(){return 'prompt';}).then(function(d){
       if(d==='granted'||!(HA&&HA.getNotificationState))return d;
       /* the plugin can disagree with Android (some phones have their own switch): trust what Android itself reports */
-      return HA.getNotificationState().then(function(s){return s&&s.enabled&&s.runtime?'granted':d;}).catch(function(){return d;});
+      return HA.getNotificationState().then(function(s){return s&&s.enabled?'granted':d;}).catch(function(){return d;});
     });
     try{return Promise.resolve(typeof Notification==='undefined'?'denied':Notification.permission==='default'?'prompt':Notification.permission);}catch(e){return Promise.resolve('denied');}
   }
