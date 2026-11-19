@@ -16,10 +16,9 @@ final class AlarmScheduler {
   private static final String KEY = "alarms";
   private AlarmScheduler() {}
 
-  static boolean canScheduleExact(Context c) {
-    AlarmManager am = (AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
-    return Build.VERSION.SDK_INT < 31 || (am != null && am.canScheduleExactAlarms());
-  }
+  /** HeyTools schedules alarms with AlarmManager.setAlarmClock(), which Android exempts from the "Alarms & reminders"
+   *  permission. So alarms never need that switch; the permission is only reported for information. */
+  static boolean canScheduleExact(Context c) { return true; }
 
   private static Context storage(Context c) {
     return Build.VERSION.SDK_INT >= 24 ? c.createDeviceProtectedStorageContext() : c;

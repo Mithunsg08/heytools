@@ -170,7 +170,7 @@ public class MediaLibraryPlugin extends Plugin {
       Intent i=new Intent(getContext(),PlaybackService.class).setAction("com.heytools.PLAY_URL");
       i.putExtra("source",source); i.putExtra("title",call.getString("title","HeyTools")); i.putExtra("artist",call.getString("artist","Now playing"));
       i.putExtra("position", Math.max(0, call.getInt("position", 0)));
-      if(Build.VERSION.SDK_INT>=26)getContext().startForegroundService(i);else getContext().startService(i);
+      if(PlaybackService.isRunning||Build.VERSION.SDK_INT<26)getContext().startService(i);else getContext().startForegroundService(i);
       call.resolve();
     } catch(Exception e) { call.reject("Could not start native audio: "+e.getMessage(),e); }
   }
@@ -192,7 +192,7 @@ public class MediaLibraryPlugin extends Plugin {
       if("stop".equals(action))i.setAction("com.heytools.STOP_URL");
       else if("play".equals(action))i.setAction("com.heytools.RESUME_URL");
       else i.setAction("com.heytools.PAUSE_URL");
-      if(Build.VERSION.SDK_INT>=26)getContext().startForegroundService(i);else getContext().startService(i);
+      getContext().startService(i);
       call.resolve();
     } catch(Exception e) { call.reject("Could not control native audio: "+e.getMessage(),e); }
   }

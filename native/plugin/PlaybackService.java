@@ -133,6 +133,7 @@ public class PlaybackService extends Service {
     releaseAudio(); audioSource=source; playing=true; refreshControls();
     try {
       audioPlayer=new MediaPlayer();
+      try{audioPlayer.setWakeMode(this,android.os.PowerManager.PARTIAL_WAKE_LOCK);}catch(Exception ignored){}
       audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
       audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);if(startMs>0){try{mp.seekTo(startMs);}catch(Exception ignored){}}mp.start();playing=true;audioIsPlaying=true;setWake(true);refreshControls();} });
       audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();Runnable r=endedListener;if(r!=null){try{r.run();}catch(Exception ignored){}}else{sendAction("NEXT",7103);}});
@@ -166,7 +167,8 @@ public class PlaybackService extends Service {
       String t=intent.getStringExtra("title"), a=intent.getStringExtra("artist");
       if(t!=null&&!t.trim().isEmpty())title=t;
       if(a!=null)artist=a;
-      playing=intent.getBooleanExtra("playing",true);
+      // while the native player owns playback its own state wins: the page pausing its muted copy must not mark this as paused
+      if(audioPlayer!=null) playing=audioIsPlaying; else playing=intent.getBooleanExtra("playing",true);
     }
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(Build.VERSION.SDK_INT>=26&&nm!=null){

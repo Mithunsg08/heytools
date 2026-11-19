@@ -1143,6 +1143,10 @@
     });
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && sheetOpen()) paintReliability(); });
+  /* coming back from the phone's own settings does not always count as "visible": listen to the app resume too, and re-check while the sheet is open */
+  if (NATIVE.onResume) NATIVE.onResume(function () { if (sheetOpen()) paintReliability(); });
+  window.addEventListener('focus', function () { if (sheetOpen()) paintReliability(); });
+  setInterval(function () { if (!document.hidden && sheetOpen()) paintReliability(); }, 2000);
   $('optTrack').addEventListener('change', function (e) { try { localStorage.setItem('heytools.track.consent', e.target.checked ? 'yes' : 'no'); } catch (err) { /* ignore */ } });
   $('optAutoUpd').addEventListener('change', function (e) { PREFS.autoUpdate = e.target.checked; savePrefs(); syncUpdateFlag(); });
   syncUpdateFlag();
