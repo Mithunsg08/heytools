@@ -29,7 +29,11 @@
     return channelsReady;
   }
   function permission(){
-    if(native)return LN.checkPermissions().then(function(r){return r.display;});
+    if(native)return LN.checkPermissions().then(function(r){return r.display;}).catch(function(){return 'prompt';}).then(function(d){
+      if(d==='granted'||!(HA&&HA.getNotificationState))return d;
+      /* the plugin can disagree with Android (some phones have their own switch): trust what Android itself reports */
+      return HA.getNotificationState().then(function(s){return s&&s.enabled&&s.runtime?'granted':d;}).catch(function(){return d;});
+    });
     try{return Promise.resolve(typeof Notification==='undefined'?'denied':Notification.permission==='default'?'prompt':Notification.permission);}catch(e){return Promise.resolve('denied');}
   }
   function exactPermission(){
@@ -41,7 +45,12 @@
     return LN.checkExactNotificationSetting().then(function(r){return r&&typeof r.exact_alarm==='string'?r.exact_alarm:'unknown';}).catch(function(){return 'unknown';});
   }
   function requestPermission(){
-    if(native)return LN.requestPermissions().then(function(r){return r.display;}).catch(function(){return 'denied';});
+    if(native)return permission().then(function(p){
+      if(p==='granted')return p;
+      return LN.requestPermissions().then(function(r){return r.display;}).catch(function(){return 'denied';}).then(function(d){
+        return d==='granted'?d:permission();      // after the system dialog, ask Android again
+      });
+    });
     return new Promise(function(resolve){
       try{var p=Notification.requestPermission(function(v){resolve(v);});if(p&&p.then)p.then(resolve,function(){resolve('denied');});}
       catch(e){resolve('denied');}
@@ -233,7 +242,7 @@
   function sendTest(){
     if(!prefs().all)return Promise.resolve('off');
     return requestPermission().then(function(r){
-      if(r!=='granted')return 'denied';
+      if(r!=='granted'){openNotificationSettings();return 'denied';}
       return schedule([{id:99002,title:'HeyTools test',body:'Notifications are working on this device.',at:Date.now()+3000,group:'test'}]).then(function(){return 'sent';});
     });
   }
@@ -244,7 +253,7 @@
   }
   function batteryState(){
     if(!(native&&HA&&HA.getBatteryState))return Promise.resolve('unknown');
-    return HA.getBatteryState().then(function(r){return r&&r.unrestricted?'ok':'restricted';}).catch(function(){return 'unknown';});
+    return HA.getBatteryState().then(function(r){return r&&r.unrestricted?'ok':'restricted';}).catch(function(e){lastError='battery check: '+String((e&&e.message)||e);return 'unknown';});
   }
   function openBatterySettings(){
     if(!(native&&HA&&HA.openBatterySettings))return Promise.resolve();
@@ -253,6 +262,14 @@
   function setAutoUpdate(on){
     if(!(native&&HA&&HA.setAutoUpdate))return Promise.resolve();
     return HA.setAutoUpdate({enabled:!!on}).catch(function(){});
+  }
+  function notificationState(){
+    if(!(native&&HA&&HA.getNotificationState))return Promise.resolve(null);
+    return HA.getNotificationState().catch(function(){return null;});
+  }
+  function openNotificationSettings(){
+    if(!(native&&HA&&HA.openNotificationSettings))return Promise.resolve();
+    return HA.openNotificationSettings().catch(function(){});
   }
   function on(evt,fn){
     (listeners[evt]=listeners[evt]||[]).push(fn);
@@ -269,5 +286,5 @@
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
     cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
-    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
 })();

@@ -34,6 +34,15 @@ import java.util.UUID;
   }
 )
 public class MediaLibraryPlugin extends Plugin {
+  @Override public void load() {
+    PlaybackService.actionListener = new PlaybackService.ActionListener() {
+      @Override public void onAction(String action) { JSObject o = new JSObject(); o.put("action", action); notifyListeners("mediaAction", o); }
+    };
+    PlaybackService.endedListener = new Runnable() {
+      @Override public void run() { notifyListeners("audioEnded", new JSObject()); }
+    };
+  }
+
   private String[] aliasesFor(String kind) {
     if (Build.VERSION.SDK_INT >= 33) {
       return new String[] { "audio".equals(kind) ? "audioNew" : "videoNew" };
@@ -160,11 +169,23 @@ public class MediaLibraryPlugin extends Plugin {
       if (!(source.startsWith("https://") || source.startsWith("http://") || source.startsWith("file://") || source.startsWith("content://"))) { call.reject("Only direct audio URLs and Android media URIs support native background playback."); return; }
       Intent i=new Intent(getContext(),PlaybackService.class).setAction("com.heytools.PLAY_URL");
       i.putExtra("source",source); i.putExtra("title",call.getString("title","HeyTools")); i.putExtra("artist",call.getString("artist","Now playing"));
+      i.putExtra("position", Math.max(0, call.getInt("position", 0)));
       if(Build.VERSION.SDK_INT>=26)getContext().startForegroundService(i);else getContext().startService(i);
       call.resolve();
     } catch(Exception e) { call.reject("Could not start native audio: "+e.getMessage(),e); }
   }
+  /** Where the native player is: used to hand playback back to the page at the same position. */
+  @PluginMethod public void getNativeAudioState(PluginCall call) {
+    JSObject o = new JSObject();
+    o.put("active", PlaybackService.audioActive());
+    o.put("playing", PlaybackService.audioIsPlaying);
+    o.put("position", PlaybackService.audioPositionMs());
+    o.put("duration", PlaybackService.audioDurationMs());
+    call.resolve(o);
+  }
   @PluginMethod public void controlNativeAudio(PluginCall call) {
+    // never start the service just to stop it: Android requires a started foreground service to show a notification
+    if (!PlaybackService.isRunning) { call.resolve(); return; }
     try {
       String action=call.getString("action","pause");
       Intent i=new Intent(getContext(),PlaybackService.class);

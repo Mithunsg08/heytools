@@ -538,7 +538,57 @@
   /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
   function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); }); }
   var hiddenAt = 0;
-  document.addEventListener('visibilitychange', function () { if (document.hidden) hiddenAt = Date.now(); });
+  /* Background and lock screen: when the app is hidden while a song or video plays, Android's own foreground player takes over the sound
+     (it does not depend on the web page staying alive). When you come back, the page gets the position back and carries on. */
+  var handoff = null;
+  function playingElement(f) {
+    try { var els = f.contentDocument.querySelectorAll('video,audio'); for (var i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return els[i]; } catch (e) { /* ignore */ }
+    return null;
+  }
+  function nativeSource(src) {
+    if (!src) return '';
+    var base = location.origin + '/_capacitor_file_';
+    if (src.indexOf(base) === 0) { try { return 'file://' + decodeURIComponent(src.slice(base.length)); } catch (e) { return ''; } }
+    if (/^https?:\/\//.test(src) && src.indexOf(location.origin) !== 0) return src;
+    return '';                                                   // blob and embedded players cannot be handed over
+  }
+  function startHandoff() {
+    if (handoff || !NATIVE.isNative || !NATIVE.startNativeAudio || !document.hidden) return;
+    var ids = playingFrames(); if (!ids.length) return;
+    var id = ids[0], f = frames[id], el = f && playingElement(f); if (!el) return;
+    var src = nativeSource(el.currentSrc || el.src); if (!src) return;
+    var d = null; try { d = f.contentDocument; } catch (e) { /* ignore */ }
+    var tn = d && d.getElementById(id === 'music-player' ? 'nTitle' : 'tt'), ta = d && d.getElementById(id === 'music-player' ? 'nArtist' : 'mt');
+    handoff = { id: id, el: el };
+    f.__ctlAt = Date.now();
+    var p = NATIVE.startNativeAudio(src, (tn && tn.textContent.trim()) || byId[id].name, (ta && ta.textContent.trim()) || byId[id].name, Math.round((el.currentTime || 0) * 1000));
+    Promise.resolve(p).then(function () { setTimeout(function () { try { if (handoff && handoff.el === el) { f.__ctlAt = Date.now(); el.pause(); } } catch (e) { /* ignore */ } }, 350); })
+      .catch(function () { handoff = null; });
+  }
+  function endHandoff() {
+    var h = handoff; if (!h) return; handoff = null;
+    NATIVE.getNativeAudioState().then(function (s) {
+      try { NATIVE.controlNativeAudio('stop'); } catch (e) { /* ignore */ }
+      var el = h.el; if (!el || !el.isConnected || !s || !s.active) return;
+      try { if (s.position > 0) el.currentTime = s.position / 1000; } catch (e) { /* ignore */ }
+      if (s.playing) { try { var pr = el.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) { /* ignore */ } }
+    }).catch(function () { /* ignore */ });
+  }
+  function forwardMedia(action) {
+    window.dispatchEvent(new CustomEvent('heytools:media-action', { detail: { action: action } }));
+    if (document.hidden) setTimeout(startHandoff, 1800);        // the next song is a new file: hand that one over too
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { hiddenAt = Date.now(); setTimeout(startHandoff, 300); } else { endHandoff(); }
+  });
+  if (NATIVE.isNative) {
+    if (NATIVE.onNativeAudioEnded) NATIVE.onNativeAudioEnded(function () { handoff = null; forwardMedia('next'); });
+    if (NATIVE.onNativeMediaAction) NATIVE.onNativeMediaAction(function (ev) {
+      var a = ev && ev.action; if (!a) return;
+      handoff = null; try { NATIVE.controlNativeAudio('stop'); } catch (e) { /* ignore */ }
+      forwardMedia(a);
+    });
+  }
   function guardMedia(f) {
     if (!f || f.__guard) return;
     var d; try { d = f.contentDocument; } catch (e) { return; }
@@ -1015,7 +1065,12 @@
   }
   function paintReliability() {
     if (!NATIVE.isNative || !HN) return;
-    HN.permission().then(function (r) { setRel('relNotif', 'Notifications', r === 'granted' ? 'ok' : 'bad', 'relNotifBtn'); });
+    HN.permission().then(function (r) {
+      setRel('relNotif', 'Notifications', r === 'granted' ? 'ok' : 'bad', 'relNotifBtn');
+      if (r !== 'granted' && HN.notificationState) HN.notificationState().then(function (s) {
+        if (s) $('relNotif').textContent += ' (Android says: notifications ' + (s.enabled ? 'on' : 'off') + ', permission ' + (s.runtime ? 'yes' : 'no') + ')';
+      });
+    });
     HN.exactPermission().then(function (r) { setRel('relExact', 'Exact alarms', r === 'granted' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relExactBtn'); });
     if (HN.diagnose) HN.diagnose().then(function (d) {
       var n = $('relPend');
@@ -1076,7 +1131,10 @@
       paintReliability();
     });
   });
-  $('relNotifBtn').addEventListener('click', function () { HN.requestPermission().then(paintReliability); });
+  $('relNotifBtn').addEventListener('click', function () {
+    /* Android only shows its permission dialog twice. After that the switch lives in the phone's settings, so open that page. */
+    HN.requestPermission().then(function (r) { if (r !== 'granted') HN.openNotificationSettings(); paintReliability(); });
+  });
   $('relExactBtn').addEventListener('click', function () { HN.requestExactPermission().then(paintReliability); });
   $('relBattBtn').addEventListener('click', function () { HN.openBatterySettings(); });
   $('relTest').addEventListener('click', function () {

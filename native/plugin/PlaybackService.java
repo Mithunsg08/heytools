@@ -25,6 +25,16 @@ public class PlaybackService extends Service {
   private static final int NOTIFICATION_ID = 7001;
   public static volatile boolean isRunning = false;
   public static volatile boolean audioIsPlaying = false;
+  /** Lets the web page ask where the native player is, so playback can be handed back without losing the position. */
+  public static volatile PlaybackService inst;
+  /** Called when a song handed to the native player finishes, so the app can start the next one. */
+  public static volatile Runnable endedListener;
+  public interface ActionListener { void onAction(String action); }
+  /** Next / previous pressed while the native player owns playback; the app forwards it to the open player. */
+  public static volatile ActionListener actionListener;
+  public static int audioPositionMs() { PlaybackService s = inst; try { return s != null && s.audioPlayer != null ? s.audioPlayer.getCurrentPosition() : 0; } catch (Exception e) { return 0; } }
+  public static int audioDurationMs() { PlaybackService s = inst; try { return s != null && s.audioPlayer != null ? s.audioPlayer.getDuration() : 0; } catch (Exception e) { return 0; } }
+  public static boolean audioActive() { PlaybackService s = inst; return s != null && s.audioPlayer != null; }
   private String title = "HeyTools";
   private String artist = "Now playing";
   private boolean playing = true;
@@ -36,17 +46,27 @@ public class PlaybackService extends Service {
 
   @Override public IBinder onBind(Intent intent) { return null; }
   @Override public void onCreate() {
-    super.onCreate(); isRunning = true;
+    super.onCreate(); isRunning = true; inst = this;
     mediaSession = new MediaSessionCompat(this, "HeyToolsPlayback");
     mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
     mediaSession.setCallback(new MediaSessionCompat.Callback() {
       @Override public void onPlay() { resumeAudio(); }
       @Override public void onPause() { pauseAudio(); }
-      @Override public void onSkipToNext() { sendAction("NEXT", 7103); }
-      @Override public void onSkipToPrevious() { sendAction("PREVIOUS", 7101); }
+      @Override public void onSkipToNext() { skip("next", "NEXT", 7103); }
+      @Override public void onSkipToPrevious() { skip("previous", "PREVIOUS", 7101); }
       @Override public void onStop() { pauseAudio(); }
     });
     mediaSession.setActive(true);
+  }
+  private void skip(String word, String name, int request) {
+    ActionListener l = actionListener;
+    if (l != null) { try { l.onAction(word); return; } catch (Exception ignored) {} }
+    sendAction(name, request);
+  }
+  private PendingIntent svc(String act, int request) {
+    Intent i = new Intent(this, PlaybackService.class).setAction(act);
+    int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
+    return PendingIntent.getService(this, request, i, flags);
   }
   private void sendAction(String name, int request) {
     try { action(name, request).send(); } catch (Exception ignored) {}
@@ -106,15 +126,16 @@ public class PlaybackService extends Service {
   private void resumeAudio() {
     if (audioPlayer != null) try { audioPlayer.start(); playing=true; audioIsPlaying=true; refreshControls(); } catch (Exception ignored) {}
   }
-  private void startAudio(String source) {
+  private void startAudio(String source) { startAudio(source, 0); }
+  private void startAudio(String source, final int startMs) {
     if (source == null || !(source.startsWith("https://") || source.startsWith("http://") || source.startsWith("file://") || source.startsWith("content://"))) { pauseAudio(); return; }
     if (source.equals(audioSource) && audioPlayer != null) { resumeAudio(); return; }
     releaseAudio(); audioSource=source; playing=true; refreshControls();
     try {
       audioPlayer=new MediaPlayer();
       audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
-      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);mp.start();playing=true;audioIsPlaying=true;refreshControls();} });
-      audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();sendAction("NEXT",7103);});
+      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);if(startMs>0){try{mp.seekTo(startMs);}catch(Exception ignored){}}mp.start();playing=true;audioIsPlaying=true;setWake(true);refreshControls();} });
+      audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();Runnable r=endedListener;if(r!=null){try{r.run();}catch(Exception ignored){}}else{sendAction("NEXT",7103);}});
       audioPlayer.setOnErrorListener((mp,what,extra)->{playing=false;audioIsPlaying=false;refreshControls();return true;});
       audioPlayer.setDataSource(this,Uri.parse(source));
       audioPlayer.prepareAsync();
@@ -132,9 +153,12 @@ public class PlaybackService extends Service {
       String t=intent.getStringExtra("title"), a=intent.getStringExtra("artist");
       if(t!=null&&!t.trim().isEmpty())title=t; if(a!=null)artist=a;
       startForeground(NOTIFICATION_ID,buildNotification());
-      startAudio(intent.getStringExtra("source"));
+      startAudio(intent.getStringExtra("source"), intent.getIntExtra("position", 0));
       lastSignature=title+"|"+artist+"|true"; return START_STICKY;
     }
+    if (intent != null && "com.heytools.SVC_TOGGLE".equals(intent.getAction())) { if (audioIsPlaying) pauseAudio(); else resumeAudio(); return START_STICKY; }
+    if (intent != null && "com.heytools.SVC_NEXT".equals(intent.getAction())) { skip("next", "NEXT", 7103); return START_STICKY; }
+    if (intent != null && "com.heytools.SVC_PREVIOUS".equals(intent.getAction())) { skip("previous", "PREVIOUS", 7101); return START_STICKY; }
     if (intent != null && "com.heytools.PAUSE_URL".equals(intent.getAction())) { pauseAudio(); return START_STICKY; }
     if (intent != null && "com.heytools.RESUME_URL".equals(intent.getAction())) { resumeAudio(); return START_STICKY; }
     if (intent != null && "com.heytools.STOP_URL".equals(intent.getAction())) { controlAudio("stop"); stopSelf(); return START_NOT_STICKY; }
@@ -178,17 +202,17 @@ public class PlaybackService extends Service {
       .setContentIntent(action("OPEN",7100))
       .setStyle(new MediaStyle().setMediaSession(mediaSession == null ? null : mediaSession.getSessionToken())
         .setShowActionsInCompactView(0,1,2))
-      .addAction(android.R.drawable.ic_media_previous,"Previous",action("PREVIOUS",7101))
+      .addAction(android.R.drawable.ic_media_previous,"Previous",audioPlayer!=null?svc("com.heytools.SVC_PREVIOUS",7111):action("PREVIOUS",7101))
       .addAction(playing?android.R.drawable.ic_media_pause:android.R.drawable.ic_media_play,
-        playing?"Pause":"Play",action("TOGGLE",7102))
-      .addAction(android.R.drawable.ic_media_next,"Next",action("NEXT",7103))
+        playing?"Pause":"Play",audioPlayer!=null?svc("com.heytools.SVC_TOGGLE",7112):action("TOGGLE",7102))
+      .addAction(android.R.drawable.ic_media_next,"Next",audioPlayer!=null?svc("com.heytools.SVC_NEXT",7113):action("NEXT",7103))
       .build();
   }
   @Override public void onDestroy(){
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
     releaseAudio(); audioSource=""; setWake(false);
-    isRunning = false; audioIsPlaying = false;
+    isRunning = false; audioIsPlaying = false; if (inst == this) inst = null;
     if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; }
     super.onDestroy();
   }

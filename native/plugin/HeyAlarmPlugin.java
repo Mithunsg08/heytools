@@ -93,6 +93,43 @@ public class HeyAlarmPlugin extends Plugin {
     } catch (Exception e) { call.reject("Could not open battery settings: " + e.getMessage(), e); }
   }
 
+  /** What Android itself says about this app's notifications (some phones keep their own switch next to the permission). */
+  @PluginMethod
+  public void getNotificationState(PluginCall call) {
+    try {
+      boolean enabled = androidx.core.app.NotificationManagerCompat.from(getContext()).areNotificationsEnabled();
+      boolean runtime = true;
+      if (android.os.Build.VERSION.SDK_INT >= 33) {
+        runtime = androidx.core.content.ContextCompat.checkSelfPermission(getContext(), android.Manifest.permission.POST_NOTIFICATIONS)
+          == android.content.pm.PackageManager.PERMISSION_GRANTED;
+      }
+      JSObject r = new JSObject();
+      r.put("enabled", enabled);
+      r.put("runtime", runtime);
+      r.put("sdk", android.os.Build.VERSION.SDK_INT);
+      call.resolve(r);
+    } catch (Exception e) { call.reject("Could not read notification state: " + e.getMessage(), e); }
+  }
+
+  /** Opens this app's notification settings page, the only place to turn notifications on again after they were refused twice. */
+  @PluginMethod
+  public void openNotificationSettings(PluginCall call) {
+    try {
+      android.content.Intent i = new android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+      i.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+      i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+      try {
+        getContext().startActivity(i);
+      } catch (Exception unavailable) {
+        android.content.Intent d = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+          android.net.Uri.parse("package:" + getContext().getPackageName()));
+        d.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(d);
+      }
+      call.resolve();
+    } catch (Exception e) { call.reject("Could not open settings: " + e.getMessage(), e); }
+  }
+
   /** Keeps the app alive with a quiet notification while a long job runs. */
   @PluginMethod
   public void startWork(PluginCall call) {
