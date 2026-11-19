@@ -365,7 +365,7 @@ const bg=it=>it.cover?`url('${it.cover}') center/cover`:grad(it.hue);
 function toast(m,ms=3200){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),ms)}
 
 /* audio graph */
-const aLocal=new Audio(),aUrl=new Audio();
+const aLocal=new Audio(),aUrl=new Audio();window.__heyMedia=[aLocal,aUrl];
 let ctx,analyser,bus,eqLo,eqHi;const EQ={lo:+ls.get('mp_lo',0),hi:+ls.get('mp_hi',0)};const fdata=new Uint8Array(256);
 function ensureCtx(){
  if(ctx){if(ctx.state==='suspended')ctx.resume();return}

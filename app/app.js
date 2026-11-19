@@ -524,7 +524,7 @@
     try {
       var d = f.contentDocument; if (!d) return false;
       if (d.body && d.body.classList.contains('playing')) return true;
-      var els = d.querySelectorAll('video,audio');
+      var els = mediaEls(f);
       for (var i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return true;
     } catch (e) { /* ignore */ }
     return false;
@@ -541,8 +541,14 @@
   /* Background and lock screen: when the app is hidden while a song or video plays, Android's own foreground player takes over the sound
      (it does not depend on the web page staying alive). When you come back, the page gets the position back and carries on. */
   var handoff = null;
+  function mediaEls(f) {
+    var list = [];
+    try { list = Array.prototype.slice.call(f.contentDocument.querySelectorAll('video,audio')); } catch (e) { /* ignore */ }
+    try { (f.contentWindow.__heyMedia || []).forEach(function (e) { if (list.indexOf(e) < 0) list.push(e); }); } catch (e) { /* ignore */ }
+    return list;
+  }
   function playingElement(f) {
-    try { var els = f.contentDocument.querySelectorAll('video,audio'); for (var i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return els[i]; } catch (e) { /* ignore */ }
+    try { var els = mediaEls(f); for (var i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return els[i]; } catch (e) { /* ignore */ }
     return null;
   }
   function nativeSource(src) {
