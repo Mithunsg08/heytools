@@ -181,6 +181,7 @@ public class MediaLibraryPlugin extends Plugin {
     o.put("playing", PlaybackService.audioIsPlaying);
     o.put("position", PlaybackService.audioPositionMs());
     o.put("duration", PlaybackService.audioDurationMs());
+    o.put("error", PlaybackService.lastError);
     call.resolve(o);
   }
   @PluginMethod public void controlNativeAudio(PluginCall call) {

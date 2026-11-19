@@ -541,6 +541,13 @@
   /* Background and lock screen: when the app is hidden while a song or video plays, Android's own foreground player takes over the sound
      (it does not depend on the web page staying alive). When you come back, the page gets the position back and carries on. */
   var handoff = null;
+  function plog(msg) {
+    try {
+      var l = JSON.parse(localStorage.getItem('heytools.playlog') || '[]'), t = new Date();
+      l.push(('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + String(msg).slice(0, 110));
+      localStorage.setItem('heytools.playlog', JSON.stringify(l.slice(-10)));
+    } catch (e) { /* ignore */ }
+  }
   function mediaEls(f) {
     var list = [];
     try { list = Array.prototype.slice.call(f.contentDocument.querySelectorAll('video,audio')); } catch (e) { /* ignore */ }
@@ -560,20 +567,22 @@
   }
   function startHandoff(force) {
     if (handoff || !NATIVE.isNative || !NATIVE.startNativeAudio || (!force && !document.hidden)) return;
-    var ids = playingFrames(); if (!ids.length) return;
-    var id = ids[0], f = frames[id], el = f && playingElement(f); if (!el) return;
-    var src = nativeSource(el.currentSrc || el.src); if (!src) return;
+    var ids = playingFrames(); if (!ids.length) { if (Object.keys(frames).some(function (k) { return byId[k] && byId[k].media; })) plog('a player is open but not ready to hand over'); return; }
+    var id = ids[0], f = frames[id], el = f && playingElement(f); if (!el) { plog(id + ': no playing audio found'); return; }
+    var src = nativeSource(el.currentSrc || el.src); if (!src) { plog(id + ': cannot hand over ' + String(el.currentSrc || el.src).slice(0, 50)); return; }
+    plog('handing ' + id + ' to Android: ' + src.slice(-40));
     var d = null; try { d = f.contentDocument; } catch (e) { /* ignore */ }
     var tn = d && d.getElementById(id === 'music-player' ? 'nTitle' : 'tt'), ta = d && d.getElementById(id === 'music-player' ? 'nArtist' : 'mt');
     handoff = { id: id, el: el };
     f.__ctlAt = Date.now();
     var p = NATIVE.startNativeAudio(src, (tn && tn.textContent.trim()) || byId[id].name, (ta && ta.textContent.trim()) || byId[id].name, Math.round((el.currentTime || 0) * 1000));
     Promise.resolve(p).then(function () { setTimeout(function () { try { if (handoff && handoff.el === el) { f.__ctlAt = Date.now(); el.pause(); } } catch (e) { /* ignore */ } }, 350); })
-      .catch(function () { handoff = null; });
+      .catch(function (e) { handoff = null; plog('Android refused: ' + ((e && e.message) || e)); });
   }
   function endHandoff() {
     var h = handoff; if (!h) return; handoff = null;
     NATIVE.getNativeAudioState().then(function (s) {
+      plog('back in app; Android player ' + (s && s.active ? ((s.playing ? 'was playing at ' : 'paused at ') + Math.round((s.position || 0) / 1000) + 's') : 'was not active') + (s && s.error ? ' | ' + s.error : ''));
       try { NATIVE.controlNativeAudio('stop'); } catch (e) { /* ignore */ }
       var el = h.el; if (!el || !el.isConnected || !s || !s.active) return;
       try { if (s.position > 0) el.currentTime = s.position / 1000; } catch (e) { /* ignore */ }
@@ -1086,6 +1095,7 @@
       n.textContent = 'Scheduled reminders: ' + (d.pending >= 0 ? d.pending : 'unknown') + (d.lastError ? ' (last problem: ' + String(d.lastError).slice(0, 80) + ')' : '');
       n.className = d.lastError ? 'warn' : '';
     });
+    try { $('relLog').textContent = 'Playback log:\n' + (JSON.parse(localStorage.getItem('heytools.playlog') || '[]').join('\n') || '(empty)'); } catch (e) { /* ignore */ }
     if (NATIVE.appInfo) NATIVE.appInfo().then(function (i) { $('relBuild').textContent = 'Build: ' + (i ? i.build + ' (v' + i.version + ')' : 'unknown'); }).catch(function () { $('relBuild').textContent = 'Build: unknown'; });
     HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });
   }

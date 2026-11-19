@@ -25,6 +25,8 @@ public class PlaybackService extends Service {
   private static final int NOTIFICATION_ID = 7001;
   public static volatile boolean isRunning = false;
   public static volatile boolean audioIsPlaying = false;
+  /** Last problem the native player hit, shown in Settings so a failure is visible instead of silent. */
+  public static volatile String lastError = "";
   /** Lets the web page ask where the native player is, so playback can be handed back without losing the position. */
   public static volatile PlaybackService inst;
   /** Called when a song handed to the native player finishes, so the app can start the next one. */
@@ -47,6 +49,7 @@ public class PlaybackService extends Service {
   @Override public IBinder onBind(Intent intent) { return null; }
   @Override public void onCreate() {
     super.onCreate(); isRunning = true; inst = this;
+    ensureChannel();
     mediaSession = new MediaSessionCompat(this, "HeyToolsPlayback");
     mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
     mediaSession.setCallback(new MediaSessionCompat.Callback() {
@@ -57,6 +60,22 @@ public class PlaybackService extends Service {
       @Override public void onStop() { pauseAudio(); }
     });
     mediaSession.setActive(true);
+  }
+  private void ensureChannel() {
+    try {
+      NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+      if(Build.VERSION.SDK_INT>=26&&nm!=null){
+        NotificationChannel ch=new NotificationChannel(CHANNEL,"Media controls",NotificationManager.IMPORTANCE_LOW);
+        ch.setDescription("Play, pause and skip HeyTools music");ch.setShowBadge(false);nm.createNotificationChannel(ch);
+      }
+    } catch (Exception e) { lastError="channel: "+e; }
+  }
+  private void goForeground() {
+    try {
+      Notification n=buildNotification();
+      if(Build.VERSION.SDK_INT>=29)startForeground(NOTIFICATION_ID,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+      else startForeground(NOTIFICATION_ID,n);
+    } catch (Exception e) { lastError="foreground: "+e; }
   }
   private void skip(String word, String name, int request) {
     ActionListener l = actionListener;
@@ -137,10 +156,10 @@ public class PlaybackService extends Service {
       audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
       audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);if(startMs>0){try{mp.seekTo(startMs);}catch(Exception ignored){}}mp.start();playing=true;audioIsPlaying=true;setWake(true);refreshControls();} });
       audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();Runnable r=endedListener;if(r!=null){try{r.run();}catch(Exception ignored){}}else{sendAction("NEXT",7103);}});
-      audioPlayer.setOnErrorListener((mp,what,extra)->{playing=false;audioIsPlaying=false;refreshControls();return true;});
+      audioPlayer.setOnErrorListener((mp,what,extra)->{lastError="player error "+what+"/"+extra+" for "+audioSource;playing=false;audioIsPlaying=false;refreshControls();return true;});
       audioPlayer.setDataSource(this,Uri.parse(source));
       audioPlayer.prepareAsync();
-    } catch(Exception e) { releaseAudio(); playing=false; refreshControls(); }
+    } catch(Exception e) { lastError="start: "+e; releaseAudio(); playing=false; refreshControls(); }
   }
   public void controlAudio(String action) {
     if ("play".equals(action)) resumeAudio();
@@ -153,7 +172,7 @@ public class PlaybackService extends Service {
     if (intent != null && "com.heytools.PLAY_URL".equals(intent.getAction())) {
       String t=intent.getStringExtra("title"), a=intent.getStringExtra("artist");
       if(t!=null&&!t.trim().isEmpty())title=t; if(a!=null)artist=a;
-      startForeground(NOTIFICATION_ID,buildNotification());
+      goForeground();
       startAudio(intent.getStringExtra("source"), intent.getIntExtra("position", 0));
       lastSignature=title+"|"+artist+"|true"; return START_STICKY;
     }
