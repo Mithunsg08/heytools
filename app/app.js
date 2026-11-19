@@ -1040,6 +1040,7 @@
     $('optTrack').checked = localStorage.getItem('heytools.track.consent') === 'yes';
     $('autoUpdRow').hidden = !NATIVE.isNative; $('optAutoUpd').checked = PREFS.autoUpdate !== false;
     $('privLink').setAttribute('href', NATIVE.isNative ? '../privacy/index.html' : '../privacy/');
+    $('licLink').setAttribute('href', NATIVE.isNative ? '../licenses/index.html' : '../licenses/');
   }
   window.paintSettingsExtras = function () { paintNotif(); paintPrivacy(); $('nMsg').textContent = ''; };
 

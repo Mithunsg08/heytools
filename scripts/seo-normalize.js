@@ -86,7 +86,7 @@ for (const t of TOOLS) {
 }
 
 // sitemap
-const urls = [`${BASE}/`, `${BASE}/app/`, `${BASE}/privacy/`].concat(TOOLS.filter(t => !t.external && fs.existsSync(path.join(root, t.id, 'index.html'))).map(t => `${BASE}/${t.id}/`));
+const urls = [`${BASE}/`, `${BASE}/app/`, `${BASE}/privacy/`, `${BASE}/licenses/`].concat(TOOLS.filter(t => !t.external && fs.existsSync(path.join(root, t.id, 'index.html'))).map(t => `${BASE}/${t.id}/`));
 const today = new Date().toISOString().slice(0, 10);
 fs.writeFileSync(path.join(root, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join('\n') + '\n</urlset>\n');

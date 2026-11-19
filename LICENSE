@@ -33,10 +33,12 @@ the share images, the name "HeyTools" and its logo, and the apps and websites bu
       machine-learning dataset.
 
 3. THIRD-PARTY COMPONENTS
-   Some files are made by others and are covered by their own licenses, not by this one. They are
-   listed in vendor/README.md (libraries) and fonts/ (open-licensed fonts from Fontsource). You may use
-   those components only under their own license terms. This license does not take away any right those
-   licenses give you for those components, and it does not claim ownership of them.
+   This license covers only the material the owner created. Files and code made by others (libraries, fonts,
+   and code loaded from other websites) are covered by their own licenses, which are reproduced in
+   THIRD_PARTY_NOTICES.md and fonts/LICENSES.md and on the in-app and website "Open-source licenses" page.
+   You may use those components only under their own terms. Nothing in this license removes a right those
+   licenses give you for those components, and nothing here claims ownership of them. If a third-party license
+   requires something of you, that requirement applies to you regardless of this license.
 
 4. OWNERSHIP
    The Software is licensed, not sold. The owner keeps all rights not expressly granted here.
