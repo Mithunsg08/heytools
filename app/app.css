@@ -268,3 +268,6 @@ body.editing .pin{display:none}
 .onb-actions{display:flex;justify-content:space-between;gap:10px}
 .onb-actions .btn.primary{min-width:120px}
 @media (forced-colors:active){.pin[aria-pressed="true"]{forced-color-adjust:none;color:Highlight}}
+
+.nowp-play{min-width:46px;font-size:1.05rem;padding-inline:12px}
+.nowp-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

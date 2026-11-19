@@ -50,8 +50,21 @@ public class MainActivity extends BridgeActivity {
     handler.postDelayed(task[0], 250);
   }
 
+  /** When an alarm opens the app, show it over the lock screen and wake the display. */
+  private void showOverLockScreen() {
+    try {
+      if (android.os.Build.VERSION.SDK_INT >= 27) {
+        setShowWhenLocked(true);
+        setTurnScreenOn(true);
+      } else {
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+      }
+    } catch (Throwable ignored) {}
+  }
+
   private void dispatchAlarmOpen(final Intent intent) {
     if (intent == null || !"com.heytools.ALARM_OPEN".equals(intent.getAction())) return;
+    showOverLockScreen();
     runWhenHeyToolsReady("location.hash='#/alarm-clock'");
   }
 
@@ -96,6 +109,7 @@ public class MainActivity extends BridgeActivity {
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(MediaLibraryPlugin.class);
     registerPlugin(HeyAlarmPlugin.class);
+    registerPlugin(ScreenRecordPlugin.class);
     super.onCreate(savedInstanceState);
     getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
 

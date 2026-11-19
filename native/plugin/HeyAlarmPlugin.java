@@ -93,6 +93,29 @@ public class HeyAlarmPlugin extends Plugin {
     } catch (Exception e) { call.reject("Could not open battery settings: " + e.getMessage(), e); }
   }
 
+  /** Keeps the app alive with a quiet notification while a long job runs. */
+  @PluginMethod
+  public void startWork(PluginCall call) {
+    try {
+      android.content.Intent i = new android.content.Intent(getContext(), KeepAliveService.class);
+      i.putExtra("title", call.getString("title", "HeyTools is working"));
+      i.putExtra("text", call.getString("text", ""));
+      if (android.os.Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(i);
+      else getContext().startService(i);
+      call.resolve();
+    } catch (Exception e) { call.reject("Could not keep the app running: " + e.getMessage(), e); }
+  }
+
+  @PluginMethod
+  public void stopWork(PluginCall call) {
+    try {
+      android.content.Intent i = new android.content.Intent(getContext(), KeepAliveService.class);
+      i.setAction(KeepAliveService.ACTION_STOP);
+      getContext().startService(i);
+    } catch (Exception ignored) {}
+    call.resolve();
+  }
+
   /** Lets the person switch background update checks off (Settings > Privacy & data). */
   @PluginMethod
   public void setAutoUpdate(PluginCall call) {

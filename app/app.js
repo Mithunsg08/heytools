@@ -532,19 +532,58 @@
   function leave(id) {
     var t = byId[id], f = frames[id]; if (!f) return;
     if (t && t.media && mediaAvailable(f)) { f.hidden = true; syncPlayback(); }
+    else if (t && t.keep && keepBusy(f)) { f.hidden = true; syncPlayback(); }      // a long job (compressing, removing a background...) carries on out of sight
     else { dropFrame(id); syncPlayback(); }
   }
   /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
   function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); }); }
+  var hiddenAt = 0;
+  document.addEventListener('visibilitychange', function () { if (document.hidden) hiddenAt = Date.now(); });
+  function guardMedia(f) {
+    if (!f || f.__guard) return;
+    var d; try { d = f.contentDocument; } catch (e) { return; }
+    if (!d) return; f.__guard = true; f.__userAt = 0; f.__ctlAt = 0;
+    ['pointerdown', 'touchstart', 'keydown', 'click'].forEach(function (n) { d.addEventListener(n, function () { f.__userAt = Date.now(); }, true); });
+    var tries = 0;
+    d.addEventListener('pause', function (e) {
+      var m = e.target, now = Date.now();
+      if (!m || m.ended || !hiddenAt || now - hiddenAt > 4000) { tries = 0; return; }     // only the pause that Android causes when the app is hidden
+      if (now - f.__userAt < 1500 || now - f.__ctlAt < 2500) return;                       // the person (or the notification buttons) paused it
+      if (tries++ > 3) return;
+      setTimeout(function () { try { var p = m.play(); if (p && p.catch) p.catch(function () {}); } catch (err) { /* ignore */ } }, 200);
+    }, true);
+    d.addEventListener('playing', function () { tries = 0; }, true);
+  }
   var currentMediaControlId = null;
+  /* tools that run long jobs set <body data-busy="true"> while they work */
+  function keepBusy(f) { try { return !!(f && f.contentDocument && f.contentDocument.body && f.contentDocument.body.dataset.busy === 'true'); } catch (e) { return false; } }
+  var workOn = false;
+  function syncWork() {
+    var busy = Object.keys(frames).filter(function (k) { return byId[k] && byId[k].keep && keepBusy(frames[k]); });
+    Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].keep && busy.indexOf(k) === -1) dropFrame(k); });
+    if (!NATIVE.isNative || !NATIVE.startWork) return;
+    if (busy.length && !workOn) { workOn = true; NATIVE.startWork(byId[busy[0]].name + ' is working…', 'Keeps going if you switch to another app'); }
+    else if (!busy.length && workOn) { workOn = false; NATIVE.stopWork(); }
+  }
   function syncPlayback() {
+    syncWork();
     var live = playingFrames();
     currentMediaControlId = live.length ? live[0] : null;
     if (currentMediaControlId) put('heytools.media.active', currentMediaControlId);
     Object.keys(frames).forEach(function (k) { if (k !== current && byId[k] && byId[k].media && live.indexOf(k) === -1) dropFrame(k); });   // paused and out of sight: free the memory
     var other = live.filter(function (k) { return k !== current; });
     var bar = $('nowp');
-    if (other.length) { var t = byId[other[0]]; $('nowpName').textContent = t.name; $('nowpIco').textContent = t.icon; bar.setAttribute('data-id', t.id); bar.hidden = false; } else bar.hidden = true;
+    if (other.length) {
+      var t = byId[other[0]], tf = frames[t.id], td = null; try { td = tf && tf.contentDocument; } catch (e) { /* ignore */ }
+      var tn = td && td.getElementById(t.id === 'music-player' ? 'nTitle' : 'tt'), ta = td && td.getElementById(t.id === 'music-player' ? 'nArtist' : 'mt');
+      var isPlay = tf ? mediaPlaying(tf) : false;
+      $('nowpName').textContent = (tn && tn.textContent.trim()) || t.name;
+      $('nowpSub').textContent = ((ta && ta.textContent.trim()) ? ta.textContent.trim() + ' · ' : '') + t.name + (isPlay ? '' : ' · paused');
+      $('nowpIco').textContent = t.icon; bar.setAttribute('data-id', t.id);
+      var tg = $('nowpToggle'); tg.textContent = isPlay ? '⏸' : '▶'; tg.setAttribute('aria-label', isPlay ? 'Pause' : 'Play');
+      bar.hidden = false;
+    } else bar.hidden = true;
+    live.forEach(function (k) { guardMedia(frames[k]); });
     if (live.length) {
       var mediaId = live[0], mediaFrame = frames[mediaId], mediaDoc = null;
       try { mediaDoc = mediaFrame && mediaFrame.contentDocument; } catch (e) {}
@@ -584,10 +623,26 @@
       if (current !== target) location.hash = '#/' + target;
       return;
     }
+    f.__ctlAt = Date.now();
     f.contentWindow.postMessage({ type: 'heytools:media-action', action: e.detail.action }, location.origin);
   });
+  /* a screen recording that ends while Recorder is not on screen (for example, stopped from the notification) is handed to Recorder */
+  if (NATIVE.isNative && NATIVE.onScreenFinished) {
+    NATIVE.onScreenFinished(function (r) {
+      put('heytools.screen.pending', r);
+      var f = frames.recorder;
+      if (f && f.contentWindow) { try { f.contentWindow.postMessage({ type: 'heytools:screen-finished' }, location.origin); } catch (e) { /* ignore */ } }
+      toast('Screen recording finished. Open Recorder to find it.');
+    });
+  }
   window.__HEYTOOLS_READY = true;
   setInterval(syncPlayback, 1500);
+  $('nowpToggle').addEventListener('click', function () {
+    var id = $('nowp').getAttribute('data-id'), f = id && frames[id]; if (!f || !f.contentWindow) return;
+    f.__ctlAt = Date.now();
+    try { f.contentWindow.postMessage({ type: 'heytools:media-action', action: 'toggle' }, location.origin); } catch (e) { /* ignore */ }
+    setTimeout(syncPlayback, 350);
+  });
   $('nowpOpen').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) location.hash = '#/' + id; });
   $('nowpStop').addEventListener('click', function () { var id = $('nowp').getAttribute('data-id'); if (id) dropFrame(id); syncPlayback(); });
 
@@ -962,6 +1017,11 @@
     if (!NATIVE.isNative || !HN) return;
     HN.permission().then(function (r) { setRel('relNotif', 'Notifications', r === 'granted' ? 'ok' : 'bad', 'relNotifBtn'); });
     HN.exactPermission().then(function (r) { setRel('relExact', 'Exact alarms', r === 'granted' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relExactBtn'); });
+    if (HN.diagnose) HN.diagnose().then(function (d) {
+      var n = $('relPend');
+      n.textContent = 'Scheduled reminders: ' + (d.pending >= 0 ? d.pending : 'unknown') + (d.lastError ? ' (last problem: ' + String(d.lastError).slice(0, 80) + ')' : '');
+      n.className = d.lastError ? 'warn' : '';
+    });
     HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });
   }
   function paintNotif() {
@@ -1069,7 +1129,13 @@
     $('onbNext').onclick = function () {
       if (step === 1 && canAsk) {
         put('heytools.notif.asked', true);
-        try { HN.requestPermission(); } catch (e) { /* ignore */ }   // never wait on the system prompt, so onboarding can not get stuck
+        // never wait on the system prompt, so onboarding can not get stuck. Alarms also need "Alarms & reminders", asked right after.
+        try {
+          HN.requestPermission().then(function () {
+            if (!HN.exactPermission || !HN.requestExactPermission) return;
+            return HN.exactPermission().then(function (s) { if (s === 'denied' || s === 'prompt') return HN.requestExactPermission(); });
+          }).catch(function () {});
+        } catch (e) { /* ignore */ }
         step++; show();
         return;
       }

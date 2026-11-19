@@ -116,7 +116,7 @@ const RK='heytools.habits.remind';let rem={on:false,t:'20:00'};try{rem=JSON.pars
 function syncRemind(){try{localStorage.setItem(RK,JSON.stringify(rem))}catch(e){}
  $('rt').value=rem.t;$('rton').textContent=rem.on?'On':'Off';$('rton').setAttribute('aria-pressed',rem.on);
  if(!window.HeyNotify)return;const p=rem.t.split(':');
- window.HeyNotify.syncGroup('habit',rem.on&&st.h.length?[{id:900001,title:'Habit check-in',body:'Have you ticked off your habits today?',repeat:{weekdays:[1,2,3,4,5,6,7],hour:+p[0],minute:+p[1]||0}}]:[])}
+ window.HeyNotify.syncGroup('habit',rem.on?[{id:900001,title:'Habit check-in',body:'Have you ticked off your habits today?',repeat:{weekdays:[1,2,3,4,5,6,7],hour:+p[0],minute:+p[1]||0}}]:[])}
 $('rton').onclick=()=>{rem.on=!rem.on;if(rem.on&&window.HeyNotify)window.HeyNotify.requestPermission().then(v=>{$('rmsg').textContent=v==='granted'?'Reminder set for '+rem.t+' every day.':'Notifications are blocked. Allow them in your phone settings.'});else $('rmsg').textContent='';syncRemind()};
 $('rt').onchange=e=>{rem.t=e.target.value||'20:00';syncRemind()};
 syncRemind();

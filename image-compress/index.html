@@ -233,7 +233,9 @@ function setMode(m){
 $$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 
 function addFiles(list){
-  const ok=[...list].filter(f=>f.type.startsWith(mode+'/'));
+  // some phone pickers give files an empty type, so the extension decides when the type is missing
+  const EXT={image:/\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i,video:/\.(mp4|m4v|mov|webm|mkv|3gp|avi)$/i};
+  const ok=[...list].filter(f=>f.type.startsWith(mode+'/')||(!f.type&&EXT[mode].test(f.name)));
   if(!ok.length){alert('Please choose '+(mode==='image'?'image':'video')+' files.');return}
   files=mode==='video'?ok:ok;renderFiles();check();go(2);
 }
@@ -260,23 +262,63 @@ $('#again').onclick=()=>{files=[];go(1)};
 
 /* ---------- Image ---------- */
 const webpOK=document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
+/* what the file really is, from its first bytes (the name and type can be wrong or empty on phones) */
+function sniff(b){
+  if(b[0]===0xFF&&b[1]===0xD8)return 'image/jpeg';
+  if(b[0]===0x89&&b[1]===0x50&&b[2]===0x4E&&b[3]===0x47)return 'image/png';
+  if(b[0]===0x47&&b[1]===0x49&&b[2]===0x46)return 'image/gif';
+  if(b[0]===0x52&&b[1]===0x49&&b[2]===0x46&&b[3]===0x46&&b[8]===0x57&&b[9]===0x45&&b[10]===0x42&&b[11]===0x50)return 'image/webp';
+  if(b[0]===0x42&&b[1]===0x4D)return 'image/bmp';
+  if(b[4]===0x66&&b[5]===0x74&&b[6]===0x79&&b[7]===0x70){const brand=String.fromCharCode(b[8],b[9],b[10],b[11]);return /^(heic|heix|hevc|hevx|mif1|msf1|heim|heis)$/.test(brand)?'image/heic':/^avi[fs]$/.test(brand)?'image/avif':''}
+  return '';
+}
+function imgFrom(blob){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(blob),img=new Image();
+    img.onload=()=>resolve({img,url});img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('decode'))};img.src=url;
+  });
+}
+async function decodeImage(file){
+  const head=new Uint8Array(await file.slice(0,16).arrayBuffer()),real=sniff(head);
+  if(real==='image/heic')throw new Error('This is a HEIC photo, which this phone cannot open here. Share or export it as JPG first, or set your camera to JPG.');
+  if(real==='image/avif'&&typeof createImageBitmap!=='function')throw new Error('This AVIF image cannot be opened on this phone. Try JPG or PNG.');
+  let blob=file;
+  const errors=[];
+  const sizes=[0,4096,2048,1280];                          // 0 = full size
+  for(let attempt=0;attempt<2;attempt++){
+    if(typeof createImageBitmap==='function'){
+      for(const s of sizes){
+        try{
+          let bmp;
+          if(!s)bmp=await createImageBitmap(blob);
+          else{
+            // decode straight to a smaller size, which also works for photos too large to decode in full
+            bmp=await createImageBitmap(blob,{resizeWidth:s,resizeQuality:'high'});
+          }
+          if(bmp&&bmp.width&&bmp.height)return {source:bmp,width:bmp.width,height:bmp.height,url:null};
+        }catch(e){errors.push(String(e&&e.message||e))}
+      }
+    }
+    try{const r=await imgFrom(blob);return {source:r.img,width:r.img.naturalWidth,height:r.img.naturalHeight,url:r.url}}
+    catch(e){errors.push('img')}
+    // same bytes, but with the type fixed from the content (an empty or wrong type breaks some phones)
+    if(attempt===0&&real&&real!==blob.type){blob=new Blob([await file.arrayBuffer()],{type:real});continue}
+    break;
+  }
+  const mb=(file.size/1048576).toFixed(1);
+  throw new Error(file.size>40*1048576
+    ?'This photo is very large ('+mb+' MB). Try a smaller copy, for example a screenshot or a resized version.'
+    :'This image could not be opened on this phone ('+(file.type||real||'unknown type')+', '+mb+' MB). Try saving it as JPG or PNG.');
+}
 async function cImg(file,target,mime){
   if(mime==='image/webp'&&!webpOK)mime='image/jpeg';
-  // Android System WebView versions differ: prefer createImageBitmap, then fall back
-  // to an HTMLImageElement so ordinary JPEG/PNG uploads still work.
+  // Phones differ a lot: big camera photos, odd MIME types and Android WebView versions all break plain decoding.
+  // So try several ways in turn: full size bitmap, smaller bitmaps, an <img> element, then the same bytes with a corrected type.
   let source=null,objectUrl=null,width=0,height=0;
   try{
-    if(typeof createImageBitmap==='function'){
-      try{source=await createImageBitmap(file);width=source.width;height=source.height}catch(e){}
-    }
-    if(!source){
-      objectUrl=URL.createObjectURL(file);
-      source=await new Promise((resolve,reject)=>{
-        const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('This image format cannot be decoded on this device. Try JPG or PNG.'));
-        img.src=objectUrl;
-      });
-      width=source.naturalWidth;height=source.naturalHeight;
-    }
+    const d=await decodeImage(file);source=d.source;width=d.width;height=d.height;objectUrl=d.url;
+    // very large photos are brought down to about 16 megapixels first: the result is the same for a KB target, and it is much faster
+    var pre=Math.min(1,Math.sqrt(16e6/(width*height)));
     if(!width||!height)throw new Error('Could not read image dimensions.');
     const c=document.createElement('canvas'),x=c.getContext('2d');
     if(!x)throw new Error('Image processing is unavailable in this app version.');
@@ -284,7 +326,7 @@ async function cImg(file,target,mime){
       if(!c.toBlob){reject(new Error('Canvas export is unavailable in this app version.'));return}
       c.toBlob(result=>result?resolve(result):reject(new Error('The image could not be exported. Try JPG or PNG.')),mime,q);
     });
-    let scale=1,last=null;
+    let scale=pre,last=null;
     for(let i=0;i<60;i++){
       c.width=Math.max(1,Math.round(width*scale));c.height=Math.max(1,Math.round(height*scale));
       x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(source,0,0,c.width,c.height);
@@ -345,7 +387,7 @@ async function cVid(file,target,onP){
 $('#go').onclick=async()=>{
   if(!check())return;
   const target=parseFloat($('#kb').value)*1024,out=$('#out'),again=$('#again');
-  out.innerHTML='';again.hidden=true;go(3);
+  out.innerHTML='';again.hidden=true;go(3);document.body.dataset.busy='true';
   for(const f of files){
     const li=document.createElement('li');
     li.innerHTML=`<div class="meta"><span class="nm">${esc(f.name)}</span><div class="bar"><i></i></div><small>Compressing…</small></div>`;
@@ -364,7 +406,7 @@ $('#go').onclick=async()=>{
       li.innerHTML=`${thumb}<div class="meta"><span class="nm">${esc(name)}</span><small>${fmt(f.size)} to <span class="ok">${fmt(blob.size)}</span>${pct?` (${pct}% smaller)`:''}</small>${note?`<small>${note}</small>`:''}</div><a class="btn" href="${url}" download="${esc(name)}">Download</a>`;
     }catch(e){meta.innerHTML=`<span class="nm">${esc(f.name)}</span><small style="color:var(--wn)">${esc(e.message||'Could not compress this file.')}</small>`}
   }
-  again.hidden=false;
+  again.hidden=false;document.body.dataset.busy='false';
 };
 </script>
 

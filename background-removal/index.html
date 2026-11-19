@@ -93,7 +93,7 @@ footer{padding:2rem 0 2.6rem;color:var(--mute);font-size:.95rem;border-top:1px s
 <meta property="og:image:height" content="630">
 <meta name="twitter:title" content="Background Removal – Remove Image Background Online Free | BG Removal">
 <meta name="twitter:description" content="Free background removal in your browser. Remove the background from any photo in seconds, download a transparent PNG. No upload, no sign-up, 100% private.">
-<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/background-removal.jpg"><style id="hey-a11y">@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
+<meta name="twitter:image" content="https://mithunsg08.github.io/heytools/og/background-removal.jpg"><script src="../heynotify.js"></script><style id="hey-a11y">@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 </head>
 <body>
 <div class="wrap">
@@ -109,7 +109,7 @@ footer{padding:2rem 0 2.6rem;color:var(--mute);font-size:.95rem;border-top:1px s
 </div>
 
 <div class="tool" id="tool">
-  <p class="pre" style="text-align:center;margin:0 0 12px"><button class="btn" type="button" id="prep">Download the AI model now (for offline use)</button></p>
+  <p class="pre" style="text-align:center;margin:0 0 12px"><select id="mq" aria-label="AI model size" style="margin-right:8px"><option value="fast">Fast model (about 40 MB)</option><option value="best">Best quality (about 80 MB)</option></select><button class="btn" type="button" id="prep">Download the AI model now (for offline use)</button></p>
   <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an image to remove its background">
     <div>
       <h2>Drop an image here</h2>
@@ -192,11 +192,27 @@ var drop=$('drop'),file=$('file'),work=$('work'),cv=$('cv'),ctx=cv.getContext('2
 var orig=null,cut=null,bgc='',view='res',mode='ai',aiFail=false,token=0;
 $('yr').textContent=new Date().getFullYear();
 
-function busy(on,m,p){$('busy').classList.toggle('on',on);if(m)$('msg').textContent=m;$('prog').style.width=(p||0)+'%'}
+/* keep the screen on while working, and tell the HeyTools app a long job is running so it keeps this page alive in the background */
+var wl=null;
+function keepAwake(on){try{if(on&&navigator.wakeLock&&!wl){navigator.wakeLock.request('screen').then(function(l){wl=l;l.addEventListener('release',function(){wl=null})}).catch(function(){})}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
+function working(on){document.body.dataset.busy=on?'true':'false';keepAwake(on)}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&document.body.dataset.busy==='true')keepAwake(true)});
+function busy(on,m,p){working(on);$('busy').classList.toggle('on',on);if(m)$('msg').textContent=m;$('prog').style.width=(p||0)+'%'}
+/* Fast model (about 40 MB) is the default, so the first download is half the size. Best quality is about 80 MB. */
+function modelName(){try{return localStorage.getItem('heytools.bg.model')==='best'?'isnet_fp16':'isnet_quint8'}catch(e){return 'isnet_quint8'}}
+function removeBg(blob,onProgress,tries){
+  tries=tries||3;
+  return import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm').then(function(m){
+    return m.removeBackground(blob,{model:modelName(),output:{format:'image/png'},progress:onProgress});
+  }).catch(function(e){
+    if(tries<=1)throw e;                                   // a dropped connection resumes from the files already saved
+    return new Promise(function(r){setTimeout(r,1500)}).then(function(){return removeBg(blob,onProgress,tries-1)});
+  });
+}
 function pressed(btns,el){btns.forEach(function(b){b.setAttribute('aria-pressed',b===el)})}
 
 function load(f){
-  if(!f||!/^image\//.test(f.type))return;
+  if(!f||!(/^image\//.test(f.type)||(!f.type&&/\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name))))return;
   var url=URL.createObjectURL(f),img=new Image();
   img.onload=function(){
     var s=Math.min(1,2000/Math.max(img.width,img.height));
@@ -214,9 +230,7 @@ function run(){
   if(mode==='ai'&&!aiFail){
     busy(true,'Loading the AI model…',5);
     orig.toBlob(function(b){
-      import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm').then(function(m){
-        return m.removeBackground(b,{output:{format:'image/png'},progress:function(k,c,tot){if(t===token)busy(true,k.indexOf('fetch')===0?'Downloading model (first time only)…':'Removing background…',tot?Math.round(c/tot*100):30)}});
-      }).then(function(out){return createImageBitmap(out)}).then(function(bm){
+      removeBg(b,function(k,c,tot){if(t===token)busy(true,k.indexOf('fetch')===0?'Downloading model (first time only)…':'Removing background…',tot?Math.round(c/tot*100):30)}).then(function(out){return createImageBitmap(out)}).then(function(bm){
         if(t!==token)return;
         cut=document.createElement('canvas');cut.width=bm.width;cut.height=bm.height;cut.getContext('2d').drawImage(bm,0,0);
         done();
@@ -228,14 +242,17 @@ function run(){
   }else{colorCut();done()}
 }
 
+(function(){var s=$('mq');try{s.value=localStorage.getItem('heytools.bg.model')==='best'?'best':'fast'}catch(e){}s.onchange=function(){try{localStorage.setItem('heytools.bg.model',s.value)}catch(e){}$('prep').disabled=false;$('prep').textContent='Download the AI model now (for offline use)'}})();
 /* Optional: fetch the AI model ahead of time on Wi-Fi, so later cut-outs work offline. Uses a tiny blank image. */
 $('prep').onclick=function(){
   var b=$('prep');b.disabled=true;b.textContent='Downloading… 0%';
   var c=document.createElement('canvas');c.width=c.height=64;c.getContext('2d').fillRect(0,0,64,64);
   c.toBlob(function(bl){
-    import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm').then(function(m){
-      return m.removeBackground(bl,{output:{format:'image/png'},progress:function(k,cur,tot){if(tot)b.textContent='Downloading… '+Math.round(cur/tot*100)+'%'}});
-    }).then(function(){b.textContent='AI model saved. Works offline now'}).catch(function(){b.disabled=false;b.textContent='Download failed. Try again on Wi-Fi'});
+    working(true);
+    removeBg(bl,function(k,cur,tot){if(tot)b.textContent='Downloading… '+Math.round(cur/tot*100)+'%'}).then(function(){
+      working(false);b.textContent='AI model saved. Works offline now';
+      if(document.hidden&&window.HeyNotify)HeyNotify.schedule([{id:930001,title:'AI model ready',body:'Background Removal now works offline.',at:Date.now()+1200,group:'bgmodel'}]);
+    }).catch(function(){working(false);b.disabled=false;b.textContent='Download failed. Check your connection and tap to try again'});
   },'image/png');
 };
 

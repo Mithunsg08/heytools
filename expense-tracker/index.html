@@ -83,6 +83,7 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 <div class="card"><div class="row" style="margin:0;justify-content:space-between"><div><div class="sub" id="mlabel">This month</div><div class="tot" id="tot">0</div></div><div><label for="month" style="margin:0">Month</label><input id="month" type="month"></div></div>
 <div class="bar"><i id="bud"></i></div><div class="sub" id="budtxt"></div>
 <div class="grid2"><div><label for="budget">Monthly budget (optional)</label><input id="budget" type="number" min="0" step="any" inputmode="decimal" placeholder="e.g. 20000"></div><div><label for="cur">Currency symbol</label><input id="cur" maxlength="4" value="₹"></div></div></div>
+<div class="card"><h2>Daily reminder</h2><div class="row" style="margin:0"><label for="ert" style="margin:0">Remind me to log expenses at</label><input id="ert" type="time" value="21:00" style="width:auto"><button id="erton" class="alt" type="button" aria-pressed="false">Off</button></div><p class="msg" id="ermsg" role="status"></p></div>
 <div class="card"><h2>Add expense</h2>
 <div class="grid2"><div><label for="amt">Amount</label><input id="amt" type="number" min="0" step="any" inputmode="decimal"></div><div><label for="cat">Category</label><select id="cat"></select></div></div>
 <div class="grid2"><div><label for="note">Note</label><input id="note" maxlength="80" placeholder="Optional"></div><div><label for="date">Date</label><input id="date" type="date"></div></div>
@@ -130,6 +131,15 @@ $('month').oninput=draw;$('budget').oninput=e=>{st.budget=e.target.value;save();
 $('clr').onclick=()=>{if(confirm('Delete every expense in this month?')){const m=$('month').value;st.items=st.items.filter(x=>!x.d.startsWith(m));save();draw()}};
 $('csv').onclick=()=>{const m=$('month').value,rows=st.items.filter(x=>x.d.startsWith(m));const csv='Date,Category,Note,Amount\n'+rows.map(x=>[x.d,x.c,'"'+(x.n||'').replace(/"/g,'""')+'"',x.a].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='expenses-'+m+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 draw();
+/* daily reminder: a system notification in the Android app, so it arrives even when the app is closed */
+const ERK='heytools.expense.remind';let erem={on:false,t:'21:00'};try{erem=Object.assign(erem,JSON.parse(localStorage.getItem(ERK))||{})}catch(e){}
+function syncExpRemind(){try{localStorage.setItem(ERK,JSON.stringify(erem))}catch(e){}
+ $('ert').value=erem.t;$('erton').textContent=erem.on?'On':'Off';$('erton').setAttribute('aria-pressed',erem.on);
+ if(!window.HeyNotify)return;const p=erem.t.split(':');
+ HeyNotify.syncGroup('expense-daily',erem.on?[{id:920001,title:"Log today's expenses",body:'Take a minute to add what you spent today.',repeat:{weekdays:[1,2,3,4,5,6,7],hour:+p[0],minute:+p[1]||0}}]:[])}
+$('erton').onclick=()=>{erem.on=!erem.on;$('ermsg').textContent=erem.on?'Reminder set for '+erem.t+' every day.':'Reminder is off.';syncExpRemind()};
+$('ert').onchange=e=>{erem.t=e.target.value||'21:00';if(erem.on)$('ermsg').textContent='Reminder set for '+erem.t+' every day.';syncExpRemind()};
+syncExpRemind();
 })();
 </script>
 

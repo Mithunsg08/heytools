@@ -11,7 +11,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     try { if(intent!=null&&intent.getData()!=null) id=Integer.parseInt(intent.getData().getLastPathSegment()); }
     catch(Exception ignored) { return; }
     if(id<0)return;
-    if(!AlarmScheduler.canScheduleExact(context))return;
+    // Ring even if the exact-alarm switch was turned off after scheduling: the person asked for this alarm.
     // The scheduler validates that this ID is still active and advances repeating alarms before ringing.
     org.json.JSONObject alarm=AlarmScheduler.fired(context,id);
     if(alarm==null)return;

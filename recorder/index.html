@@ -204,6 +204,21 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:30px}
 .app.fs .top{margin-top:0}
 .app.fs .controls{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
 @media(max-width:600px){.app.fs{padding-left:0!important;padding-right:0!important}.app.fs>.app-in{width:100%}.app.fs .stage{height:64dvh;border-radius:0}.app.fs .card{border-radius:0}}
+
+/* Full-screen camera for Video mode, like a phone camera app. The recorder controls move into this layer while it is open. */
+#camfs{position:fixed;inset:0;z-index:2000;background:#000;color:#fff;overflow:hidden}
+#camfs[hidden]{display:none}
+#camfs .stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;border-radius:0!important;border:0!important;background:#000!important}
+#camfs #orb{display:none!important}
+#camfs #preview{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;object-fit:cover!important;transform:none!important;border-radius:0!important;opacity:1!important}
+#camfs #preview.mirror{transform:scaleX(-1)!important}
+#camfs .timer{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:5;padding:4px 14px;border-radius:99px;background:rgba(0,0,0,.45);color:#fff;font-size:1.05rem;margin:0}
+#camfs .status{position:absolute;left:12px;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:5;text-align:center;color:#fff;text-shadow:0 1px 6px #000;margin:0}
+#camfs .controls{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom));z-index:5;display:flex;align-items:center;justify-content:center;gap:34px;margin:0;padding:0}
+#camfs .chips{position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;z-index:5;display:flex;gap:8px;margin:0;padding:0}
+#camfs .chip{background:rgba(0,0,0,.5);color:#fff;border-color:rgba(255,255,255,.3)}
+.cam-x{position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;z-index:6;width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:20px;cursor:pointer}
+body.camopen{overflow:hidden}
 </style>
 <script src="../install-prompt.js" defer></script>
 <link rel="canonical" href="https://mithunsg08.github.io/heytools/recorder/">
@@ -376,6 +391,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:30px}
 
 
 </div>
+<div id="camfs" hidden><button id="camClose" class="cam-x" type="button" aria-label="Close camera">✕</button></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -386,6 +402,9 @@ const rec=$('#rec'),pauseB=$('#pause'),markB=$('#mark'),muteB=$('#mute'),flipB=$
 let mode='voice',facing='user',mr=null,chunks=[],startT=0,acc=0,tick=null,state='idle',
     actx=null,analyser=null,data=null,level=0,allStreams=[],micTracks=[],markers=[],muted=false,wake=null,cache=[],filter='all';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let vf=null,camOpen=false,nat=false;                      // vf: live camera preview, nat: a native (Android) screen recording is running
+const nb=(()=>{try{return window.parent&&window.parent.HeyNative}catch(e){return null}})();
+const nativeScreen=!!(nb&&nb.isNative&&nb.hasScreen);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* theme */
@@ -419,7 +438,7 @@ loadMics();
 
 /* mode switch */
 const screenCaptureAvailable=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
-if(!screenCaptureAvailable)$('#screenBtn').remove();
+if(!screenCaptureAvailable&&!nativeScreen)$('#screenBtn').remove();
 const segBtns=$$('#seg button'),pill=$('#seg .pill');
 function placePill(){const i=segBtns.findIndex(b=>b.dataset.m===mode),n=segBtns.length;
   pill.style.width=`calc((100% - 10px) / ${n})`;pill.style.transform=`translateX(${i*100}%)`;
@@ -427,9 +446,35 @@ function placePill(){const i=segBtns.findIndex(b=>b.dataset.m===mode),n=segBtns.
   flipB.hidden=mode!=='video';
   statusEl.textContent=mode==='screen'?'Tap to share your screen & record':mode==='video'?'Tap to record video':'Tap the button to start';
 }
-segBtns.forEach(b=>b.onclick=()=>{if(state!=='idle')return toast('Stop the recording first');mode=b.dataset.m;placePill()});
+segBtns.forEach(b=>b.onclick=()=>{if(state!=='idle')return toast('Stop the recording first');mode=b.dataset.m;placePill();syncCam()});
+
+/* full-screen camera (Video mode) */
+const camfs=$('#camfs'),camHome=new Map();
+const camNodes=()=>[$('.stage'),timerEl,statusEl,$('.controls'),$('.chips')];
+function camMoveIn(){camNodes().forEach(n=>{if(!n||camHome.has(n))return;const ph=document.createComment('cam');n.parentNode.insertBefore(ph,n);camHome.set(n,ph);camfs.appendChild(n)})}
+function camMoveOut(){camHome.forEach((ph,n)=>{if(ph.parentNode){ph.parentNode.insertBefore(n,ph);ph.remove()}});camHome.clear()}
+function stopFinder(){if(vf){vf.getTracks().forEach(t=>t.stop());vf=null}}
+async function startFinder(){
+  stopFinder();
+  try{
+    const [w,h]=VQ[S.vq]||VQ[720];
+    vf=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:w},height:{ideal:h}},audio:false});
+    preview.srcObject=vf;preview.classList.add('show');preview.classList.toggle('mirror',facing==='user'&&S.mirror);preview.play().catch(()=>{});
+    statusEl.textContent='Tap the red button to record';
+  }catch(e){
+    toast(e&&e.name==='NotAllowedError'?'Please allow camera access':'Could not open the camera');
+    mode='voice';placePill();closeCam();
+  }
+}
+function openCam(){if(camOpen)return;camOpen=true;camMoveIn();camfs.hidden=false;document.body.classList.add('camopen');startFinder()}
+function closeCam(){
+  if(!camOpen)return;camOpen=false;stopFinder();camfs.hidden=true;document.body.classList.remove('camopen');camMoveOut();
+  preview.classList.remove('show','mirror');preview.srcObject=null;placePill();
+}
+function syncCam(){if(mode==='video')openCam();else closeCam()}
+$('#camClose').onclick=()=>{if(state!=='idle')return toast('Stop the recording first');mode='voice';placePill();closeCam()};
 placePill();
-flipB.onclick=()=>{if(state!=='idle')return toast('Switch camera before recording');facing=facing==='user'?'environment':'user';toast(facing==='user'?'Front camera':'Back camera')};
+flipB.onclick=()=>{if(state!=='idle')return toast('Switch camera before recording');facing=facing==='user'?'environment':'user';toast(facing==='user'?'Front camera':'Back camera');if(camOpen)startFinder()};
 
 /* mute */
 muteB.onclick=()=>{
@@ -484,8 +529,13 @@ async function acquire(){
     disp.getVideoTracks()[0].onended=()=>{if(state==='rec'||state==='pause')stop()};
   }else{
     const [w,h]=VQ[S.vq]||VQ[720];
-    ms=await gum(mode==='video'?{audio:audioC(true),video:{facingMode:facing,width:{ideal:w},height:{ideal:h}}}:{audio:audioC(true)});
-    allStreams.push(ms);micTracks=ms.getAudioTracks();
+    if(mode==='video'&&vf&&vf.getVideoTracks().some(t=>t.readyState==='live')){
+      const a=await gum({audio:audioC(true)});allStreams.push(a);micTracks=a.getAudioTracks();
+      ms=new MediaStream([...vf.getVideoTracks(),...micTracks]);       // the preview camera is reused, it stays open after you stop
+    }else{
+      ms=await gum(mode==='video'?{audio:audioC(true),video:{facingMode:facing,width:{ideal:w},height:{ideal:h}}}:{audio:audioC(true)});
+      allStreams.push(ms);micTracks=ms.getAudioTracks();
+    }
     if(micTracks.length)actx.createMediaStreamSource(new MediaStream(micTracks)).connect(analyser);
   }
   micTracks.forEach(t=>t.enabled=!muted);
@@ -496,6 +546,7 @@ function releaseAll(){
   allStreams.forEach(s=>s.getTracks().forEach(t=>t.stop()));allStreams=[];
   if(actx){actx.close().catch(()=>{});actx=null}analyser=null;
   preview.classList.remove('show','paused','rect');preview.srcObject=null;
+  if(camOpen&&vf&&vf.active){preview.srcObject=vf;preview.classList.add('show');preview.classList.toggle('mirror',facing==='user'&&S.mirror);preview.play().catch(()=>{})}
   if(wake){wake.release().catch(()=>{});wake=null}
 }
 function errMsg(e){
@@ -515,6 +566,7 @@ function setUI(){
 }
 async function start(){
   if(state!=='idle')return;
+  if(mode==='screen'&&nativeScreen)return startNativeScreen();
   if(!navigator.mediaDevices||!window.MediaRecorder)return toast('Recording is not supported in this browser');
   state='busy';statusEl.textContent='Waiting for permission…';
   let ms;
@@ -526,7 +578,7 @@ async function start(){
   mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
   const recMode=mode;mr.onstop=()=>save(recMode);
   if(mode!=='voice'){
-    preview.srcObject=ms;preview.classList.toggle('rect',mode==='screen');
+    preview.srcObject=ms;preview.classList.toggle('rect',mode==='screen');preview.classList.toggle('mirror',mode==='video'&&facing==='user'&&S.mirror);
     preview.style.transform=(mode==='video'&&facing==='user'&&S.mirror)?'translate(-50%,-50%) scaleX(-1)':'translate(-50%,-50%)';
     preview.play().catch(()=>{});preview.classList.add('show');
   }
@@ -543,6 +595,7 @@ async function start(){
 function elapsed(){return (acc+(state==='rec'?(Date.now()-startT):0))/1000}
 function updTimer(){const t=fmt(elapsed());timerEl.textContent=t;document.title=(state==='rec'?'● ':'⏸ ')+t+' · Recorder'}
 function stop(){
+  if(nat&&(state==='rec'||state==='pause'))return stopNativeScreen();
   if(state==='count'||state==='busy'){state='idle';cdEl.classList.remove('show');releaseAll();setUI();statusEl.textContent='Cancelled';return}
   if(!mr||(state!=='rec'&&state!=='pause'))return;
   acc=elapsed()*1000;state='idle';clearInterval(tick);
@@ -571,23 +624,70 @@ async function saveToPhone(blob,name,type){
 async function save(recMode){
   const type=mr.mimeType||(recMode==='voice'?'audio/webm':'video/webm');
   const blob=new Blob(chunks,{type});
+  await commit(recMode,type,blob,acc/1000);
+  chunks=[];
+}
+async function commit(recMode,type,blob,dur,phoneSaver){
   if(!blob.size){statusEl.textContent='Nothing was recorded';return}
   const d=new Date(),label={voice:'Voice',video:'Video',screen:'Screen'}[recMode];
   const stamp=d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
   const ext=type.includes('mp4')?'mp4':type.includes('ogg')?'ogg':'webm';
   const name=label+' '+stamp+'.'+ext;
   try{
-    await addRec({name,kind:recMode,type,blob,dur:acc/1000,size:blob.size,date:Date.now(),markers:markers.slice()});
+    await addRec({name,kind:recMode,type,blob,dur,size:blob.size,date:Date.now(),markers:markers.slice()});
     let phoneSaved=false;
-    try{phoneSaved=await saveToPhone(blob,name,type)}catch(e){console.warn('Phone save failed',e)}
+    try{phoneSaved=await (phoneSaver?phoneSaver(name):saveToPhone(blob,name,type))}catch(e){console.warn('Phone save failed',e)}
     statusEl.textContent=phoneSaved?'Saved to your phone ✓':'Saved on this device ✓';
     toast(phoneSaved?'Saved to '+(typeof phoneSaved==='string'?phoneSaved:'your phone'):'Saved in Recorder');
     if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
   }catch(e){statusEl.textContent='Could not save – storage full?';toast('Could not save')}
-  timerEl.textContent='00:00';chunks=[];loadAll();
+  timerEl.textContent='00:00';loadAll();
 }
+
+/* Android: the phone screen is recorded by the app itself (a notification with a Stop button shows while it runs) */
+async function startNativeScreen(){
+  state='busy';statusEl.textContent='Waiting for permission…';
+  try{
+    if(!muted){try{const t=await navigator.mediaDevices.getUserMedia({audio:true});t.getTracks().forEach(x=>x.stop())}catch(e){}}
+    await nb.screenStart({mic:!muted,maxDim:(VQ[S.vq]||VQ[720])[0]});
+  }catch(e){
+    state='idle';setUI();statusEl.textContent='Tap the button to start';
+    return toast(/cancel/i.test(String(e&&(e.message||e)))?'Screen recording was cancelled':'Could not start screen recording');
+  }
+  nat=true;acc=0;markers=[];startT=Date.now();state='rec';setUI();
+  statusEl.textContent='Recording your screen. You can switch to any app.';
+  tick=setInterval(updTimer,200);toast('Recording. Pull down the notification and tap Stop when done.');
+}
+async function stopNativeScreen(){
+  acc=elapsed()*1000;clearInterval(tick);
+  try{const r=await nb.screenStop();await finishNative(r)}
+  catch(e){nat=false;state='idle';setUI();statusEl.textContent='Nothing was recorded';toast('Nothing was recorded')}
+}
+async function finishNative(r){
+  if(!nat||!r||!r.path)return;
+  nat=false;clearInterval(tick);state='idle';setUI();document.title=ORIG;statusEl.textContent='Saving…';
+  try{
+    const resp=await fetch(nb.fileUrl(r.path));const blob=await resp.blob();
+    await commit('screen','video/mp4',blob,(r.durationMs||acc)/1000,async name=>{const x=await nb.screenExport(r.path,name);return x&&x.where?x.where:false});
+  }catch(e){statusEl.textContent='Could not save the recording';toast('Could not save the recording')}
+  try{nb.screenDelete(r.path)}catch(e){}
+}
+/* a recording that ended while this page was not open (for example, stopped from the notification) */
+function checkPending(){
+  let p=null;try{p=JSON.parse(localStorage.getItem('heytools.screen.pending')||'null')}catch(e){}
+  if(!p||!p.path)return;
+  try{localStorage.removeItem('heytools.screen.pending')}catch(e){}
+  nat=true;finishNative(p);
+}
+addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.type==='heytools:screen-finished')checkPending()});
+if(nativeScreen)checkPending();
 rec.onclick=()=>state==='idle'?start():stop();
-function togglePause(){
+async function togglePause(){
+  if(nat){
+    if(state==='rec'){const r=await nb.screenPause();if(!(r&&r.ok))return toast('Pause is not supported on this phone');acc=elapsed()*1000;state='pause';statusEl.textContent='Paused. Tap ▶ to continue';updTimer()}
+    else if(state==='pause'){await nb.screenResume();startT=Date.now();state='rec';statusEl.textContent='Recording your screen…'}
+    setUI();return;
+  }
   if(state==='rec'){acc=elapsed()*1000;state='pause';mr.pause();statusEl.textContent='Paused – tap ▶ to continue';updTimer()}
   else if(state==='pause'){startT=Date.now();state='rec';mr.resume();statusEl.textContent='Recording…'}
   else return;

@@ -32,6 +32,7 @@ public class PlaybackService extends Service {
   private MediaSessionCompat mediaSession;
   private MediaPlayer audioPlayer;
   private String audioSource = "";
+  private android.os.PowerManager.WakeLock wake;
 
   @Override public IBinder onBind(Intent intent) { return null; }
   @Override public void onCreate() {
@@ -50,7 +51,24 @@ public class PlaybackService extends Service {
   private void sendAction(String name, int request) {
     try { action(name, request).send(); } catch (Exception ignored) {}
   }
+  /** Keeps the CPU running while music or video plays, so locking the screen does not stop it. Released on pause. */
+  private void setWake(boolean on) {
+    try {
+      if (on) {
+        if (wake == null) {
+          android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+          if (pm == null) return;
+          wake = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "HeyTools:playback");
+          wake.setReferenceCounted(false);
+        }
+        if (!wake.isHeld()) wake.acquire(6 * 60 * 60 * 1000L);
+      } else if (wake != null && wake.isHeld()) {
+        wake.release();
+      }
+    } catch (Exception ignored) {}
+  }
   private void updateMediaSession() {
+    setWake(playing);
     if (mediaSession == null) return;
     mediaSession.setMetadata(new MediaMetadataCompat.Builder()
       .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
@@ -169,7 +187,7 @@ public class PlaybackService extends Service {
   @Override public void onDestroy(){
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
-    releaseAudio(); audioSource="";
+    releaseAudio(); audioSource=""; setWake(false);
     isRunning = false; audioIsPlaying = false;
     if (mediaSession != null) { mediaSession.setActive(false); mediaSession.release(); mediaSession = null; }
     super.onDestroy();

@@ -63,7 +63,18 @@ public class AlarmRingingService extends Service {
     b.setFullScreenIntent(content,true);
     return b.build();
   }
+  /** An alarm that is turned all the way down is not an alarm. Raise the alarm volume to at least half if it is lower. */
+  private void ensureAudible(){
+    try{
+      android.media.AudioManager am=(android.media.AudioManager)getSystemService(AUDIO_SERVICE);
+      if(am==null)return;
+      int max=am.getStreamMaxVolume(android.media.AudioManager.STREAM_ALARM);
+      int want=Math.max(1,max/2);
+      if(am.getStreamVolume(android.media.AudioManager.STREAM_ALARM)<want)am.setStreamVolume(android.media.AudioManager.STREAM_ALARM,want,0);
+    }catch(Exception ignored){}
+  }
   private void playTone(String name){
+    ensureAudible();
     stopPlayer();
     String safe=(name==null?"classic":name).replaceAll("[^a-z0-9_]","");
     int res=getResources().getIdentifier("tone_"+safe,"raw",getPackageName());

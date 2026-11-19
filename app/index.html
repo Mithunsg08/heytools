@@ -123,7 +123,7 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
   </main>
 </div>
 
-<div class="nowp" id="nowp" hidden role="region" aria-label="Now playing"><span class="nowp-ico" id="nowpIco" aria-hidden="true">🎵</span><span class="nowp-t"><b id="nowpName">Playing</b><small>Media controls available in the background</small></span><button class="btn" id="nowpOpen" type="button">Open</button><button class="btn primary" id="nowpStop" type="button">Stop</button></div>
+<div class="nowp" id="nowp" hidden role="region" aria-label="Now playing"><span class="nowp-ico" id="nowpIco" aria-hidden="true">🎵</span><span class="nowp-t"><b id="nowpName">Playing</b><small id="nowpSub">Plays in the background</small></span><button class="btn primary nowp-play" id="nowpToggle" type="button" aria-label="Pause">⏸</button><button class="btn" id="nowpOpen" type="button">Open</button><button class="btn" id="nowpStop" type="button" aria-label="Stop and close">✕</button></div>
 <div class="updatebar" id="updateBar" hidden role="status"><span id="updateMsg">A new version is ready.</span><button class="btn primary" id="updateGo" type="button">Update</button><button class="btn" id="updateLater" type="button">Later</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
@@ -196,6 +196,7 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
           <p class="set-s">Some phones stop apps in the background. These checks keep your alarms reliable.</p>
           <div class="rel-row"><span id="relNotif">Notifications</span><button class="btn" id="relNotifBtn" type="button" hidden>Allow</button></div>
           <div class="rel-row"><span id="relExact">Exact alarms</span><button class="btn" id="relExactBtn" type="button" hidden>Allow</button></div>
+          <div class="rel-row"><span id="relPend">Scheduled reminders: checking…</span></div>
           <div class="rel-row"><span id="relBatt">Battery</span><button class="btn" id="relBattBtn" type="button" hidden>Fix</button></div>
           <div class="row-btns"><button class="btn primary" id="relTest" type="button">Test alarm in 1 minute</button></div>
         </div>

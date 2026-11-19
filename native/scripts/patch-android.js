@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java'])
+for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -20,6 +20,8 @@ const perms = [
   ['android.permission.ACCESS_FINE_LOCATION'],
   ['android.permission.VIBRATE'],
   ['android.permission.WAKE_LOCK'],
+  ['android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION'],
+  ['android.permission.FOREGROUND_SERVICE_DATA_SYNC'],
   ['android.permission.FOREGROUND_SERVICE'],
   ['android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'],
   ['android.permission.POST_NOTIFICATIONS'],
@@ -35,6 +37,8 @@ if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '
 m = m.replace(/android:allowBackup="true"/, 'android:allowBackup="false"');
 if (!m.includes('android:allowBackup')) m = m.replace('<application', '<application android:allowBackup="false"');
 if (!m.includes('usesCleartextTraffic')) m = m.replace('<application', '<application android:usesCleartextTraffic="false"');
+if (!m.includes('KeepAliveService')) m = m.replace('</application>', '    <service android:name=".KeepAliveService" android:exported="false" android:foregroundServiceType="dataSync" />\n    </application>');
+if (!m.includes('ScreenRecordService')) m = m.replace('</application>', '    <service android:name=".ScreenRecordService" android:exported="false" android:foregroundServiceType="mediaProjection" />\n    </application>');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
   '<service android:name=".AlarmRingingService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="mediaPlayback" />',

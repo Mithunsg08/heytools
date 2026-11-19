@@ -141,9 +141,37 @@
     else n.schedule={at:new Date(it.at),allowWhileIdle:true};
     return n;
   }
+  var lastError='';
+  /* Android 13+ rejects scheduling until notifications are allowed. Ask first and wait for the answer, so the very first reminder is not lost. */
+  function ensureAllowed(){
+    return permission().then(function(p){return p==='granted'?p:(p==='denied'?p:requestPermission());}).catch(function(){return 'denied';});
+  }
+  /* try everything at once; if Android rejects the batch, retry one by one on the plain channel so a single bad item cannot drop the rest */
+  function scheduleNative(list){
+    return LN.schedule({notifications:list}).catch(function(e){
+      lastError=String((e&&e.message)||e);
+      return Promise.all(list.map(function(n){
+        var plain=Object.assign({},n,{channelId:CHANNEL_DEFAULT});delete plain.actionTypeId;
+        return LN.schedule({notifications:[plain]}).catch(function(e2){lastError=String((e2&&e2.message)||e2);return null;});
+      }));
+    });
+  }
   function schedule(items){
-    items=(items||[]).filter(function(i){return i&&i.id!=null&&allowedKind(kindOf(i));}).map(quietShift);
+    var now=Date.now();
+    items=(items||[]).filter(function(i){return i&&i.id!=null&&allowedKind(kindOf(i));}).map(function(it){
+      /* something due a moment ago (the person was answering a permission prompt) still fires, right away */
+      var at=+new Date(it.at);
+      if(!it.repeat&&at<=now+1000&&at>now-120000)it=Object.assign({},it,{at:now+1500});
+      return quietShift(it);
+    });
     if(!native){items.forEach(webSchedule);return Promise.resolve(items.length);}
+    if(!items.length)return Promise.resolve(0);
+    return ensureAllowed().then(function(p){
+      if(p!=='granted')return 0;
+      return scheduleItemsNative(items);
+    });
+  }
+  function scheduleItemsNative(items){
     var list=[];
     items.forEach(function(it){
       if(it.repeat&&it.repeat.weekdays&&it.repeat.weekdays.length)it.repeat.weekdays.forEach(function(wd){list.push(toNative(Object.assign({},it,{id:it.id*10+wd}),wd));});
@@ -151,7 +179,12 @@
       else if(+new Date(it.at)>Date.now()+1000)list.push(toNative(Object.assign({},it,{id:it.id*10}),0));
     });
     if(!list.length)return Promise.resolve(0);
-    return ensureChannels().then(function(){return LN.schedule({notifications:list});}).then(function(){return list.length;});
+    return ensureChannels().then(function(){return scheduleNative(list);}).then(function(){return list.length;});
+  }
+  /* for Settings: what Android currently has scheduled, and the last problem scheduling reported */
+  function diagnose(){
+    if(!native)return Promise.resolve({native:false,pending:0,lastError:lastError});
+    return pending().then(function(l){return {native:true,pending:l.length,lastError:lastError};}).catch(function(){return {native:true,pending:-1,lastError:lastError};});
   }
   function pending(){return native?LN.getPending().then(function(r){return r.notifications||[];}):Promise.resolve([]);}
   function cancelIds(ids){
@@ -236,5 +269,5 @@
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
     cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
-    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
 })();

@@ -191,11 +191,12 @@ function pick(list){
 $('fm').onclick=e=>{const b=e.target.closest('button');if(b)run(b.dataset.t)};
 
 async function run(t){
+ document.body.dataset.busy='true';
  cur=0;show(3);$('acts').classList.add('hide');$('st').classList.remove('err');p(1,'Preparing…');
  try{
   const r=await C[cat](files,t);
-  p(100,'Done! Your download has started.');last=r;dl(r.blob,r.name);$('acts').classList.remove('hide');
- }catch(e){console.error(e);$('st').classList.add('err');$('st').textContent='Conversion failed: '+(e.message||e);$('pct').textContent='⚠️';$('acts').classList.remove('hide');$('again').classList.add('hide');return}
+  p(100,'Done! Your download has started.');last=r;dl(r.blob,r.name);$('acts').classList.remove('hide');document.body.dataset.busy='false';
+ }catch(e){document.body.dataset.busy='false';console.error(e);$('st').classList.add('err');$('st').textContent='Conversion failed: '+(e.message||e);$('pct').textContent='⚠️';$('acts').classList.remove('hide');$('again').classList.add('hide');return}
  $('again').classList.remove('hide');
 }
 
@@ -213,11 +214,51 @@ const wordBlob=t=>new Blob(['<html lang="en" xmlns:w="urn:schemas-microsoft-com:
 async function pdfLines(d,n){const pg=await d.getPage(n),c=await pg.getTextContent(),rows=[];let y=null,row=null;c.items.forEach(i=>{if(!i.str.trim())return;const yy=Math.round(i.transform[5]);if(y===null||Math.abs(yy-y)>3){row=[];rows.push(row);y=yy}row.push(i.str.trim())});return rows}
 
 const C={};
+/* Fast path for photos: a normal JPEG goes into the PDF as it is, with no decoding and no re-encoding. */
+async function jpegInfo(f){
+ const b=new Uint8Array(await f.slice(0,262144).arrayBuffer());
+ if(b[0]!==0xFF||b[1]!==0xD8)return null;
+ let i=2,orient=1,w=0,h=0,comps=0;
+ while(i+9<b.length){
+  if(b[i]!==0xFF){i++;continue}
+  const m=b[i+1],len=(b[i+2]<<8)|b[i+3];
+  if(m===0xE1&&b[i+4]===0x45&&b[i+5]===0x78){                         // Exif block: read the rotation flag
+   const o=i+10,le=b[o]===0x49,u16=x=>le?b[o+x]|(b[o+x+1]<<8):(b[o+x]<<8)|b[o+x+1];
+   const u32=x=>le?(b[o+x]|(b[o+x+1]<<8)|(b[o+x+2]<<16)|(b[o+x+3]<<24))>>>0:((b[o+x]<<24)|(b[o+x+1]<<16)|(b[o+x+2]<<8)|b[o+x+3])>>>0;
+   try{const ifd=u32(4),n=u16(ifd);for(let k=0;k<n;k++){const e=ifd+2+k*12;if(u16(e)===0x0112){orient=u16(e+8);break}}}catch(e){}
+  }
+  if((m>=0xC0&&m<=0xC3)||(m>=0xC5&&m<=0xC7)||(m>=0xC9&&m<=0xCB)||(m>=0xCD&&m<=0xCF)){h=(b[i+5]<<8)|b[i+6];w=(b[i+7]<<8)|b[i+8];comps=b[i+9];break}
+  i+=2+len;
+ }
+ return w&&h?{w,h,orient,comps}:null;
+}
+const MAXPX=4096;
+async function pageOf(f){
+ const info=await jpegInfo(f).catch(()=>null);
+ if(info&&info.orient===1&&info.comps===3&&info.w*info.h<=60e6)
+  return{bytes:new Uint8Array(await f.arrayBuffer()),w:info.w,h:info.h};
+ // everything else (PNG, WebP, rotated or unusual JPEGs): decode once, shrink very large pictures, and encode as JPEG
+ let src,w,h;
+ try{src=await createImageBitmap(f);w=src.width;h=src.height}
+ catch(e){const i=await imgEl(f);src=i;w=i.naturalWidth;h=i.naturalHeight}
+ const k=Math.min(1,MAXPX/Math.max(w,h)),cw=Math.max(1,Math.round(w*k)),ch=Math.max(1,Math.round(h*k));
+ const c=document.createElement('canvas');c.width=cw;c.height=ch;
+ const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cw,ch);x.drawImage(src,0,0,cw,ch);
+ if(src.close)src.close();
+ const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.9));
+ return{bytes:new Uint8Array(await blob.arrayBuffer()),w:cw,h:ch};
+}
 C.image=async(fs,t)=>{
  if(t==='pdf'){const J=await jsp();let d;
-  for(let i=0;i<fs.length;i++){const c=await canvasOf(fs[i]),w=c.width,h=c.height,o=w>h?'l':'p';
-   if(!d)d=new J({unit:'px',format:[w,h],orientation:o,hotfixes:['px_scaling']});else d.addPage([w,h],o);
-   d.addImage(c.toDataURL('image/jpeg',.92),'JPEG',0,0,w,h);p((i+1)/fs.length*95,'Building PDF page '+(i+1)+' of '+fs.length+'…')}
+  let next=pageOf(fs[0]);                                              // the next picture is prepared while the current one is added
+  for(let i=0;i<fs.length;i++){
+   const pg=await next;if(i+1<fs.length)next=pageOf(fs[i+1]);
+   const w=pg.w,h=pg.h,o=w>h?'l':'p';
+   if(!d)d=new J({unit:'px',format:[w,h],orientation:o,hotfixes:['px_scaling'],compress:false});else d.addPage([w,h],o);
+   d.addImage(pg.bytes,'JPEG',0,0,w,h,undefined,'NONE');
+   p((i+1)/fs.length*95,'Building PDF page '+(i+1)+' of '+fs.length+'…');
+   await new Promise(r=>setTimeout(r))                                  // let the progress bar repaint
+  }
   return{blob:d.output('blob'),name:base(fs[0])+'.pdf'}}
  const out=[];
  for(let i=0;i<fs.length;i++){out.push({blob:await blobOf(await canvasOf(fs[i]),t),name:base(fs[i])+'.'+t});p((i+1)/fs.length*90,'Converting '+(i+1)+' of '+fs.length+'…')}

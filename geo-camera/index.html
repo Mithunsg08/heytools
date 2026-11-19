@@ -46,6 +46,13 @@
   .row{display:flex;gap:8px;margin-top:10px}
   .row button,.row a{flex:1;text-align:center;background:var(--panel);padding:12px 6px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:.85rem}
   .row .pri{background:var(--accent);color:#06232a;font-weight:700} .row .del{color:#ff8f8f}
+  .pstage{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  .pstage img{transition:opacity .15s,transform .15s}
+  .pstage.swap img{opacity:.35;transform:scale(.98)}
+  .pnav{display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0 4px}
+  .pnav button{width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:inherit;font-size:28px;line-height:1;cursor:pointer}
+  .pnav button:disabled{opacity:.3;cursor:default}
+  .pnav span{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
   #gallery{display:none;padding-bottom:24px}
   #gallery .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
   #gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
@@ -167,7 +174,8 @@
 </div>
 
 <div id="preview">
-  <img id="out" alt="Captured photo">
+  <div class="pstage"><img id="out" alt="Captured photo"></div>
+  <div class="pnav" id="pnav" hidden><button id="pprev" type="button" aria-label="Previous photo">&#8249;</button><span id="pcount" aria-live="polite"></span><button id="pnext" type="button" aria-label="Next photo">&#8250;</button></div>
   <div class="row"><a id="dl" class="pri">Save</a><button id="share">Share</button><button id="del" class="del">Delete</button></div>
   <div class="row"><button id="close">Back to camera</button></div>
 </div>
@@ -416,7 +424,7 @@
       const thumb = await new Promise(res => tc.toBlob(res, 'image/jpeg', 0.7));
       const d = new Date(stamped ? trustedNow() : Date.now()), p = n => String(n).padStart(2, '0');
       const name = `${stamped ? 'geo-photo' : 'photo'}_${d.getUTCFullYear()}${p(d.getUTCMonth()+1)}${p(d.getUTCDate())}_${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z.jpg`;
-      current = {id:Date.now(), name, blob, thumb}; dbAdd(current); showPreview(current, true);
+      current = {id:Date.now(), name, blob, thumb}; await dbAdd(current); await loadList(); showPreview(current, true);
     } finally { busy = false; shot.disabled = false; }
   }
   async function countdown() {
@@ -428,15 +436,46 @@
 
   /* ---------- Preview, share, delete ---------- */
   let curUrl = null;
-  function showPreview(rec, autosave) {
+  let list = [], idx = -1;
+  async function loadList() { list = ((await dbAll()) || []).sort((a, b) => b.id - a.id); return list; }
+  function navUI() {
+    const n = list.length, show = n > 1 && idx >= 0;
+    $('pnav').hidden = !show; if (!show) return;
+    $('pcount').textContent = (idx + 1) + ' / ' + n;
+    $('pprev').disabled = idx <= 0; $('pnext').disabled = idx >= n - 1;
+  }
+  /* d = -1 shows the newer photo, +1 the older one */
+  function go(d) {
+    const to = idx + d; if (to < 0 || to >= list.length) return;
+    const stage = document.querySelector('.pstage'); stage.classList.add('swap');
+    setTimeout(() => { showPreview(list[to], false, true); stage.classList.remove('swap'); }, 90);
+  }
+  $('pprev').onclick = () => go(-1); $('pnext').onclick = () => go(1);
+  (function swipe() {
+    const el = document.querySelector('.pstage'); let x0 = null, y0 = 0, t0 = 0;
+    el.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; t0 = Date.now(); });
+    el.addEventListener('pointerup', e => {
+      if (x0 === null) return; const dx = e.clientX - x0, dy = e.clientY - y0, dt = Date.now() - t0; x0 = null;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4 && dt < 900) go(dx < 0 ? 1 : -1);   // swipe left = next (older), right = previous (newer)
+    });
+    el.addEventListener('pointercancel', () => { x0 = null; });
+    addEventListener('keydown', e => { if ($('preview').style.display !== 'block') return; if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); });
+  })();
+  async function showPreview(rec, autosave, keepScroll) {
     current = rec; if (curUrl) URL.revokeObjectURL(curUrl); curUrl = URL.createObjectURL(rec.blob);
+    if (!list.some(r => r.id === rec.id)) await loadList();
+    idx = list.findIndex(r => r.id === rec.id); navUI();
     $('out').src = curUrl; const a = $('dl'); a.href = curUrl; a.download = rec.name;
     $('gallery').style.display = 'none'; $('preview').style.display = 'block';
     $('share').style.display = (navigator.canShare && navigator.canShare({files:[new File([rec.blob], rec.name, {type:'image/jpeg'})]})) ? '' : 'none';
-    if (autosave) a.click(); $('preview').scrollIntoView({behavior:'smooth'});
+    if (autosave) a.click(); if (!keepScroll) $('preview').scrollIntoView({behavior:'smooth'});
   }
   $('share').onclick = () => navigator.share({files:[new File([current.blob], current.name, {type:'image/jpeg'})], title:'Geo Camera'}).catch(() => {});
-  $('del').onclick = async () => { await dbDel(current.id); $('preview').style.display = 'none'; openGallery(); };
+  $('del').onclick = async () => {
+    if (!confirm('Delete this photo from HeyTools? A copy you already saved to your Gallery is not removed.')) return;
+    const at = idx; await dbDel(current.id); await loadList();
+    if (list.length) showPreview(list[Math.min(at, list.length - 1)], false, true); else { $('preview').style.display = 'none'; openGallery(); }
+  };
   $('close').onclick = () => { $('preview').style.display = 'none'; $('gallery').style.display = 'none'; scrollTo({top:0, behavior:'smooth'}); };
 
   /* ---------- Gallery (kept in this browser, on this device) ---------- */
@@ -444,7 +483,7 @@
   const dbDo = (mode, fn) => dbp.then(db => new Promise((res, rej) => { const t = db.transaction('p', mode), rq = fn(t.objectStore('p')); t.oncomplete = () => res(rq && rq.result); t.onerror = rej; })).catch(() => []);
   const dbAdd = r => dbDo('readwrite', s => s.put(r)), dbDel = id => dbDo('readwrite', s => s.delete(id)), dbAll = () => dbDo('readonly', s => s.getAll());
   async function openGallery() {
-    const all = ((await dbAll()) || []).sort((a, b) => b.id - a.id), box = $('tiles'); box.innerHTML = '';
+    const all = await loadList(), box = $('tiles'); box.innerHTML = '';
     if (!all.length) box.innerHTML = '<div class="empty" style="grid-column:1/-1">No photos yet. Take one and it appears here.</div>';
     all.forEach(r => { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(r.thumb || r.blob); i.alt = r.name; i.onclick = () => showPreview(r, false); box.appendChild(i); });
     $('preview').style.display = 'none'; $('gallery').style.display = 'block'; $('gallery').scrollIntoView({behavior:'smooth'});

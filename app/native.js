@@ -2,10 +2,12 @@
 (function () {
   var C = window.Capacitor;
   var native = !!(C && C.isNativePlatform && C.isNativePlatform());
-  var P = null, A = null;
+  var P = null, A = null, SR = null, AL = null;
   if (native) {
     try { P = C.registerPlugin ? C.registerPlugin('MediaLibrary') : C.Plugins.MediaLibrary; } catch (e) { P = null; }
     try { A = C.registerPlugin ? C.registerPlugin('App') : C.Plugins.App; } catch (e) { A = null; }
+    try { AL = C.registerPlugin ? C.registerPlugin('HeyAlarm') : C.Plugins.HeyAlarm; } catch (e) { AL = null; }
+    try { SR = C.registerPlugin ? C.registerPlugin('ScreenRecord') : C.Plugins.ScreenRecord; } catch (e) { SR = null; }
   }
   function url(path) {
     return C.convertFileSrc('file://' + path.split('/').map(encodeURIComponent).join('/'));
@@ -13,6 +15,20 @@
   window.HeyNative = {
     isNative: native,
     hasMedia: native && !!P,
+    /* keeps the app running (with a notification) while a long job such as compressing or removing a background is busy */
+    startWork: function (title, text) { try { return AL && AL.startWork ? AL.startWork({ title: title, text: text }).catch(function () {}) : null; } catch (e) { return null; } },
+    stopWork: function () { try { return AL && AL.stopWork ? AL.stopWork().catch(function () {}) : null; } catch (e) { return null; } },
+    /* Screen recording (Android MediaProjection). Older app builds do not have it, so check hasScreen first. */
+    hasScreen: native && !!SR && !!SR.exportToGallery,
+    screenStart: function (opts) { return SR.start(opts || {}); },
+    screenStop: function () { return SR.stop(); },
+    screenPause: function () { return SR.pause(); },
+    screenResume: function () { return SR.resume(); },
+    screenStatus: function () { return SR.status(); },
+    screenExport: function (path, name) { return SR.exportToGallery({ path: path, name: name }); },
+    screenDelete: function (path) { return SR.deleteFile({ path: path }); },
+    onScreenFinished: function (cb) { try { return SR.addListener('finished', cb); } catch (e) { return null; } },
+    fileUrl: function (path) { return url(path); },
     /* Ask Android for access to videos or music. Resolves true when granted. */
     ensure: function (kind) {
       return P.requestAccess({ kind: kind }).then(function (r) { return !!(r && r.granted); });

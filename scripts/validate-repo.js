@@ -184,3 +184,16 @@ else pass('Privacy page exists');
   else if (!/usesCleartextTraffic=\\?"false/.test(pa)) fail('patch-android.js must set android:usesCleartextTraffic="false"');
   else pass('Android backup and cleartext traffic are switched off');
 }
+
+/* structured data must stay valid JSON, and page code must never end up inside it */
+{
+  let bad = [];
+  for (const id of localIds) {
+    const html = read(id + '/index.html');
+    for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+      try { JSON.parse(m[1]); } catch (e) { bad.push(id); }
+    }
+  }
+  if (bad.length) fail('Invalid JSON-LD structured data in: ' + [...new Set(bad)].join(', '));
+  else pass('Structured data is valid JSON on every tool page');
+}
