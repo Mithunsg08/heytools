@@ -108,6 +108,7 @@ public class HeyAlarmPlugin extends Plugin {
       r.put("runtime", runtime);
       r.put("sdk", android.os.Build.VERSION.SDK_INT);
       r.put("alarmLog", AlarmScheduler.noteLog(getContext()));
+      r.put("playLog", PlaybackService.noteLog(getContext()));
       call.resolve(r);
     } catch (Exception e) { call.reject("Could not read notification state: " + e.getMessage(), e); }
   }

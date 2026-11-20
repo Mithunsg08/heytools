@@ -561,7 +561,7 @@
       /* the page says it is playing but the element already stopped (the phone paused it as the screen went off): still hand it over */
       if (f.contentDocument.body.classList.contains('playing'))
         for (i = 0; i < els.length; i++) if (!els[i].ended && (els[i].currentSrc || els[i].src) && els[i].currentTime > 0) return els[i];
-      plog('no playing audio: ' + els.map(function (e) { return (e.paused ? 'paused' : 'playing') + '/rs' + e.readyState + '/' + String(e.currentSrc || e.src || 'no-src').slice(0, 12); }).join(', '));
+      plog('no playing audio (' + (f.contentDocument.body.dataset.mkind || 'nothing loaded') + '): ' + els.map(function (e) { return (e.paused ? 'paused' : 'playing') + '/rs' + e.readyState + '/' + String(e.currentSrc || e.src || 'no-src').slice(0, 12); }).join(', '));
     } catch (e) { /* ignore */ }
     return null;
   }
@@ -948,7 +948,12 @@
     if (current) { location.hash = '#/'; return; }
     if (q.value) { q.value = ''; render(); return; }
     if (NATIVE.isNative) {
-      if (Date.now() - lastBack < 2000) { NATIVE.exit(); return; }
+      if (Date.now() - lastBack < 2000) {
+        /* music or a video is open: leave the app in the background (like Home) instead of closing it, so the sound goes on */
+        var busy = Object.keys(frames).some(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); });
+        if (busy && NATIVE.minimize && NATIVE.minimize()) { plog('back pressed: app minimised so media keeps playing'); return; }
+        NATIVE.exit(); return;
+      }
       lastBack = Date.now(); toast('Press back again to exit');
     }
   }
@@ -1124,7 +1129,7 @@
       n.textContent = 'Scheduled reminders: ' + (d.pending >= 0 ? d.pending : 'unknown') + (d.lastError ? ' (last problem: ' + String(d.lastError).slice(0, 80) + ')' : '');
       n.className = d.lastError ? 'warn' : '';
     });
-    if (HN.notificationState) HN.notificationState().then(function (s) { var e = $('relAlarmLog'); if (e) e.textContent = 'Alarm log:\n' + ((s && s.alarmLog) || '(empty)'); });
+    if (HN.notificationState) HN.notificationState().then(function (s) { var e = $('relAlarmLog'); if (e) e.textContent = 'Alarm log:\n' + ((s && s.alarmLog) || '(empty)') + '\n\nAndroid player log:\n' + ((s && s.playLog) || '(empty)'); });
     try { $('relLog').textContent = 'Playback log:\n' + (JSON.parse(localStorage.getItem('heytools.playlog') || '[]').join('\n') || '(empty)'); } catch (e) { /* ignore */ }
     if (NATIVE.appInfo) NATIVE.appInfo().then(function (i) { $('relBuild').textContent = 'Build: ' + (i ? i.build + ' (v' + i.version + ')' : 'unknown'); }).catch(function () { $('relBuild').textContent = 'Build: unknown'; });
     HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });

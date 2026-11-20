@@ -27,6 +27,49 @@ public class PlaybackService extends Service {
   public static volatile boolean audioIsPlaying = false;
   /** Last problem the native player hit, shown in Settings so a failure is visible instead of silent. */
   public static volatile String lastError = "";
+  /** Short event log of the Android player, shown in Settings so a stop can be traced to its cause. */
+  public static void note(android.content.Context c, String msg) {
+    try {
+      android.content.SharedPreferences sp = c.getSharedPreferences("heytools_play_log", 0);
+      String[] old = sp.getString("log", "").split("\n");
+      StringBuilder sb = new StringBuilder();
+      for (int i = Math.max(0, old.length - 9); i < old.length; i++) if (!old[i].isEmpty()) sb.append(old[i]).append('\n');
+      sb.append(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date())).append(' ').append(msg);
+      sp.edit().putString("log", sb.toString()).apply();
+    } catch (Exception ignored) {}
+  }
+  public static String noteLog(android.content.Context c) { try { return c.getSharedPreferences("heytools_play_log", 0).getString("log", ""); } catch (Exception e) { return ""; } }
+  private boolean resumeAfterFocus = false;
+  private android.media.AudioFocusRequest focusReq;
+  private final android.media.AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+    try {
+      if (change == android.media.AudioManager.AUDIOFOCUS_LOSS) { note(this, "audio focus lost for good: pausing"); pauseAudio(); }
+      else if (change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) { note(this, "audio focus lost for a moment"); resumeAfterFocus = audioIsPlaying; pauseAudio(); }
+      else if (change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) { if (audioPlayer != null) audioPlayer.setVolume(0.25f, 0.25f); }
+      else if (change == android.media.AudioManager.AUDIOFOCUS_GAIN) { if (audioPlayer != null) audioPlayer.setVolume(1f, 1f); if (resumeAfterFocus) { resumeAfterFocus = false; note(this, "audio focus back: resuming"); resumeAudio(); } }
+    } catch (Exception ignored) {}
+  };
+  private void requestFocus() {
+    try {
+      android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+      if (am == null) return;
+      int r;
+      if (Build.VERSION.SDK_INT >= 26) {
+        focusReq = new android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
+          .setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+          .setOnAudioFocusChangeListener(focusListener).build();
+        r = am.requestAudioFocus(focusReq);
+      } else r = am.requestAudioFocus(focusListener, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN);
+      note(this, "audio focus " + (r == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED ? "granted" : "refused"));
+    } catch (Exception e) { note(this, "audio focus error " + e); }
+  }
+  private void abandonFocus() {
+    try {
+      android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+      if (am == null) return;
+      if (Build.VERSION.SDK_INT >= 26 && focusReq != null) am.abandonAudioFocusRequest(focusReq); else am.abandonAudioFocus(focusListener);
+    } catch (Exception ignored) {}
+  }
   /** Lets the web page ask where the native player is, so playback can be handed back without losing the position. */
   public static volatile PlaybackService inst;
   /** Called when a song handed to the native player finishes, so the app can start the next one. */
@@ -49,6 +92,7 @@ public class PlaybackService extends Service {
   @Override public IBinder onBind(Intent intent) { return null; }
   @Override public void onCreate() {
     super.onCreate(); isRunning = true; inst = this;
+    note(this, "player service created");
     ensureChannel();
     mediaSession = new MediaSessionCompat(this, "HeyToolsPlayback");
     mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
@@ -139,6 +183,7 @@ public class PlaybackService extends Service {
     try { NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE); if(nm!=null)nm.notify(NOTIFICATION_ID,buildNotification()); } catch(Exception ignored) {}
   }
   private void pauseAudio() {
+    try { note(this, "paused by " + new Throwable().getStackTrace()[1].getMethodName()); } catch (Exception ignored) {}
     if (audioPlayer != null) try { if (audioPlayer.isPlaying()) audioPlayer.pause(); } catch (Exception ignored) {}
     audioIsPlaying=false; playing=false; refreshControls();
   }
@@ -154,9 +199,9 @@ public class PlaybackService extends Service {
       audioPlayer=new MediaPlayer();
       try{audioPlayer.setWakeMode(this,android.os.PowerManager.PARTIAL_WAKE_LOCK);}catch(Exception ignored){}
       audioPlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
-      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){mp.setVolume(1f,1f);if(startMs>0){try{mp.seekTo(startMs);}catch(Exception ignored){}}mp.start();playing=true;audioIsPlaying=true;setWake(true);refreshControls();} });
-      audioPlayer.setOnCompletionListener(mp -> {playing=false;audioIsPlaying=false;refreshControls();Runnable r=endedListener;if(r!=null){try{r.run();}catch(Exception ignored){}}else{sendAction("NEXT",7103);}});
-      audioPlayer.setOnErrorListener((mp,what,extra)->{lastError="player error "+what+"/"+extra+" for "+audioSource;playing=false;audioIsPlaying=false;refreshControls();return true;});
+      audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){note(this,"native player started at "+(startMs/1000)+"s");requestFocus();mp.setVolume(1f,1f);if(startMs>0){try{mp.seekTo(startMs);}catch(Exception ignored){}}mp.start();playing=true;audioIsPlaying=true;setWake(true);refreshControls();} });
+      audioPlayer.setOnCompletionListener(mp -> {note(this,"song finished");playing=false;audioIsPlaying=false;refreshControls();Runnable r=endedListener;if(r!=null){try{r.run();}catch(Exception ignored){}}else{sendAction("NEXT",7103);}});
+      audioPlayer.setOnErrorListener((mp,what,extra)->{lastError="player error "+what+"/"+extra+" for "+audioSource;note(this,lastError);playing=false;audioIsPlaying=false;refreshControls();return true;});
       audioPlayer.setDataSource(this,Uri.parse(source));
       audioPlayer.prepareAsync();
     } catch(Exception e) { lastError="start: "+e; releaseAudio(); playing=false; refreshControls(); }
@@ -164,7 +209,7 @@ public class PlaybackService extends Service {
   public void controlAudio(String action) {
     if ("play".equals(action)) resumeAudio();
     else if ("pause".equals(action)) pauseAudio();
-    else if ("stop".equals(action)) { pauseAudio(); releaseAudio(); audioIsPlaying=false; audioSource=""; }
+    else if ("stop".equals(action)) { note(this,"stopped by the app (it came back to the front)"); pauseAudio(); releaseAudio(); abandonFocus(); audioIsPlaying=false; audioSource=""; }
   }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
@@ -172,6 +217,7 @@ public class PlaybackService extends Service {
     if (intent != null && "com.heytools.PLAY_URL".equals(intent.getAction())) {
       String t=intent.getStringExtra("title"), a=intent.getStringExtra("artist");
       if(t!=null&&!t.trim().isEmpty())title=t; if(a!=null)artist=a;
+      note(this,"asked to play "+String.valueOf(intent.getStringExtra("source")).replaceAll(".*/",""));
       goForeground();
       startAudio(intent.getStringExtra("source"), intent.getIntExtra("position", 0));
       lastSignature=title+"|"+artist+"|true"; return START_STICKY;
@@ -229,7 +275,9 @@ public class PlaybackService extends Service {
       .addAction(android.R.drawable.ic_media_next,"Next",audioPlayer!=null?svc("com.heytools.SVC_NEXT",7113):action("NEXT",7103))
       .build();
   }
+  @Override public void onTaskRemoved(Intent rootIntent){ note(this,"app swiped away from recents"); super.onTaskRemoved(rootIntent); }
   @Override public void onDestroy(){
+    note(this,"player service destroyed");
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
     if(nm!=null)nm.cancel(NOTIFICATION_ID);
     releaseAudio(); audioSource=""; setWake(false);

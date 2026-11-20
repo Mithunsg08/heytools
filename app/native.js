@@ -59,6 +59,7 @@
     },
     /* Android back button. Once a listener is set the app fully controls what Back does. */
     onBack: function (cb) { if (A && A.addListener) A.addListener('backButton', cb); },
+    minimize: function () { if (A && A.minimizeApp) { A.minimizeApp(); return true; } return false; },
     exit: function () { if (A && A.exitApp) A.exitApp(); },
     /* save a file the phone can see (Downloads, Pictures, ...). Used for every "download" button inside the tools. */
     hasSave: native && !!P,
