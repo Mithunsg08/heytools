@@ -1191,6 +1191,7 @@
   });
   $('relExactBtn').addEventListener('click', function () { HN.requestExactPermission().then(paintReliability); });
   $('relBattBtn').addEventListener('click', function () { HN.openBatterySettings(); });
+  if ($('relAutoBtn')) $('relAutoBtn').addEventListener('click', function () { if (HN.openAutostartSettings) HN.openAutostartSettings(); });
   $('relTest').addEventListener('click', function () {
     HN.testAlarm().then(function (r) {
       $('nMsg').textContent = r === 'scheduled' ? 'A test alarm will ring in 1 minute. Lock your phone and wait for it.' : r === 'unsupported' ? 'Alarm tests need the Android app.' : String(r);

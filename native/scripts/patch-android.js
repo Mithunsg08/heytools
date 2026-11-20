@@ -27,7 +27,8 @@ const perms = [
   ['android.permission.POST_NOTIFICATIONS'],
   ['android.permission.SCHEDULE_EXACT_ALARM'],
   ['android.permission.RECEIVE_BOOT_COMPLETED'],
-  ['android.permission.USE_FULL_SCREEN_INTENT']
+  ['android.permission.USE_FULL_SCREEN_INTENT'],
+  ['android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS']
 ];
 const add = perms.filter(p => !m.includes('"' + p[0] + '"'))
   .map(p => `    <uses-permission android:name="${p[0]}"${p[1] || ''} />`).join('\n');

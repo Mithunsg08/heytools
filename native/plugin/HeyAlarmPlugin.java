@@ -78,19 +78,40 @@ public class HeyAlarmPlugin extends Plugin {
   @PluginMethod
   public void openBatterySettings(PluginCall call) {
     try {
-      android.content.Intent list = new android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-      list.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-      try {
-        getContext().startActivity(list);
-      } catch (Exception unavailable) {
-        android.content.Intent details = new android.content.Intent(
-          android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-          android.net.Uri.parse("package:" + getContext().getPackageName()));
-        details.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-        getContext().startActivity(details);
+      android.content.Context c = getContext();
+      String pkg = c.getPackageName();
+      android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(android.content.Context.POWER_SERVICE);
+      boolean ignoring = android.os.Build.VERSION.SDK_INT < 23 || (pm != null && pm.isIgnoringBatteryOptimizations(pkg));
+      String opened = "";
+      /* 1. the system question "Allow HeyTools to always run in the background?" */
+      if (!ignoring && android.os.Build.VERSION.SDK_INT >= 23 && startSafe(new android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:" + pkg)))) opened = "dialog";
+      /* 2. Xiaomi / Poco (HyperOS): the per-app page where "No restrictions" is chosen */
+      if (opened.isEmpty()) {
+        android.content.Intent mi = new android.content.Intent().setClassName("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity");
+        mi.putExtra("package_name", pkg).putExtra("package_label", "HeyTools");
+        if (startSafe(mi)) opened = "xiaomi";
       }
-      call.resolve();
+      if (opened.isEmpty() && startSafe(new android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))) opened = "list";
+      if (opened.isEmpty() && startSafe(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + pkg)))) opened = "details";
+      JSObject r = new JSObject(); r.put("opened", opened); r.put("unrestricted", ignoring);
+      call.resolve(r);
     } catch (Exception e) { call.reject("Could not open battery settings: " + e.getMessage(), e); }
+  }
+
+  /** Xiaomi / Poco "Autostart" page, so the app may start by itself after a restart. Falls back to the app's own settings. */
+  @PluginMethod
+  public void openAutostartSettings(PluginCall call) {
+    try {
+      android.content.Context c = getContext();
+      boolean ok = startSafe(new android.content.Intent().setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"))
+        || startSafe(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + c.getPackageName())));
+      JSObject r = new JSObject(); r.put("opened", ok); call.resolve(r);
+    } catch (Exception e) { call.reject("Could not open autostart settings: " + e.getMessage(), e); }
+  }
+
+  private boolean startSafe(android.content.Intent i) {
+    try { i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); return true; }
+    catch (Exception e) { return false; }
   }
 
   /** What Android itself says about this app's notifications (some phones keep their own switch next to the permission). */
