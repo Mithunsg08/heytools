@@ -9,9 +9,19 @@
     for(var i=0;i<tries.length;i++){try{var c=tries[i]();if(c&&c.isNativePlatform&&c.isNativePlatform())return c;}catch(e){}}
     return null;
   }
-  var C=cap(),LN=null,HA=null;
-  if(C){try{LN=C.registerPlugin('LocalNotifications');}catch(e){}try{HA=C.registerPlugin('HeyAlarm');}catch(e){}}
-  var native=!!LN,channelsReady=null,listeners=Object.create(null),pendingActions=[];
+  var C=null,LN=null,HA=null,native=false,channelsReady=null,listeners=Object.create(null),pendingActions=[],actionHooked=false;
+  /* The Android bridge can appear a moment after this script runs, so look again until it shows up */
+  function init(){
+    if(native)return true;
+    C=cap();if(!C)return false;
+    try{LN=C.registerPlugin('LocalNotifications');}catch(e){}try{HA=C.registerPlugin('HeyAlarm');}catch(e){}
+    native=!!LN;
+    if(window.HeyNotify)window.HeyNotify.isNative=native;
+    if(native&&!actionHooked){actionHooked=true;hookActions();}
+    return native;
+  }
+  var initTries=0,initTimer=setInterval(function(){if(init()||++initTries>40)clearInterval(initTimer);},250);
+  window.addEventListener('load',init);document.addEventListener('DOMContentLoaded',init);
   var ACTION_TYPES=[
     {id:'ALARM',actions:[{id:'snooze',title:'Snooze'},{id:'stop',title:'Stop',destructive:true}]},
     {id:'TIMER',actions:[{id:'restart',title:'Restart'},{id:'dismiss',title:'Dismiss',destructive:true}]},
@@ -265,6 +275,7 @@
   }
   /* what each native call really answers, so a wrong status on the Settings screen can be traced */
   function rawState(){
+    init();
     var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN},jobs=[];
     function err(k){return function(e){out[k]=String((e&&e.message)||e).slice(0,60);};}
     if(HA){out.fns=['getState','getNotificationState','getBatteryState','syncAlarms','testAlarm'].map(function(n){return n+':'+(typeof HA[n]==='function'?'y':'n');}).join(' ');}
@@ -288,13 +299,14 @@
       queued.forEach(function(e){try{fn(e.actionId,e.notification);}catch(x){}});
     }
   }
-  if(native)LN.addListener('localNotificationActionPerformed',function(e){
+  function hookActions(){LN.addListener('localNotificationActionPerformed',function(e){
     var handlers=listeners.action||[];
     if(!handlers.length){pendingActions.push(e);if(pendingActions.length>20)pendingActions.shift();return;}
     handlers.forEach(function(fn){try{fn(e.actionId,e.notification);}catch(x){}});
-  });
+  });}
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
     cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
-    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate,init:init};
+  init();
 })();

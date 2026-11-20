@@ -72,7 +72,7 @@
     /* keep music / video playing when the screen is left or the phone is locked */
     getLogs: function () { return P && P.getLogs ? P.getLogs() : Promise.resolve(null); },
     cacheAudio: function (key, data, first) { return P.cacheAudio({ key: key, data: data, first: !!first }); },
-    startNativeAudio: function (source,title,artist,position) { return P.startNativeAudio({source:source,title:title||"HeyTools",artist:artist||"Now playing",position:Math.max(0,Math.round(position||0))}); },
+    startNativeAudio: function (source,title,artist,position) { try { var b=location.origin+"/_capacitor_file_"; if(String(source).indexOf(b)===0) source="file://"+decodeURIComponent(String(source).slice(b.length).split("?")[0]); } catch(e){} return P.startNativeAudio({source:source,title:title||"HeyTools",artist:artist||"Now playing",position:Math.max(0,Math.round(position||0))}); },
     getNativeAudioState: function () { return P.getNativeAudioState ? P.getNativeAudioState() : Promise.resolve({ active: false }); },
     onNativeMediaAction: function (cb) { try { return P.addListener('mediaAction', cb); } catch (e) { return null; } },
     onNativeAudioEnded: function (cb) { try { return P.addListener('audioEnded', cb); } catch (e) { return null; } },
