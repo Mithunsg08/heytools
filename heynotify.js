@@ -9,15 +9,16 @@
     for(var i=0;i<tries.length;i++){try{var c=tries[i]();if(c&&c.isNativePlatform&&c.isNativePlatform())return c;}catch(e){}}
     return null;
   }
-  var C=null,LN=null,HA=null,native=false,channelsReady=null,listeners=Object.create(null),pendingActions=[],actionHooked=false;
+  var regErr={},C=null,LN=null,HA=null,native=false,channelsReady=null,listeners=Object.create(null),pendingActions=[],actionHooked=false;
   /* The Android bridge can appear a moment after this script runs, so look again until it shows up */
   function init(){
     if(native)return true;
     C=cap();
     if(!C){try{if(window.HeyNative&&window.HeyNative.isNative&&window.Capacitor&&window.Capacitor.registerPlugin)C=window.Capacitor;}catch(e){}}
     if(!C)return false;
-    try{LN=C.registerPlugin('LocalNotifications');}catch(e){}try{HA=C.registerPlugin('HeyAlarm');}catch(e){}
-    native=!!LN;
+    function getP(n){var P=null;try{P=C.Plugins&&C.Plugins[n];}catch(e){}if(P)return P;try{return C.registerPlugin(n);}catch(e){regErr[n]=String((e&&e.message)||e).slice(0,70);}return null;}
+    LN=getP('LocalNotifications');HA=getP('HeyAlarm');
+    native=!!(LN||HA);
     if(window.HeyNotify)window.HeyNotify.isNative=native;
     if(native&&!actionHooked){actionHooked=true;hookActions();}
     return native;
@@ -279,7 +280,7 @@
   /* what each native call really answers, so a wrong status on the Settings screen can be traced */
   function rawState(){
     init();
-    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN,v:'35b'},jobs=[];
+    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN,v:'37',regErr:regErr},jobs=[];
     try{var W=window.Capacitor;out.cap=!!W;out.isNP=W&&W.isNativePlatform?String(W.isNativePlatform()):'n/a';out.plat=W&&W.getPlatform?W.getPlatform():'n/a';out.heyNative=!!(window.HeyNative&&window.HeyNative.isNative);}catch(e){out.capErr=String(e).slice(0,50);}
     function err(k){return function(e){out[k]=String((e&&e.message)||e).slice(0,60);};}
     if(HA){out.fns=['getState','getNotificationState','getBatteryState','syncAlarms','testAlarm'].map(function(n){return n+':'+(typeof HA[n]==='function'?'y':'n');}).join(' ');}
