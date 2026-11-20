@@ -13,7 +13,9 @@
   /* The Android bridge can appear a moment after this script runs, so look again until it shows up */
   function init(){
     if(native)return true;
-    C=cap();if(!C)return false;
+    C=cap();
+    if(!C){try{if(window.HeyNative&&window.HeyNative.isNative&&window.Capacitor&&window.Capacitor.registerPlugin)C=window.Capacitor;}catch(e){}}
+    if(!C)return false;
     try{LN=C.registerPlugin('LocalNotifications');}catch(e){}try{HA=C.registerPlugin('HeyAlarm');}catch(e){}
     native=!!LN;
     if(window.HeyNotify)window.HeyNotify.isNative=native;
@@ -277,7 +279,8 @@
   /* what each native call really answers, so a wrong status on the Settings screen can be traced */
   function rawState(){
     init();
-    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN},jobs=[];
+    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN,v:'35b'},jobs=[];
+    try{var W=window.Capacitor;out.cap=!!W;out.isNP=W&&W.isNativePlatform?String(W.isNativePlatform()):'n/a';out.plat=W&&W.getPlatform?W.getPlatform():'n/a';out.heyNative=!!(window.HeyNative&&window.HeyNative.isNative);}catch(e){out.capErr=String(e).slice(0,50);}
     function err(k){return function(e){out[k]=String((e&&e.message)||e).slice(0,60);};}
     if(HA){out.fns=['getState','getNotificationState','getBatteryState','syncAlarms','testAlarm'].map(function(n){return n+':'+(typeof HA[n]==='function'?'y':'n');}).join(' ');}
     if(HA&&HA.getState)jobs.push(HA.getState().then(function(r){out.exactOk=!!(r&&r.exactPermission);out.alarmsSet=((r&&r.alarms)||[]).length;}).catch(err('getStateErr')));
