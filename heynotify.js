@@ -20,8 +20,9 @@
     if(native&&!actionHooked){actionHooked=true;hookActions();}
     return native;
   }
-  var initTries=0,initTimer=setInterval(function(){if(init()||++initTries>40)clearInterval(initTimer);},250);
-  window.addEventListener('load',init);document.addEventListener('DOMContentLoaded',init);
+  var initTries=0;
+  if(typeof setInterval==='function'&&!native){var initTimer=setInterval(function(){if(init()||++initTries>40)clearInterval(initTimer);},250);}
+  try{window.addEventListener('load',init);document.addEventListener('DOMContentLoaded',init);}catch(e){}
   var ACTION_TYPES=[
     {id:'ALARM',actions:[{id:'snooze',title:'Snooze'},{id:'stop',title:'Stop',destructive:true}]},
     {id:'TIMER',actions:[{id:'restart',title:'Restart'},{id:'dismiss',title:'Dismiss',destructive:true}]},
