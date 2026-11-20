@@ -53,6 +53,7 @@ final class AlarmScheduler {
   }
   static void sync(Context c, JSONArray incoming) throws Exception {
     if (!canScheduleExact(c)) throw new SecurityException("Exact alarm access is disabled");
+    note(c,"app sent "+incoming.length()+" alarm(s)");
     JSONArray old=read(c);
     for(int i=0;i<old.length();i++){JSONObject o=old.optJSONObject(i);if(o!=null)cancelId(c,o.optInt("id",-1));}
     JSONArray clean=new JSONArray();
@@ -103,7 +104,7 @@ final class AlarmScheduler {
   }
   private static void scheduleOne(Context c, JSONObject a) {
     int id=a.optInt("id",-1); if(id<0)return;
-    long at=nextTime(a); if(at<=System.currentTimeMillis())return;
+    long at=nextTime(a); if(at<=System.currentTimeMillis()){note(c,"alarm "+id+" not set: no future time (at="+a.optLong("at",0L)+", on="+a.optBoolean("on",false)+")");return;}
     AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
     if(am==null)return;
     Intent open=new Intent(c,MainActivity.class).setAction("com.heytools.ALARM_OPEN").setData(alarmUri(id));

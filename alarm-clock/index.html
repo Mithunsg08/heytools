@@ -313,6 +313,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
 
 
   render(); ensurePerm(); sync();
+  if (HeyNotify.whenNative) HeyNotify.whenNative(function () { ensurePerm(); sync(); });
   setInterval(render, 30000);
 })();
 </script>

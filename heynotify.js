@@ -9,7 +9,7 @@
     for(var i=0;i<tries.length;i++){try{var c=tries[i]();if(c&&c.isNativePlatform&&c.isNativePlatform())return c;}catch(e){}}
     return null;
   }
-  var regErr={},C=null,LN=null,HA=null,native=false,channelsReady=null,listeners=Object.create(null),pendingActions=[],actionHooked=false;
+  var readyCbs=[],regErr={},C=null,LN=null,HA=null,native=false,channelsReady=null,listeners=Object.create(null),pendingActions=[],actionHooked=false;
   /* The Android bridge can appear a moment after this script runs, so look again until it shows up */
   function init(){
     if(native)return true;
@@ -21,6 +21,7 @@
     native=!!(LN||HA);
     if(window.HeyNotify)window.HeyNotify.isNative=native;
     if(native&&!actionHooked){actionHooked=true;hookActions();}
+    if(native){readyCbs.splice(0).forEach(function(f){try{f();}catch(e){}});}
     return native;
   }
   var initTries=0;
@@ -289,6 +290,7 @@
     if(LN)jobs.push(LN.checkPermissions().then(function(r){out.pluginSays=r&&r.display;}).catch(err('checkPermErr')));
     return Promise.all(jobs).then(function(){return JSON.stringify(out);});
   }
+  function whenNative(f){if(native)f();else readyCbs.push(f);}
   function ringingState(){init();if(!(native&&HA&&HA.getRinging))return Promise.resolve({ringing:false});return HA.getRinging().catch(function(){return {ringing:false};});}
   function stopRinging(){init();if(!(native&&HA&&HA.stopRinging))return Promise.resolve();return HA.stopRinging().catch(function(){});}
   function snoozeNative(id,min){init();if(!(native&&HA&&HA.snooze))return Promise.resolve();return HA.snooze({id:id,minutes:min}).catch(function(){});}
@@ -315,6 +317,6 @@
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
     cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
-    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,ringingState:ringingState,stopRinging:stopRinging,snoozeNative:snoozeNative,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate,init:init};
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,ringingState:ringingState,whenNative:whenNative,stopRinging:stopRinging,snoozeNative:snoozeNative,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate,init:init};
   init();
 })();
