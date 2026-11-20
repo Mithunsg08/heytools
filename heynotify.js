@@ -263,6 +263,16 @@
     if(!(native&&HA&&HA.setAutoUpdate))return Promise.resolve();
     return HA.setAutoUpdate({enabled:!!on}).catch(function(){});
   }
+  /* what each native call really answers, so a wrong status on the Settings screen can be traced */
+  function rawState(){
+    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN},jobs=[];
+    function err(k){return function(e){out[k]=String((e&&e.message)||e).slice(0,60);};}
+    if(HA){out.fns=['getState','getNotificationState','getBatteryState','syncAlarms','testAlarm'].map(function(n){return n+':'+(typeof HA[n]==='function'?'y':'n');}).join(' ');}
+    if(HA&&HA.getState)jobs.push(HA.getState().then(function(r){out.exactOk=!!(r&&r.exactPermission);out.alarmsSet=((r&&r.alarms)||[]).length;}).catch(err('getStateErr')));
+    if(HA&&HA.getNotificationState)jobs.push(HA.getNotificationState().then(function(r){out.androidNotifOn=r&&r.enabled;out.permission=r&&r.runtime;out.sdk=r&&r.sdk;}).catch(err('notifStateErr')));
+    if(LN)jobs.push(LN.checkPermissions().then(function(r){out.pluginSays=r&&r.display;}).catch(err('checkPermErr')));
+    return Promise.all(jobs).then(function(){return JSON.stringify(out);});
+  }
   function notificationState(){
     if(!(native&&HA&&HA.getNotificationState))return Promise.resolve(null);
     return HA.getNotificationState().catch(function(){return null;});
@@ -286,5 +296,5 @@
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
     cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
-    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate};
 })();

@@ -162,6 +162,17 @@ public class MediaLibraryPlugin extends Plugin {
   }
 
 
+  /** Event logs and what Android says about notifications, read through the plugin the player already uses. */
+  @PluginMethod public void getLogs(PluginCall call) {
+    JSObject o=new JSObject();
+    try { o.put("alarmLog", AlarmScheduler.noteLog(getContext())); } catch(Exception ignored) {}
+    try { o.put("playLog", PlaybackService.noteLog(getContext())); } catch(Exception ignored) {}
+    try { o.put("notifEnabled", androidx.core.app.NotificationManagerCompat.from(getContext()).areNotificationsEnabled()); } catch(Exception ignored) {}
+    try { o.put("sdk", Build.VERSION.SDK_INT); } catch(Exception ignored) {}
+    try { JSObject st=AlarmScheduler.getState(getContext()); o.put("alarmCount", st.getJSONArray("alarms").length()); } catch(Exception ignored) {}
+    call.resolve(o);
+  }
+
   /** Copies a song the page holds in memory (a blob) into app storage, so the Android player can play it when the page cannot. */
   @PluginMethod public void cacheAudio(PluginCall call) {
     try {
