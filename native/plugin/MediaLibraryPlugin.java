@@ -190,13 +190,14 @@ public class MediaLibraryPlugin extends Plugin {
   @PluginMethod public void startNativeAudio(PluginCall call) {
     try {
       String source=call.getString("source", "");
+      PlaybackService.note(getContext(),"app asked Android to play "+(source.length()>40?source.substring(0,40):source));
       if (!(source.startsWith("https://") || source.startsWith("http://") || source.startsWith("file://") || source.startsWith("content://"))) { call.reject("Only direct audio URLs and Android media URIs support native background playback."); return; }
       Intent i=new Intent(getContext(),PlaybackService.class).setAction("com.heytools.PLAY_URL");
       i.putExtra("source",source); i.putExtra("title",call.getString("title","HeyTools")); i.putExtra("artist",call.getString("artist","Now playing"));
       i.putExtra("position", Math.max(0, call.getInt("position", 0)));
       if(PlaybackService.isRunning||Build.VERSION.SDK_INT<26)getContext().startService(i);else getContext().startForegroundService(i);
       call.resolve();
-    } catch(Exception e) { call.reject("Could not start native audio: "+e.getMessage(),e); }
+    } catch(Exception e) { PlaybackService.note(getContext(),"could not start native audio: "+e); call.reject("Could not start native audio: "+e.getMessage(),e); }
   }
   /** Where the native player is: used to hand playback back to the page at the same position. */
   @PluginMethod public void getNativeAudioState(PluginCall call) {
