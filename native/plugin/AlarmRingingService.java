@@ -52,7 +52,7 @@ public class AlarmRingingService extends Service {
     return START_NOT_STICKY;
   }
   private Notification buildNotification(String title,int snooze){
-    Intent open=new Intent(this,MainActivity.class).setAction("com.heytools.ALARM_OPEN").setData(android.net.Uri.parse("heytools://alarm/ringing/"+alarmId));
+    Intent open=new Intent(this,AlarmRingActivity.class).setAction("com.heytools.ALARM_RING").setData(android.net.Uri.parse("heytools://alarm/ringing/"+alarmId)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
     PendingIntent content=PendingIntent.getActivity(this,alarmId,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     Intent stop=new Intent(this,AlarmActionReceiver.class).setAction("com.heytools.ALARM_STOP").putExtra("alarmId",alarmId);
     PendingIntent stopPi=PendingIntent.getBroadcast(this,alarmId+300000,stop,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);

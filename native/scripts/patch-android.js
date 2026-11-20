@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
+for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -41,6 +41,7 @@ if (!m.includes('KeepAliveService')) m = m.replace('</application>', '    <servi
 if (!m.includes('ScreenRecordService')) m = m.replace('</application>', '    <service android:name=".ScreenRecordService" android:exported="false" android:foregroundServiceType="mediaProjection" />\n    </application>');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
+  '<activity android:name=".AlarmRingActivity" android:exported="false" android:launchMode="singleInstance" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />',
   '<service android:name=".AlarmRingingService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="mediaPlayback" />',
   '<receiver android:name=".AlarmReceiver" android:exported="false" android:directBootAware="true" />',
   '<receiver android:name=".AlarmActionReceiver" android:exported="false" android:directBootAware="true" />',

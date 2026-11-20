@@ -1129,10 +1129,6 @@
       n.textContent = 'Scheduled reminders: ' + (d.pending >= 0 ? d.pending : 'unknown') + (d.lastError ? ' (last problem: ' + String(d.lastError).slice(0, 80) + ')' : '');
       n.className = d.lastError ? 'warn' : '';
     });
-    if (HN.rawState) HN.rawState().then(function (t) { var e = $('relRaw'); if (e) e.textContent = 'Native check: ' + t; });
-    var paintLogs = function (s) { var e = $('relAlarmLog'); if (e) e.textContent = 'Alarm log:\n' + ((s && s.alarmLog) || '(empty)') + '\n\nAndroid player log:\n' + ((s && s.playLog) || '(empty)') + (s && s.notifEnabled !== undefined ? '\n\nAndroid says notifications ' + (s.notifEnabled ? 'ON' : 'OFF') + ', alarms saved: ' + s.alarmCount : ''); };
-    if (NATIVE.getLogs) NATIVE.getLogs().then(paintLogs).catch(function (er) { var e = $('relAlarmLog'); if (e) e.textContent = 'Logs unavailable: ' + ((er && er.message) || er); });
-    try { $('relLog').textContent = 'Playback log:\n' + (JSON.parse(localStorage.getItem('heytools.playlog') || '[]').join('\n') || '(empty)'); } catch (e) { /* ignore */ }
     if (NATIVE.appInfo) NATIVE.appInfo().then(function (i) { $('relBuild').textContent = 'Build: ' + (i ? i.build + ' (v' + i.version + ')' : 'unknown'); }).catch(function () { $('relBuild').textContent = 'Build: unknown'; });
     HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });
   }

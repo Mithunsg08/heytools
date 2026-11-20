@@ -176,7 +176,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
         items.push(it);
       });
       save();
-      return HeyNotify.syncGroup('alarm', items).then(function (r) { info('Android: ' + (HeyNotify.isNative ? 'connected' : 'NOT connected') + ' · sent ' + items.length + ' alarm(s)'); return r; });
+      return HeyNotify.syncGroup('alarm', items);
     }).catch(function (e) {
       $('perm').hidden = false;
       $('permTxt').textContent = 'Alarm not scheduled. Allow notifications and exact alarms in Android settings, then return to HeyTools and save again.';

@@ -73,7 +73,6 @@ public class MainActivity extends BridgeActivity {
 
   private void dispatchAlarmOpen(final Intent intent) {
     if (intent == null || !"com.heytools.ALARM_OPEN".equals(intent.getAction())) return;
-    showOverLockScreen();
     runWhenHeyToolsReady("location.hash='#/alarm-clock'");
   }
 
