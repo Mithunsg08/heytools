@@ -555,11 +555,40 @@
     return list;
   }
   function playingElement(f) {
-    try { var els = mediaEls(f); for (var i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return els[i]; } catch (e) { /* ignore */ }
+    try {
+      var els = mediaEls(f), i;
+      for (i = 0; i < els.length; i++) if (!els[i].paused && !els[i].ended && els[i].readyState > 2) return els[i];
+      /* the page says it is playing but the element already stopped (the phone paused it as the screen went off): still hand it over */
+      if (f.contentDocument.body.classList.contains('playing'))
+        for (i = 0; i < els.length; i++) if (!els[i].ended && (els[i].currentSrc || els[i].src) && els[i].currentTime > 0) return els[i];
+      plog('no playing audio: ' + els.map(function (e) { return (e.paused ? 'paused' : 'playing') + '/rs' + e.readyState + '/' + String(e.currentSrc || e.src || 'no-src').slice(0, 12); }).join(', '));
+    } catch (e) { /* ignore */ }
     return null;
   }
+  /* A song picked on the phone lives in the page as a blob that Android's own player cannot open, so it is copied once into app storage. */
+  var prepared = {};
+  window.__heyLog = plog;
+  window.__heyPrepare = function (blobUrl, blob) {
+    try {
+      if (!NATIVE.isNative || !NATIVE.cacheAudio || !blob || prepared[blobUrl] || blob.size > 400 * 1024 * 1024) return;
+      var rec = prepared[blobUrl] = { ready: false, path: '' }, key = 'a' + blob.size + '_' + Date.now().toString(36), pos = 0, STEP = 384 * 1024;
+      plog('copying song for background play (' + Math.round(blob.size / 1048576 * 10) / 10 + ' MB)');
+      (function next() {
+        if (pos >= blob.size && pos > 0) { rec.ready = true; plog('song copy ready'); return; }
+        var r = new FileReader();
+        r.onload = function () {
+          var b64 = String(r.result).split(',')[1] || '';
+          NATIVE.cacheAudio(key, b64, pos === 0).then(function (res) { rec.path = res && res.path; pos += STEP; if (pos >= blob.size) { rec.ready = true; plog('song copy ready'); } else setTimeout(next, 0); })
+            .catch(function (e) { delete prepared[blobUrl]; plog('song copy failed: ' + ((e && e.message) || e)); });
+        };
+        r.onerror = function () { delete prepared[blobUrl]; plog('song copy failed: cannot read file'); };
+        r.readAsDataURL(blob.slice(pos, pos + STEP));
+      })();
+    } catch (e) { plog('song copy error: ' + e); }
+  };
   function nativeSource(src) {
     if (!src) return '';
+    if (src.indexOf('blob:') === 0) { var p = prepared[src]; return p && p.ready && p.path ? 'file://' + p.path : ''; }
     var base = location.origin + '/_capacitor_file_';
     if (src.indexOf(base) === 0) { try { return 'file://' + decodeURIComponent(src.slice(base.length)); } catch (e) { return ''; } }
     if (/^https?:\/\//.test(src) && src.indexOf(location.origin) !== 0) return src;
@@ -568,8 +597,8 @@
   function startHandoff(force) {
     if (handoff || !NATIVE.isNative || !NATIVE.startNativeAudio || (!force && !document.hidden)) return;
     var ids = playingFrames(); if (!ids.length) { if (Object.keys(frames).some(function (k) { return byId[k] && byId[k].media; })) plog('a player is open but not ready to hand over'); return; }
-    var id = ids[0], f = frames[id], el = f && playingElement(f); if (!el) { plog(id + ': no playing audio found'); return; }
-    var src = nativeSource(el.currentSrc || el.src); if (!src) { plog(id + ': cannot hand over ' + String(el.currentSrc || el.src).slice(0, 50)); return; }
+    var id = ids[0], f = frames[id], el = f && playingElement(f); if (!el) return;
+    var src = nativeSource(el.currentSrc || el.src); if (!src) { plog(id + ': cannot hand over ' + String(el.currentSrc || el.src).slice(0, 14) + ((el.currentSrc || el.src || '').indexOf('blob:') === 0 ? ' (song copy not ready yet)' : '')); return; }
     plog('handing ' + id + ' to Android: ' + src.slice(-40));
     var d = null; try { d = f.contentDocument; } catch (e) { /* ignore */ }
     var tn = d && d.getElementById(id === 'music-player' ? 'nTitle' : 'tt'), ta = d && d.getElementById(id === 'music-player' ? 'nArtist' : 'mt');
@@ -1095,6 +1124,7 @@
       n.textContent = 'Scheduled reminders: ' + (d.pending >= 0 ? d.pending : 'unknown') + (d.lastError ? ' (last problem: ' + String(d.lastError).slice(0, 80) + ')' : '');
       n.className = d.lastError ? 'warn' : '';
     });
+    if (HN.notificationState) HN.notificationState().then(function (s) { var e = $('relAlarmLog'); if (e) e.textContent = 'Alarm log:\n' + ((s && s.alarmLog) || '(empty)'); });
     try { $('relLog').textContent = 'Playback log:\n' + (JSON.parse(localStorage.getItem('heytools.playlog') || '[]').join('\n') || '(empty)'); } catch (e) { /* ignore */ }
     if (NATIVE.appInfo) NATIVE.appInfo().then(function (i) { $('relBuild').textContent = 'Build: ' + (i ? i.build + ' (v' + i.version + ')' : 'unknown'); }).catch(function () { $('relBuild').textContent = 'Build: unknown'; });
     HN.batteryState().then(function (r) { setRel('relBatt', 'Battery', r === 'ok' ? 'ok' : (r === 'unknown' ? 'unknown' : 'bad'), 'relBattBtn'); });

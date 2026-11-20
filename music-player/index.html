@@ -376,6 +376,8 @@ function ensureCtx(){
 }
 function audioProv(el,viz){
  el.preload='auto';const me=()=>active===prov;
+ const L=m=>{try{window.parent.__heyLog&&window.parent.__heyLog('audio '+m+(document.hidden?' (app hidden)':' (app open)')+' t='+Math.round(el.currentTime))}catch(e){}};
+ el.addEventListener('pause',()=>L('paused'));el.addEventListener('play',()=>L('playing'));el.addEventListener('error',()=>L('error '+(el.error?el.error.code:'?')));
  el.addEventListener('ended',()=>{if(me())onEnded()});
  el.addEventListener('play',()=>{if(me())setPlaying(true)});
  el.addEventListener('pause',()=>{if(me())setPlaying(false)});
@@ -388,7 +390,7 @@ const DB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(th
  async tx(mode,fn){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('files',mode),st=t.objectStore('files'),rq=fn(st);t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error)})},
  put(k,v){return this.tx('readwrite',s=>s.put(v,k))},get(k){return this.tx('readonly',s=>s.get(k))},del(k){return this.tx('readwrite',s=>s.delete(k)).catch(()=>{})},clear(){return this.tx('readwrite',s=>s.clear())}};
 const P={};P.local=audioProv(aLocal,true);P.url=audioProv(aUrl,false);
-{const ll=P.local.load;P.local.load=async function(it){if(!it.src&&it.fid){let b=null;try{b=await DB.get(it.fid)}catch(e){}if(!b){toast('This file is no longer stored. Add it again.');throw new Error('sp')}it.src=URL.createObjectURL(b)}ll(it)}}
+{const ll=P.local.load;P.local.load=async function(it){if(!it.src&&it.fid){let b=null;try{b=await DB.get(it.fid)}catch(e){}if(!b){toast('This file is no longer stored. Add it again.');throw new Error('sp')}it.src=URL.createObjectURL(b);try{window.parent.__heyPrepare&&window.parent.__heyPrepare(it.src,b)}catch(e){}}ll(it)}}
 
 /* YouTube */
 let ytp=null;

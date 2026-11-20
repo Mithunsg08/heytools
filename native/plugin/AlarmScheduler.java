@@ -109,8 +109,22 @@ final class AlarmScheduler {
     Intent open=new Intent(c,MainActivity.class).setAction("com.heytools.ALARM_OPEN").setData(alarmUri(id));
     PendingIntent show=PendingIntent.getActivity(c,id,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     am.setAlarmClock(new AlarmManager.AlarmClockInfo(at,show),operation(c,id));
+    note(c,"set alarm "+id+" for "+new java.text.SimpleDateFormat("HH:mm:ss",java.util.Locale.US).format(new java.util.Date(at)));
     try{a.put("nextAt",at);}catch(Exception ignored){}
   }
+  /** Short event log shown in Settings, so a missed alarm can be traced. */
+  static void note(Context c,String msg) {
+    try {
+      android.content.SharedPreferences sp=c.getSharedPreferences("heytools_alarm_log",0);
+      String[] old=sp.getString("log","").split("\n");
+      StringBuilder sb=new StringBuilder();
+      int from=Math.max(0,old.length-7);
+      for(int i=from;i<old.length;i++)if(!old[i].isEmpty())sb.append(old[i]).append('\n');
+      sb.append(new java.text.SimpleDateFormat("HH:mm:ss",java.util.Locale.US).format(new java.util.Date())).append(' ').append(msg);
+      sp.edit().putString("log",sb.toString()).apply();
+    } catch(Exception ignored) {}
+  }
+  static String noteLog(Context c){ try{return c.getSharedPreferences("heytools_alarm_log",0).getString("log","");}catch(Exception e){return "";} }
   static JSONObject fired(Context c,int id) {
     JSONArray all=read(c);int ix=indexOf(all,id);if(ix<0)return null;
     JSONObject a=all.optJSONObject(ix);if(a==null)return null;

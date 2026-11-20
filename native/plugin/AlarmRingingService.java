@@ -41,7 +41,7 @@ public class AlarmRingingService extends Service {
     String title=intent==null?"Alarm":intent.getStringExtra("title");
     String tone=intent==null?"classic":intent.getStringExtra("tone");
     int snooze=intent==null?10:intent.getIntExtra("snooze",10);
-    startForeground(NOTIFICATION_ID,buildNotification(title,snooze));
+    try{startForeground(NOTIFICATION_ID,buildNotification(title,snooze));}catch(Exception e){AlarmScheduler.note(this,"ring notification failed: "+e);}
     playTone(tone);
     return START_NOT_STICKY;
   }
@@ -87,7 +87,8 @@ public class AlarmRingingService extends Service {
       try { player.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength()); }
       finally { afd.close(); }
       player.setLooping(true);player.setVolume(1f,1f);player.prepare();player.start();
-    }catch(Exception ignored){stopPlayer();}
+      AlarmScheduler.note(this,"ringing with tone "+safe);
+    }catch(Exception e){AlarmScheduler.note(this,"tone failed: "+e);stopPlayer();}
   }
   private void stopPlayer(){if(player!=null){try{if(player.isPlaying())player.stop();player.release();}catch(Exception ignored){}player=null;}}
   @Override public void onDestroy(){

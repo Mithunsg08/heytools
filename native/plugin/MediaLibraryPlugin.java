@@ -162,6 +162,30 @@ public class MediaLibraryPlugin extends Plugin {
   }
 
 
+  /** Copies a song the page holds in memory (a blob) into app storage, so the Android player can play it when the page cannot. */
+  @PluginMethod public void cacheAudio(PluginCall call) {
+    try {
+      String key=call.getString("key","a").replaceAll("[^A-Za-z0-9_]","");
+      if(key.isEmpty())key="a";
+      java.io.File dir=new java.io.File(getContext().getCacheDir(),"heyaudio"); dir.mkdirs();
+      java.io.File f=new java.io.File(dir,key+".bin");
+      boolean first=call.getBoolean("first",false);
+      if(first){
+        java.io.File[] all=dir.listFiles();
+        if(all!=null&&all.length>4){
+          java.util.Arrays.sort(all,(a,b)->Long.compare(a.lastModified(),b.lastModified()));
+          for(int n=0;n<all.length-4;n++)if(!all[n].equals(f))all[n].delete();
+        }
+      }
+      String data=call.getString("data","");
+      try(java.io.FileOutputStream os=new java.io.FileOutputStream(f,!first)){
+        if(data!=null&&!data.isEmpty())os.write(Base64.decode(data,Base64.DEFAULT));
+      }
+      JSObject o=new JSObject(); o.put("path",f.getAbsolutePath()); o.put("size",f.length());
+      call.resolve(o);
+    } catch(Exception e) { call.reject("Could not cache audio: "+e.getMessage(),e); }
+  }
+
   /** Native foreground playback for direct audio streams; independent of the WebView lifecycle. */
   @PluginMethod public void startNativeAudio(PluginCall call) {
     try {
