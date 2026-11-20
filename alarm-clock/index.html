@@ -270,9 +270,25 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     if (stopRing) stopRing(); stopRing = HeyTones.play(it.tone || 'classic', { loop: true, volume: 1 });
     if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
   }
-  function endRing() { if (stopRing) stopRing(); stopRing = null; $('ring').hidden = true; if (ringing && !ringing.days.length) { ringing.on = false; sync(); render(); } }
+  var nativeRing = null;
+  function endRing() { if (stopRing) stopRing(); stopRing = null; $('ring').hidden = true; if (nativeRing) { nativeRing = null; HeyNotify.stopRinging(); return; } if (ringing && !ringing.days.length) { ringing.on = false; sync(); render(); } }
   $('ringStop').onclick = endRing;
-  $('ringSnooze').onclick = function () { snoozeFor(ringing); endRing(); };
+  $('ringSnooze').onclick = function () { if (nativeRing) { HeyNotify.snoozeNative(nativeRing.id, nativeRing.snooze || 10); endRing(); return; } snoozeFor(ringing); endRing(); };
+  /* an alarm that Android is ringing: show Stop / Snooze here so opening the app can silence it */
+  function checkNativeRing() {
+    if (!HeyNotify.isNative || !HeyNotify.ringingState) return;
+    HeyNotify.ringingState().then(function (r) {
+      if (r && r.ringing) {
+        if (!nativeRing) {
+          nativeRing = { id: r.id, snooze: r.snooze };
+          var n = new Date(); $('ringT').textContent = n.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); $('ringL').textContent = r.title || 'Alarm';
+          $('ringSnooze').hidden = false; $('ring').hidden = false;
+        }
+      } else if (nativeRing) { nativeRing = null; $('ring').hidden = true; }
+    });
+  }
+  checkNativeRing(); setInterval(checkNativeRing, 1500);
+  document.addEventListener('visibilitychange', checkNativeRing); window.addEventListener('focus', checkNativeRing);
   HeyNotify.on('fire', function (it) { if (it.group === 'alarm' && !HeyNotify.isNative) { it.id = it.id; showRing(it); } });
   function handleAlarmNotificationAction(id, n) {
     if (!n || !n.id) return;

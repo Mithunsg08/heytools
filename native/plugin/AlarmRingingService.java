@@ -22,6 +22,10 @@ public class AlarmRingingService extends Service {
   private MediaPlayer player;
   private PowerManager.WakeLock wakeLock;
   private int alarmId=-1;
+  /** What is ringing right now, so the app can show Stop / Snooze when it is opened. */
+  static volatile int ringingId=-1;static volatile String ringingTitle="Alarm";static volatile int ringingSnooze=10;static volatile boolean ringing=false;
+  private final android.os.Handler timeout=new android.os.Handler(android.os.Looper.getMainLooper());
+  private final Runnable autoStop=new Runnable(){@Override public void run(){AlarmScheduler.note(AlarmRingingService.this,"stopped by itself after 5 minutes");stopSelf();}};
 
   @Override public IBinder onBind(Intent i){return null;}
   @Override public void onCreate(){
@@ -42,6 +46,8 @@ public class AlarmRingingService extends Service {
     String tone=intent==null?"classic":intent.getStringExtra("tone");
     int snooze=intent==null?10:intent.getIntExtra("snooze",10);
     try{startForeground(NOTIFICATION_ID,buildNotification(title,snooze));}catch(Exception e){AlarmScheduler.note(this,"ring notification failed: "+e);}
+    ringingId=alarmId;ringingTitle=title==null||title.trim().isEmpty()?"Alarm":title;ringingSnooze=snooze;ringing=true;
+    timeout.removeCallbacks(autoStop);timeout.postDelayed(autoStop,5*60*1000L);
     playTone(tone);
     return START_NOT_STICKY;
   }
@@ -92,6 +98,7 @@ public class AlarmRingingService extends Service {
   }
   private void stopPlayer(){if(player!=null){try{if(player.isPlaying())player.stop();player.release();}catch(Exception ignored){}player=null;}}
   @Override public void onDestroy(){
+    ringing=false;ringingId=-1;timeout.removeCallbacks(autoStop);
     stopPlayer();
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.cancel(NOTIFICATION_ID);
     if(wakeLock!=null&&wakeLock.isHeld())try{wakeLock.release();}catch(Exception ignored){}

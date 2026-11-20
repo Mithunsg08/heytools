@@ -189,4 +189,20 @@ public class HeyAlarmPlugin extends Plugin {
       call.resolve();
     } catch (Exception e) { call.reject("Could not snooze alarm: " + e.getMessage(), e); }
   }
+
+  @PluginMethod
+  public void getRinging(PluginCall call) {
+    JSObject o = new JSObject();
+    o.put("ringing", AlarmRingingService.ringing);
+    o.put("id", AlarmRingingService.ringingId);
+    o.put("title", AlarmRingingService.ringingTitle);
+    o.put("snooze", AlarmRingingService.ringingSnooze);
+    call.resolve(o);
+  }
+
+  @PluginMethod
+  public void stopRinging(PluginCall call) {
+    try { getContext().stopService(new android.content.Intent(getContext(), AlarmRingingService.class)); } catch (Exception ignored) {}
+    call.resolve();
+  }
 }

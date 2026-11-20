@@ -289,6 +289,9 @@
     if(LN)jobs.push(LN.checkPermissions().then(function(r){out.pluginSays=r&&r.display;}).catch(err('checkPermErr')));
     return Promise.all(jobs).then(function(){return JSON.stringify(out);});
   }
+  function ringingState(){init();if(!(native&&HA&&HA.getRinging))return Promise.resolve({ringing:false});return HA.getRinging().catch(function(){return {ringing:false};});}
+  function stopRinging(){init();if(!(native&&HA&&HA.stopRinging))return Promise.resolve();return HA.stopRinging().catch(function(){});}
+  function snoozeNative(id,min){init();if(!(native&&HA&&HA.snooze))return Promise.resolve();return HA.snooze({id:id,minutes:min}).catch(function(){});}
   function notificationState(){
     if(!(native&&HA&&HA.getNotificationState))return Promise.resolve(null);
     return HA.getNotificationState().catch(function(){return null;});
@@ -312,6 +315,6 @@
   window.HeyNotify={isNative:native,permission:permission,exactPermission:exactPermission,requestPermission:requestPermission,
     requestExactPermission:requestExactPermission,schedule:schedule,syncGroup:syncGroup,cancelGroup:cancelGroup,
     cancelIds:cancelIds,cancelAlarmIds:cancelAlarmIds,pending:pending,alarmState:alarmState,on:on,ensureChannels:ensureChannels,
-    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate,init:init};
+    prefs:prefs,setPrefs:setPrefs,cancelAll:cancelAll,sendTest:sendTest,testAlarm:testAlarm,batteryState:batteryState,notificationState:notificationState,rawState:rawState,ringingState:ringingState,stopRinging:stopRinging,snoozeNative:snoozeNative,openNotificationSettings:openNotificationSettings,diagnose:diagnose,openBatterySettings:openBatterySettings,setAutoUpdate:setAutoUpdate,init:init};
   init();
 })();
