@@ -24,6 +24,16 @@ public class AlarmRingingService extends Service {
   private int alarmId=-1;
   /** What is ringing right now, so the app can show Stop / Snooze when it is opened. */
   static volatile int ringingId=-1;static volatile String ringingTitle="Alarm";static volatile int ringingSnooze=10;static volatile boolean ringing=false;
+  private long ringStartedAt=0;
+  private final android.content.BroadcastReceiver screenOff=new android.content.BroadcastReceiver(){
+    @Override public void onReceive(android.content.Context c,Intent i){
+      /* the power button turns the screen off: treat it as Snooze (ignore the first moments, while the ring screen is still waking the display) */
+      if(!ringing||System.currentTimeMillis()-ringStartedAt<4000)return;
+      try{if(ringingId>=0)AlarmScheduler.snooze(AlarmRingingService.this,ringingId,ringingSnooze);AlarmScheduler.note(AlarmRingingService.this,"snoozed with the power button");}catch(Exception ignored){}
+      stopSelf();
+    }
+  };
+  private boolean screenOffRegistered=false;
   private final android.os.Handler timeout=new android.os.Handler(android.os.Looper.getMainLooper());
   private final Runnable autoStop=new Runnable(){@Override public void run(){AlarmScheduler.note(AlarmRingingService.this,"stopped by itself after 5 minutes");stopSelf();}};
 
@@ -46,6 +56,8 @@ public class AlarmRingingService extends Service {
     String tone=intent==null?"classic":intent.getStringExtra("tone");
     int snooze=intent==null?10:intent.getIntExtra("snooze",10);
     try{startForeground(NOTIFICATION_ID,buildNotification(title,snooze));}catch(Exception e){AlarmScheduler.note(this,"ring notification failed: "+e);}
+    ringStartedAt=System.currentTimeMillis();
+    if(!screenOffRegistered){try{registerReceiver(screenOff,new android.content.IntentFilter(Intent.ACTION_SCREEN_OFF));screenOffRegistered=true;}catch(Exception ignored){}}
     ringingId=alarmId;ringingTitle=title==null||title.trim().isEmpty()?"Alarm":title;ringingSnooze=snooze;ringing=true;
     timeout.removeCallbacks(autoStop);timeout.postDelayed(autoStop,5*60*1000L);
     playTone(tone);
@@ -98,6 +110,7 @@ public class AlarmRingingService extends Service {
   }
   private void stopPlayer(){if(player!=null){try{if(player.isPlaying())player.stop();player.release();}catch(Exception ignored){}player=null;}}
   @Override public void onDestroy(){
+    if(screenOffRegistered){try{unregisterReceiver(screenOff);}catch(Exception ignored){}screenOffRegistered=false;}
     ringing=false;ringingId=-1;timeout.removeCallbacks(autoStop);
     stopPlayer();
     NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.cancel(NOTIFICATION_ID);

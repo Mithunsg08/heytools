@@ -212,7 +212,9 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     });
     $('empty').hidden = alarms.length > 0;
     var on = alarms.filter(function (a) { return a.on && isFinite(nextAt(a)); });
-    if (on.length) { var soon = Math.min.apply(null, on.map(nextAt)); $('nextT').textContent = 'Next alarm in ' + until(soon - Date.now()); $('nextS').textContent = new Date(soon).toLocaleString([], { weekday: 'long', hour: 'numeric', minute: '2-digit' }); }
+    var snoozedIds = Object.keys(snoozeInfo).filter(function (k) { return snoozeInfo[k] > Date.now(); });
+    if (snoozedIds.length) { var sn = Math.min.apply(null, snoozedIds.map(function (k) { return snoozeInfo[k]; })); $('nextT').textContent = 'Snoozed alarm in ' + until(sn - Date.now()); $('nextS').textContent = 'Rings again at ' + new Date(sn).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    else if (on.length) { var soon = Math.min.apply(null, on.map(nextAt)); $('nextT').textContent = 'Next alarm in ' + until(soon - Date.now()); $('nextS').textContent = new Date(soon).toLocaleString([], { weekday: 'long', hour: 'numeric', minute: '2-digit' }); }
     else { $('nextT').textContent = 'No alarm set'; $('nextS').textContent = 'Tap New alarm to add one.'; }
   }
   function ensurePerm() {
@@ -285,7 +287,13 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     var mins = a && a.snooze ? a.snooze : 10, sid = (a ? a.id : uid()) + 5000000;
     HeyNotify.schedule([{ id: sid, title: (a && a.label) || 'Alarm', body: 'Snoozed alarm', at: Date.now() + mins * 60000, tone: a ? a.tone : 'classic', alarm: true, group: 'alarm-snooze' }]);
   }
+  var DAY_THEMES = [['#1e1b4b', '#be185d'], ['#042f2e', '#0e7490'], ['#4c0519', '#ea580c'], ['#052e16', '#15803d'], ['#2e1065', '#7c3aed'], ['#0c1445', '#2563eb'], ['#3b0a2a', '#f43f5e'], ['#022c22', '#06b6d4']];
+  function paintRingTheme() {
+    var d = new Date(), seed = d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate(), i = Math.floor((Math.sin(seed) * 10000 % 1 + 1) % 1 * DAY_THEMES.length), t = DAY_THEMES[i];
+    $('ring').style.background = 'linear-gradient(160deg,' + t[0] + ',' + t[1] + ')';
+  }
   function showRing(it) {
+    paintRingTheme();
     var a = alarms.filter(function (x) { return x.id === it.id; })[0] || null; ringing = a;
     var n = new Date(); $('ringT').textContent = n.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); $('ringL').textContent = it.title || 'Alarm';
     $('ringSnooze').hidden = !(a && a.snooze); $('ring').hidden = false;
@@ -303,7 +311,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       if (r && r.ringing) {
         if (!nativeRing) {
           nativeRing = { id: r.id, snooze: r.snooze };
-          var n = new Date(); $('ringT').textContent = n.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); $('ringL').textContent = r.title || 'Alarm';
+          paintRingTheme(); var n = new Date(); $('ringT').textContent = n.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); $('ringL').textContent = r.title || 'Alarm';
           $('ringSnooze').hidden = false; $('ring').hidden = false;
         }
       } else if (nativeRing) { nativeRing = null; $('ring').hidden = true; }
