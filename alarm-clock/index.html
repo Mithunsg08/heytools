@@ -108,7 +108,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
 <div class="scrim" id="scrim" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
   <h2 id="sTitle">New alarm</h2>
   <div class="field"><label for="fTime">Time</label><input id="fTime" type="time" value="07:00"></div>
-  <div class="field"><label for="fDate">Specific date (optional)</label><input id="fDate" type="date"><small style="display:block;color:var(--muted);margin-top:5px">Choose a future date for a one-time alarm. Leave blank to use repeat days.</small></div>
+  <div class="field"><label for="fDate">Specific date (optional)</label><input id="fDate" type="date"><small style="display:block;color:var(--muted);margin-top:5px">Choose today or a later date for a one-time alarm. Leave blank to use repeat days.</small></div>
   <div class="field"><label for="fLabel">Label</label><input id="fLabel" type="text" maxlength="40" placeholder="Wake up"></div>
   <div class="field"><label>Repeat</label><div class="days" id="fDays" role="group" aria-label="Repeat on"></div></div>
   <div class="field"><label>Tone</label><div class="tones" id="fTones" role="radiogroup" aria-label="Alarm tone"></div></div>
@@ -150,6 +150,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     if (!e) { e = document.createElement('p'); e.id = 'syncInfo'; e.style.cssText = 'font-size:12px;opacity:.6;text-align:center;margin:14px 0'; var l = $('list'); l.parentNode.insertBefore(e, l.nextSibling); }
     e.textContent = t;
   }
+  var snoozeInfo = {};
   function sync() {
     save();   /* keep the list first, whatever Android answers, so added and deleted alarms always stick */
     var stateAsked = Promise.race([
@@ -159,6 +160,8 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
     return stateAsked.then(function (nativeState) {
       nativeState = nativeState || { alarms: [] };
       var savedAlarms = nativeState.alarms || [];
+      snoozeInfo = {}; savedAlarms.forEach(function (x) { if (x.snoozed && x.snoozeAt > Date.now()) snoozeInfo[x.id] = x.snoozeAt; });
+      render();
       savedAlarms.forEach(function (saved) {
         var local = alarms.filter(function (a) { return a.id === saved.id; })[0];
         if (local && local.on && (!local.days.length || local.date) && !saved.snoozed &&
@@ -196,6 +199,13 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
       var t = document.createElement('button'); t.type = 'button'; t.className = 't'; t.setAttribute('aria-label', 'Edit alarm at ' + f.t + ' ' + f.ap); t.innerHTML = f.t + (f.ap ? '<small>' + f.ap + '</small>' : '');
       t.onclick = function () { openSheet(a); };
       var meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = (a.label ? a.label + ' · ' : '') + repeatText(a) + ' · ' + (HeyTones.byId[a.tone] || {}).name;
+      var sz = snoozeInfo[a.id];
+      if (sz && sz > Date.now()) {
+        meta.textContent += ' · Snoozed until ' + new Date(sz).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        var ss = document.createElement('button'); ss.type = 'button'; ss.className = 'btn sec'; ss.textContent = 'Stop snooze'; ss.style.cssText = 'margin-top:8px;padding:6px 14px;font-size:.85rem';
+        ss.onclick = function (ev) { ev.stopPropagation(); HeyNotify.cancelSnooze(a.id).then(function () { if (!a.days.length || a.date) a.on = false; delete snoozeInfo[a.id]; sync(); render(); }); };
+        meta.appendChild(document.createElement('br')); meta.appendChild(ss);
+      }
       var sw = document.createElement('input'); sw.type = 'checkbox'; sw.className = 'sw'; sw.checked = a.on; sw.setAttribute('aria-label', 'Alarm at ' + f.t + ' ' + f.ap + ' on or off');
       sw.onchange = function () { a.on = sw.checked; if (a.on) { a.fireAt = 0; ensurePerm(); } sync(); render(); };
       li.appendChild(t); li.appendChild(meta); li.appendChild(sw); list.appendChild(li);
@@ -250,7 +260,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   }
   function openSheet(a) {
     editing = a || null; $('sTitle').textContent = a ? 'Edit alarm' : 'New alarm';
-    $('fTime').value = a ? a.time : '07:00'; $('fDate').value = a ? (a.date || '') : ''; $('fLabel').value = a ? a.label : ''; formDays = a ? a.days.slice() : []; formTone = a ? a.tone : 'classic';
+    $('fTime').value = a ? a.time : '07:00'; { var t0 = new Date(); $('fDate').min = t0.getFullYear() + '-' + String(t0.getMonth() + 1).padStart(2, '0') + '-' + String(t0.getDate()).padStart(2, '0'); } $('fDate').value = a ? (a.date || '') : ''; $('fLabel').value = a ? a.label : ''; formDays = a ? a.days.slice() : []; formTone = a ? a.tone : 'classic';
     $('fSnooze').value = String(a ? a.snooze : 10); $('delRow').hidden = !a; buildDays(); buildTones(); $('scrim').hidden = false; $('fTime').focus();
   }
   function closeSheet() { if (stopPreview) stopPreview(); $('scrim').hidden = true; }
@@ -261,7 +271,8 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   $('sSave').onclick = function () {
     var chosenDate = $('fDate').value;
     var today = new Date(), todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    if (chosenDate && chosenDate <= todayKey) { alert("Choose a future date."); return; }
+    if (chosenDate && chosenDate < todayKey) { alert("Choose today or a future date."); return; }
+    if (chosenDate && chosenDate === todayKey) { var tp = parts($('fTime').value || '07:00'); if (new Date(today.getFullYear(), today.getMonth(), today.getDate(), tp.h, tp.m, 0, 0) <= today) { alert("That time has already passed today. Pick a later time or another date."); return; } }
     var data = { time: $('fTime').value || '07:00', date: chosenDate || '', label: $('fLabel').value.trim(), days: chosenDate ? [] : formDays.slice().sort(), tone: formTone, snooze: +$('fSnooze').value, on: true, fireAt: 0 };
     if (editing) Object.assign(editing, data); else alarms.push(Object.assign({ id: uid() }, data));
     closeSheet(); ensurePerm(); sync(); render();

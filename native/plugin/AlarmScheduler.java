@@ -143,6 +143,19 @@ final class AlarmScheduler {
     write(c,all);
     return a;
   }
+  /** Turns a snoozed alarm's extra ring off. Repeating alarms go back to their normal times; one-time alarms are finished. */
+  static void cancelSnooze(Context c,int id) {
+    JSONArray all=read(c);int ix=indexOf(all,id);if(ix<0){cancelId(c,id);return;}
+    JSONObject a=all.optJSONObject(ix);if(a==null)return;
+    cancelId(c,id);
+    JSONArray days=a.optJSONArray("days");
+    boolean repeats=days!=null&&days.length()>0;
+    try{
+      if(!repeats){all.remove(ix);write(c,all);note(c,"snooze of alarm "+id+" cancelled (one-time alarm finished)");return;}
+      a.put("snoozeAt",0L);a.put("snoozed",false);write(c,all);scheduleOne(c,a);write(c,all);
+      note(c,"snooze of alarm "+id+" cancelled");
+    }catch(Exception e){throw new IllegalStateException(e);}
+  }
   static void snooze(Context c,int id,int minutes) {
     JSONArray all=read(c);int ix=indexOf(all,id);if(ix<0)return;
     JSONObject a=all.optJSONObject(ix);if(a==null)return;
@@ -179,7 +192,7 @@ final class AlarmScheduler {
   static JSObject getState(Context c) {
     JSObject out=new JSObject();JSONArray state=new JSONArray(),all=read(c);
     for(int i=0;i<all.length();i++){JSONObject a=all.optJSONObject(i);if(a==null)continue;
-      JSObject x=new JSObject();try{x.put("id",a.optInt("id"));x.put("on",a.optBoolean("on"));x.put("nextAt",a.optLong("nextAt"));x.put("snoozed",a.optBoolean("snoozed"));x.put("lastFiredAt",a.optLong("lastFiredAt"));state.put(x);}catch(Exception ignored){}
+      JSObject x=new JSObject();try{x.put("id",a.optInt("id"));x.put("on",a.optBoolean("on"));x.put("nextAt",a.optLong("nextAt"));x.put("snoozed",a.optBoolean("snoozed"));x.put("snoozeAt",a.optLong("snoozeAt",0L));x.put("lastFiredAt",a.optLong("lastFiredAt"));state.put(x);}catch(Exception ignored){}
     }
     try{out.put("alarms",state);out.put("exactPermission",canScheduleExact(c));}catch(Exception ignored){}
     return out;

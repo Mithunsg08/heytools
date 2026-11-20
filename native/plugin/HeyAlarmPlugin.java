@@ -205,4 +205,14 @@ public class HeyAlarmPlugin extends Plugin {
     try { getContext().stopService(new android.content.Intent(getContext(), AlarmRingingService.class)); } catch (Exception ignored) {}
     call.resolve();
   }
+
+  @PluginMethod
+  public void cancelSnooze(PluginCall call) {
+    try {
+      int id = call.getInt("id", -1);
+      if (id < 0) throw new IllegalArgumentException("Missing alarm id");
+      AlarmScheduler.cancelSnooze(getContext(), id);
+      call.resolve();
+    } catch (Exception e) { call.reject("Could not cancel snooze: " + e.getMessage(), e); }
+  }
 }
