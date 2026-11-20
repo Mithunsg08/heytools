@@ -5,7 +5,7 @@
   'use strict';
   var CHANNEL_DEFAULT = 'heytools_reminders';
   function cap() {
-    var w=window, tries=[function(){return w.Capacitor;},function(){return w.parent&&w.parent.Capacitor;},function(){return w.top&&w.top.Capacitor;}];
+    var w=window, tries=[function(){return w.top&&w.top!==w&&w.top.Capacitor;},function(){return w.parent&&w.parent!==w&&w.parent.Capacitor;},function(){return w.Capacitor;}];
     for(var i=0;i<tries.length;i++){try{var c=tries[i]();if(c&&c.isNativePlatform&&c.isNativePlatform())return c;}catch(e){}}
     return null;
   }
@@ -281,7 +281,7 @@
   /* what each native call really answers, so a wrong status on the Settings screen can be traced */
   function rawState(){
     init();
-    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN,v:'37',regErr:regErr},jobs=[];
+    var out={native:native,alarmPlugin:!!HA,notifPlugin:!!LN,v:'41',regErr:regErr},jobs=[];
     try{var W=window.Capacitor;out.cap=!!W;out.isNP=W&&W.isNativePlatform?String(W.isNativePlatform()):'n/a';out.plat=W&&W.getPlatform?W.getPlatform():'n/a';out.heyNative=!!(window.HeyNative&&window.HeyNative.isNative);}catch(e){out.capErr=String(e).slice(0,50);}
     function err(k){return function(e){out[k]=String((e&&e.message)||e).slice(0,60);};}
     if(HA){out.fns=['getState','getNotificationState','getBatteryState','syncAlarms','testAlarm'].map(function(n){return n+':'+(typeof HA[n]==='function'?'y':'n');}).join(' ');}
