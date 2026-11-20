@@ -44,9 +44,9 @@ public class PlaybackService extends Service {
   private final android.media.AudioManager.OnAudioFocusChangeListener focusListener = change -> {
     try {
       if (change == android.media.AudioManager.AUDIOFOCUS_LOSS) { note(this, "audio focus lost for good: pausing"); pauseAudio(); }
-      else if (change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) { note(this, "audio focus lost for a moment"); resumeAfterFocus = audioIsPlaying; pauseAudio(); }
-      else if (change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) { if (audioPlayer != null) audioPlayer.setVolume(0.25f, 0.25f); }
-      else if (change == android.media.AudioManager.AUDIOFOCUS_GAIN) { if (audioPlayer != null) audioPlayer.setVolume(1f, 1f); if (resumeAfterFocus) { resumeAfterFocus = false; note(this, "audio focus back: resuming"); resumeAudio(); } }
+      else if (change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) { note(this, "audio focus lost for a moment"); this.resumeAfterFocus = audioIsPlaying; pauseAudio(); }
+      else if (change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) { if (this.audioPlayer != null) this.audioPlayer.setVolume(0.25f, 0.25f); }
+      else if (change == android.media.AudioManager.AUDIOFOCUS_GAIN) { if (this.audioPlayer != null) this.audioPlayer.setVolume(1f, 1f); if (this.resumeAfterFocus) { this.resumeAfterFocus = false; note(this, "audio focus back: resuming"); resumeAudio(); } }
     } catch (Exception ignored) {}
   };
   private void requestFocus() {
