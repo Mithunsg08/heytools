@@ -145,8 +145,19 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
   /* one-time alarms switch themselves off after they have rung */
   alarms.forEach(function (a) { if (a.on && a.date && !isFinite(nextAt(a))) a.on = false; else if (a.on && !a.date && !a.days.length && a.fireAt && a.fireAt < Date.now() - 60000) a.on = false; });
 
+  function info(t) {
+    var e = document.getElementById('syncInfo');
+    if (!e) { e = document.createElement('p'); e.id = 'syncInfo'; e.style.cssText = 'font-size:12px;opacity:.6;text-align:center;margin:14px 0'; var l = $('list'); l.parentNode.insertBefore(e, l.nextSibling); }
+    e.textContent = t;
+  }
   function sync() {
-    return HeyNotify.alarmState().then(function (nativeState) {
+    save();   /* keep the list first, whatever Android answers, so added and deleted alarms always stick */
+    var stateAsked = Promise.race([
+      Promise.resolve().then(function () { return HeyNotify.alarmState(); }),
+      new Promise(function (res) { setTimeout(function () { res({ alarms: [] }); }, 2500); })
+    ]).catch(function () { return { alarms: [] }; });
+    return stateAsked.then(function (nativeState) {
+      nativeState = nativeState || { alarms: [] };
       var savedAlarms = nativeState.alarms || [];
       savedAlarms.forEach(function (saved) {
         var local = alarms.filter(function (a) { return a.id === saved.id; })[0];
@@ -165,7 +176,7 @@ footer{margin-top:24px;font-size:.85rem;color:var(--muted)}
         items.push(it);
       });
       save();
-      return HeyNotify.syncGroup('alarm', items);
+      return HeyNotify.syncGroup('alarm', items).then(function (r) { info('Android: ' + (HeyNotify.isNative ? 'connected' : 'NOT connected') + ' · sent ' + items.length + ' alarm(s)'); return r; });
     }).catch(function (e) {
       $('perm').hidden = false;
       $('permTxt').textContent = 'Alarm not scheduled. Allow notifications and exact alarms in Android settings, then return to HeyTools and save again.';
