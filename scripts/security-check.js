@@ -10,7 +10,7 @@ const fail = (m) => failures.push(m);
 const android = read('native/scripts/patch-android.js');
 if (/android:allowBackup="false"/.test(android) && /android:usesCleartextTraffic="false"/.test(android)) pass('Android backup and cleartext traffic protections are configured');
 else fail('Android backup or cleartext traffic protection is missing');
-if (!android.includes('requestLegacyExternalStorage="true"') && /requestLegacyExternalStorage/.test(android)) pass('Legacy shared-storage access is removed from generated manifests');
+if (/m = m\.replace\(\/\\s\+android:requestLegacyExternalStorage/.test(android) && !/m = m\.replace\('<application'.*requestLegacyExternalStorage/.test(android)) pass('Legacy shared-storage access is removed from generated manifests');
 else fail('Legacy shared-storage access is enabled or is not explicitly stripped');
 if (android.includes('android:name=".AlarmBootReceiver" android:enabled="true" android:exported="false"')) pass('Alarm boot receiver is not exported');
 else fail('Alarm boot receiver export state needs review');
