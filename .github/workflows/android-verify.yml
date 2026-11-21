@@ -77,6 +77,9 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: bash native/scripts/android-emulator-test.sh
+        env:
+          # GitHub-hosted Ubuntu runners do not expose KVM; allow QEMU TCG for emulator boot.
+          ANDROID_I_WANT_MY_TCG: 'yes'
       - name: Upload Android emulator diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -86,6 +89,3 @@ jobs:
             android-instrumentation-logcat.txt
             android-test-diagnostics/
           if-no-files-found: ignore
-        env:
-          # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
-          ANDROID_I_WANT_MY_TCG: 'yes'
