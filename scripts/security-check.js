@@ -46,15 +46,15 @@ if (appSource.includes("SKIP.test(k)") && appSource.includes("backup.data[k]")) 
 else fail('Backup restore reserved-key filtering needs review');
 
 const appHtml = read('app/index.html');
-if (/script-src 'self'(?:;|["'])/.test(appHtml) && !/script-src[^;]*unsafe-inline/.test(appHtml) &&
-    !/<script>\\s*[\\s\\S]*?<\\/script>/i.test(appHtml)) pass('App shell JavaScript is same-origin and has no inline executable script');
+if (appHtml.includes("script-src 'self';") && !appHtml.includes("script-src 'self' 'unsafe-inline'") &&
+    !appHtml.includes('<script>')) pass('App shell JavaScript is same-origin and has no inline executable script');
 else fail('App shell CSP permits inline JavaScript or inline script remains');
-if (/Permissions-Policy/.test(appHtml) && /referrer" content="no-referrer"/.test(appHtml)) pass('App shell limits browser capability policy and referrer disclosure');
+if (appHtml.includes('Permissions-Policy') && appHtml.includes('content="no-referrer"')) pass('App shell limits browser capability policy and referrer disclosure');
 else fail('App shell Permissions Policy or strict referrer policy is missing');
-if (/network_security_config.xml/.test(android) &&
-    /trust-anchors><certificates src="system"/.test(android) &&
-    /cleartextTrafficPermitted="false"/.test(android) &&
-    /android:networkSecurityConfig="@xml\\/network_security_config"/.test(android)) pass('Android generator writes system-CA-only network security config and denies cleartext');
+if (android.includes('network_security_config.xml') &&
+    android.includes('<certificates src="system"') &&
+    android.includes('cleartextTrafficPermitted="false"') &&
+    android.includes('android:networkSecurityConfig="@xml/network_security_config"')) pass('Android generator writes system-CA-only network security config and denies cleartext');
 else fail('Android network security config is missing required trust and cleartext restrictions');
 
 const tracking = read('heytrack.js');
