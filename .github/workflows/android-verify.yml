@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [heytools-v2-audit, heytools-premium-notifications]
+    branches: [heytools-v2-audit, heytools-premium-notifications, security/complete-privacy-encryption]
 
 permissions:
   contents: read
@@ -30,6 +30,9 @@ jobs:
       - name: Install Capacitor dependencies
         working-directory: native
         run: npm install --no-audit --no-fund
+      - name: Patch Capacitor 6 tar compatibility
+        working-directory: native
+        run: node scripts/patch-capacitor-cli.js
       - name: Bundle website assets
         working-directory: native
         run: node scripts/prepare-web.js
@@ -74,6 +77,9 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: bash native/scripts/android-emulator-test.sh
+        env:
+          # GitHub-hosted Ubuntu runners do not expose KVM; allow QEMU TCG for emulator boot.
+          ANDROID_I_WANT_MY_TCG: 'yes'
       - name: Upload Android emulator diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -83,6 +89,3 @@ jobs:
             android-instrumentation-logcat.txt
             android-test-diagnostics/
           if-no-files-found: ignore
-        env:
-          # GitHub-hosted Ubuntu runners do not expose KVM; explicitly allow QEMU TCG.
-          ANDROID_I_WANT_MY_TCG: 'yes'
