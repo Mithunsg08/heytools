@@ -12,7 +12,7 @@ Please open a private report through GitHub: **Security → Report a vulnerabili
 - **Android hardening** (see `native/scripts/patch-android.js`): `allowBackup=false`, `usesCleartextTraffic=false`, the boot receiver is not exported, WebView debugging is off, and legacy shared-storage access is not requested. The app still requests feature-specific permissions listed on the privacy page.
 - **Backups are encrypted and validated.** New backups use AES-256-GCM with a random salt and nonce, and a password-derived key using PBKDF2-SHA-256. Login tokens and install ids are excluded. Restore authenticates encrypted data before parsing and applies safe-key and size limits. Older plaintext backups require an explicit warning confirmation.
 - **Updates are only offered, never forced.** The APK must be signed with the same key as the installed app, so Android rejects a tampered file.
-- The app shell has a Content-Security-Policy (`app/index.html`). Current limitation: it permits inline scripts/styles and broad HTTPS connections/media because some embedded streaming and lookup tools need them. This is not a strict allowlist and remains a hardening item.
+- The app shell uses a Content-Security-Policy (`app/index.html`) with same-origin scripts (no `unsafe-inline` for JavaScript), no plugins, restricted framing/base URLs, and a Permissions Policy for device capabilities. Inline styles remain allowed for dynamic theming and tool UI; broad HTTPS connections and media remain allowed for online streaming and lookup features, so this is not a complete destination allowlist. The Android build generates a Network Security Config that denies cleartext and trusts system certificate authorities only.
 
 ## Signing key (important)
 
@@ -35,4 +35,5 @@ Android updates only install if they are signed with the same key. Losing the ke
 - Browser session storage is not equivalent to hardware-backed encryption. A compromised device, malicious same-origin script, or debugging/root access may still expose active session data.
 - Encrypted backup passwords are not recoverable. Losing the password means the backup cannot be decrypted. Use a unique, strong password and keep it in a password manager.
 - The source-code checks in `.github/workflows/security.yml` are automated safeguards, not an independent penetration test or certification.
+- Android live app data (notes, trackers and preferences) still relies on the Android app sandbox and WebView storage; it is not separately encrypted with an app-managed key. Exported backup encryption does not encrypt live storage.
 - Public streaming and API services used by some tools (see the privacy page) can see the requests you make to them.
