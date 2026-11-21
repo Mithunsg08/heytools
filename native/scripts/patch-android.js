@@ -13,11 +13,11 @@ const xmlDir = path.join(root, 'app/src/main/res/xml');
 fs.mkdirSync(xmlDir, { recursive: true });
 fs.writeFileSync(path.join(xmlDir, 'network_security_config.xml'),
   '<?xml version="1.0" encoding="utf-8"?>\n' +
-  '<network-security-config>\\n' +
+  '<network-security-config>\n' +
   '  <base-config cleartextTrafficPermitted="false">\n' +
   '    <trust-anchors><certificates src="system" /></trust-anchors>\n' +
   '  </base-config>\n' +
-  '</network-security-config>\\n');
+  '</network-security-config>\n');
 
 const perms = [
   ['android.permission.ACCESS_NETWORK_STATE'],
