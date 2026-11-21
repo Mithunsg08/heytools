@@ -537,7 +537,7 @@
   }
   /* the Android foreground service keeps the app alive while something plays; the bar lets you get back to it */
   function playingFrames() { return Object.keys(frames).filter(function (k) { return byId[k] && byId[k].media && mediaAvailable(frames[k]); }); }
-  var hiddenAt = 0;
+  var hiddenAt = 0, appHidden = false;
   /* Background and lock screen: when the app is hidden while a song or video plays, Android's own foreground player takes over the sound
      (it does not depend on the web page staying alive). When you come back, the page gets the position back and carries on. */
   var handoff = null;
@@ -636,7 +636,7 @@
     if (document.hidden) setTimeout(startHandoff, 1800);        // the next song is a new file: hand that one over too
   }
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { hiddenAt = Date.now(); startHandoff(); } else { endHandoff(); }
+    if (document.hidden) { appHidden = true; hiddenAt = Date.now(); startHandoff(); } else { appHidden = false; endHandoff(); }
   });
   if (NATIVE.isNative) {
     if (NATIVE.onNativeAudioEnded) NATIVE.onNativeAudioEnded(function () { handoff = null; forwardMedia('next'); });
@@ -743,8 +743,17 @@
     });
   }
   /* called by the Android activity itself as it pauses / resumes, which is earlier and more reliable than the page's own hidden event */
-  window.__heyPause = function () { hiddenAt = Date.now(); var before = handoff; startHandoff(true); return (handoff && handoff !== before) ? 'handed ' + handoff.id + ' to Android' : (handoff ? 'already with Android' : 'nothing handed over'); };
-  window.__heyResume = function () { var had = !!handoff; endHandoff(); return had ? 'took playback back' : 'no handoff to take back'; };
+  /* Android finished a song it was playing: tell the player so it moves on, and keep going if the app is still in the background */
+  if (NATIVE.onNativeAudioEnded) NATIVE.onNativeAudioEnded(function () {
+    plog('Android finished the song');
+    var target = (handoff && handoff.id) || currentMediaControlId || get('heytools.media.active', 'music-player');
+    handoff = null;
+    var f = frames[target];
+    try { if (f && f.contentWindow) f.contentWindow.postMessage({ type: 'heytools:native-ended' }, location.origin); } catch (e) { /* ignore */ }
+    setTimeout(function () { if (appHidden) startHandoff(true); }, 1800);
+  });
+  window.__heyPause = function () { appHidden = true; hiddenAt = Date.now(); var before = handoff; startHandoff(true); return (handoff && handoff !== before) ? 'handed ' + handoff.id + ' to Android' : (handoff ? 'already with Android' : 'nothing handed over'); };
+  window.__heyResume = function () { appHidden = false; var had = !!handoff; endHandoff(); return had ? 'took playback back' : 'no handoff to take back'; };
   window.__HEYTOOLS_READY = true;
   setInterval(syncPlayback, 1500);
   $('nowpToggle').addEventListener('click', function () {
