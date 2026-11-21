@@ -57,6 +57,20 @@ if (android.includes('network_security_config.xml') &&
     android.includes('android:networkSecurityConfig="@xml/network_security_config"')) pass('Android generator writes system-CA-only network security config and denies cleartext');
 else fail('Android network security config is missing required trust and cleartext restrictions');
 
+
+const securePlugin = read('native/plugin/SecureStoragePlugin.java');
+if (securePlugin.includes('AndroidKeyStore') && securePlugin.includes('AES/GCM/NoPadding') &&
+    securePlugin.includes('setRandomizedEncryptionRequired(true)') && securePlugin.includes('cipher.updateAAD(aad(recordKey))') &&
+    securePlugin.includes('MAX_PLAINTEXT_BYTES')) pass('Native secure-record primitive uses Android Keystore AES-GCM, random nonces and record-bound AAD');
+else fail('Native Android Keystore secure-record primitive is missing required protections');
+if (android.includes("'SecureStoragePlugin.java'") &&
+    read('native/plugin/MainActivity.java').includes('registerPlugin(SecureStoragePlugin.class)')) pass('Secure storage plugin is included in generated Android builds and registered with Capacitor');
+else fail('Secure storage plugin is not copied and registered in generated Android builds');
+const alarmScheduler = read('native/plugin/AlarmScheduler.java');
+if (alarmScheduler.includes('createDeviceProtectedStorageContext()') &&
+    alarmScheduler.includes('getSharedPreferences(PREFS, 0)')) pass('Alarm schedule remains device-protected for direct-boot rescheduling');
+else fail('Alarm schedule direct-boot storage path changed; reboot behavior requires review');
+
 const tracking = read('heytrack.js');
 if (/heytools\.track\.consent['"]\)\s*!==\s*'yes'/.test(tracking)) pass('Optional event tracking requires explicit consent');
 else fail('Tracking consent guard is missing');
