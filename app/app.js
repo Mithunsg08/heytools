@@ -614,8 +614,19 @@
       plog('back in app; Android player ' + (s && s.active ? ((s.playing ? 'was playing at ' : 'paused at ') + Math.round((s.position || 0) / 1000) + 's') : 'was not active') + (s && s.error ? ' | ' + s.error : ''));
       try { NATIVE.controlNativeAudio('stop'); } catch (e) { /* ignore */ }
       var el = h.el; if (!el || !el.isConnected || !s || !s.active) return;
-      try { if (s.position > 0) el.currentTime = s.position / 1000; } catch (e) { /* ignore */ }
-      if (s.playing) { try { var pr = el.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) { /* ignore */ } }
+      var pos = (s.position || 0) / 1000;
+      var resume = function (n) {
+        try { if (pos > 0 && Math.abs(el.currentTime - pos) > 1.5) el.currentTime = pos; } catch (e) { plog('could not seek the page player: ' + e); }
+        if (!s.playing) { plog('Android player was paused, page left paused at ' + Math.round(pos) + 's'); return; }
+        var pr; try { pr = el.play(); } catch (e) { plog('page play threw: ' + e); }
+        Promise.resolve(pr).then(function () {
+          setTimeout(function () {
+            if (el.paused && n < 3) { plog('page paused again right after resuming, retry ' + n); resume(n + 1); }
+            else plog('page ' + (el.paused ? 'still paused' : 'playing again') + ' at ' + Math.round(el.currentTime) + 's');
+          }, 900);
+        }, function (err) { plog('page could not resume: ' + ((err && err.name) || err)); if (n < 3) setTimeout(function () { resume(n + 1); }, 600); });
+      };
+      resume(1);
     }).catch(function () { /* ignore */ });
   }
   function forwardMedia(action) {

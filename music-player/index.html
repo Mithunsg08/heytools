@@ -396,6 +396,7 @@ const P={};P.local=audioProv(aLocal,true);P.url=audioProv(aUrl,false);
 
 /* YouTube */
 let ytp=null;
+let ytWant=false;
 const loadYT=()=>new Promise((res,rej)=>{if(window.YT&&YT.Player)return res();const t=setTimeout(()=>rej(new Error('yt')),8000);window.onYouTubeIframeAPIReady=()=>{clearTimeout(t);res()};const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>{clearTimeout(t);rej(new Error('yt'))};document.head.appendChild(s)});
 function ytStart(it){
  if(it.list){ytp.loadPlaylist({listType:'playlist',list:it.list,index:0});let n=0;
@@ -435,8 +436,10 @@ P.yt={
     playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,modestbranding:1,enablejsapi:1},location.protocol.startsWith('http')?{origin:location.origin}:{}),
     events:{onReady:()=>{ytp.setVolume((S.muted?0:S.vol)*100);ytStart(it);res()},
      onStateChange:e=>{if(active!==P.yt)return;const c=cur();
-      if(e.data===1){setPlaying(true);ytMeta(c);ytp.setPlaybackRate&&ytp.setPlaybackRate(S.rate)}
-      else if(e.data===2)setPlaying(false);
+      hlog('YouTube '+({'-1':'unstarted',0:'ended',1:'playing',2:'paused',3:'buffering',5:'cued'}[e.data]||e.data)+(document.hidden?' (app hidden)':' (app open)'));
+      if(e.data===2&&document.hidden&&ytWant){setTimeout(()=>{try{if(document.hidden&&ytWant){hlog('YouTube paused itself in the background: asking it to continue');ytp.playVideo()}}catch(x){}},300)}
+      if(e.data===1){ytWant=true;setPlaying(true);ytMeta(c);ytp.setPlaybackRate&&ytp.setPlaybackRate(S.rate)}
+      else if(e.data===2){if(!document.hidden)ytWant=false;setPlaying(false)}
       else if(e.data===0){if(c&&c.list){const l=ytp.getPlaylist()||[];if(ytp.getPlaylistIndex()>=l.length-1)onEnded()}else onEnded()}},
      onError:e=>{const c=cur(),blocked=e.data===101||e.data===150||e.data===153;
       if(c&&c.list&&blocked&&ytp.nextVideo){toast('Skipped a video the uploader blocks from embedding');ytp.nextVideo();return}
@@ -445,7 +448,7 @@ P.yt={
       ytFail(c,blocked)}}});
   });
  },
- play(){ytp&&ytp.playVideo&&ytp.playVideo()},pause(){ytp&&ytp.pauseVideo&&ytp.pauseVideo()},seek(t){ytp&&ytp.seekTo&&ytp.seekTo(t,true)},vol(v){ytp&&ytp.setVolume&&ytp.setVolume(v*100)},
+ play(){ytp&&ytp.playVideo&&ytp.playVideo()},pause(){ytWant=false;ytp&&ytp.pauseVideo&&ytp.pauseVideo()},seek(t){ytp&&ytp.seekTo&&ytp.seekTo(t,true)},vol(v){ytp&&ytp.setVolume&&ytp.setVolume(v*100)},
  rate(r){ytp&&ytp.setPlaybackRate&&ytp.setPlaybackRate(r)},
  time(){return ytp&&ytp.getCurrentTime?ytp.getCurrentTime():0},dur(){return ytp&&ytp.getDuration?ytp.getDuration():0},stop(){ytp&&ytp.pauseVideo&&ytp.pauseVideo()},
  step(d){if(!ytp||!ytp.getPlaylist)return false;const l=ytp.getPlaylist()||[],i=ytp.getPlaylistIndex();if(d>0&&i<l.length-1){ytp.nextVideo();return true}if(d<0&&i>0){ytp.previousVideo();return true}return false}
