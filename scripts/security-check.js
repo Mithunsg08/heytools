@@ -1,0 +1,45 @@
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+const failures = [];
+const pass = (m) => console.log('PASS  ' + m);
+const fail = (m) => failures.push(m);
+
+const android = read('native/scripts/patch-android.js');
+if (/android:allowBackup="false"/.test(android) && /android:usesCleartextTraffic="false"/.test(android)) pass('Android backup and cleartext traffic protections are configured');
+else fail('Android backup or cleartext traffic protection is missing');
+if (!android.includes('requestLegacyExternalStorage="true"') && /requestLegacyExternalStorage/.test(android)) pass('Legacy shared-storage access is removed from generated manifests');
+else fail('Legacy shared-storage access is enabled or is not explicitly stripped');
+if (android.includes('android:name=".AlarmBootReceiver" android:enabled="true" android:exported="false"')) pass('Alarm boot receiver is not exported');
+else fail('Alarm boot receiver export state needs review');
+
+const music = read('music-player/index.html');
+if (music.includes("secureSession.set('mp_sp',JSON.stringify(SP.tok))") &&
+    music.includes("secureSession.set('mp_ver',ver)") &&
+    music.includes("secureSession.get('mp_ver','')")) pass('Spotify tokens and PKCE verifier use tab-scoped session storage');
+else fail('Spotify credentials or PKCE verifier are not consistently stored in session storage');
+if (music.includes("ls.del('mp_sp');ls.del('mp_ver');")) pass('Legacy persistent Spotify token and verifier keys are cleared on upgrade');
+else fail('Legacy persistent Spotify credential cleanup is missing');
+if (!music.includes("ls.set('mp_sp',") && !music.includes("ls.set('mp_ver',")) pass('Spotify credentials are not written to localStorage');
+else fail('Spotify credentials are still written to localStorage');
+
+const shell = read('app/index.html');
+if (/object-src\s+'none'/.test(shell) && /base-uri\s+'self'/.test(shell) && /frame-src\s+'self'/.test(shell)) pass('App shell CSP blocks plugins and restricts framing/base URLs');
+else fail('App shell CSP baseline directives are missing');
+if (shell.includes("script-src 'self' 'unsafe-inline'") || shell.includes("style-src 'self' 'unsafe-inline'")) {
+  console.log('WARN  CSP still permits inline script/style; nonce/hash migration requires a separate compatibility review');
+}
+if (/connect-src\s+'self'\s+https:/.test(shell)) console.log('WARN  CSP allows broad HTTPS connections for online tools; a per-provider allowlist remains future hardening');
+
+const tracking = read('heytrack.js');
+if (/heytools\.track\.consent['"]\)\s*!==\s*'yes'/.test(tracking)) pass('Optional event tracking requires explicit consent');
+else fail('Tracking consent guard is missing');
+
+if (failures.length) {
+  for (const m of failures) console.error('FAIL  ' + m);
+  process.exitCode = 1;
+} else {
+  console.log('Security source checks passed. These checks are not a penetration test or certification.');
+}
