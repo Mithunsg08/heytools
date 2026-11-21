@@ -3,7 +3,7 @@ name: Build Android app
 on:
   workflow_dispatch:
   push:
-    branches: [main, security/complete-privacy-encryption]
+    branches: [main]
     paths-ignore: ['**.md', 'dashboard/**']
 
 permissions:
