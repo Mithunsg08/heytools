@@ -8,6 +8,17 @@ for (const f of ['MediaLibraryPlugin.java', 'PlaybackService.java', 'MainActivit
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
 let m = fs.readFileSync(mp, 'utf8');
+/* Enforce HTTPS and trust only Android system CAs. */
+const xmlDir = path.join(root, 'app/src/main/res/xml');
+fs.mkdirSync(xmlDir, { recursive: true });
+fs.writeFileSync(path.join(xmlDir, 'network_security_config.xml'),
+  '<?xml version="1.0" encoding="utf-8"?>\n' +
+  '<network-security-config>\n' +
+  '  <base-config cleartextTrafficPermitted="false">\n' +
+  '    <trust-anchors><certificates src="system" /></trust-anchors>\n' +
+  '  </base-config>\n' +
+  '</network-security-config>\n');
+
 const perms = [
   ['android.permission.ACCESS_NETWORK_STATE'],
   ['android.permission.READ_MEDIA_VIDEO'],
@@ -33,11 +44,16 @@ const perms = [
 const add = perms.filter(p => !m.includes('"' + p[0] + '"'))
   .map(p => `    <uses-permission android:name="${p[0]}"${p[1] || ''} />`).join('\n');
 m = m.replace('<application', add + '\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />\n\n    <application');
-if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '<application android:requestLegacyExternalStorage="true"');
+/* Do not opt into legacy shared-storage access. Android's scoped-storage model
+   limits the app to media selected or explicitly granted by the user. Also strip
+   the attribute if an older generated manifest already contains it. */
+m = m.replace(/\s+android:requestLegacyExternalStorage="true"/g, '');
 /* Privacy and security: keep app data out of cloud / adb backups (notes, expenses and Spotify tokens live in it) and refuse plain-http traffic. */
 m = m.replace(/android:allowBackup="true"/, 'android:allowBackup="false"');
 if (!m.includes('android:allowBackup')) m = m.replace('<application', '<application android:allowBackup="false"');
+m = m.replace(/android:usesCleartextTraffic="true"/, 'android:usesCleartextTraffic="false"');
 if (!m.includes('usesCleartextTraffic')) m = m.replace('<application', '<application android:usesCleartextTraffic="false"');
+if (!m.includes('android:networkSecurityConfig=')) m = m.replace('<application', '<application android:networkSecurityConfig="@xml/network_security_config"');
 if (!m.includes('KeepAliveService')) m = m.replace('</application>', '    <service android:name=".KeepAliveService" android:exported="false" android:foregroundServiceType="dataSync" />\n    </application>');
 if (!m.includes('ScreenRecordService')) m = m.replace('</application>', '    <service android:name=".ScreenRecordService" android:exported="false" android:foregroundServiceType="mediaProjection" />\n    </application>');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');

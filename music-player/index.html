@@ -788,17 +788,28 @@ $('#qDemo').onclick=playDemo;$('#demoBtn').onclick=playDemo;
 const SP_SCOPES='streaming user-read-email user-read-private user-library-read playlist-read-private playlist-read-collaborative user-read-playback-state user-modify-playback-state';
 const redirectUri=()=>location.origin+location.pathname;
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-function loadTok(){try{SP.tok=JSON.parse(ls.get('mp_sp','null'))}catch(e){SP.tok=null}SP.cid=SPOTIFY_CLIENT_ID||ls.get('mp_sp_cid','')}
+const secureSession={
+ get(k,d){try{const v=sessionStorage.getItem(k);return v==null?d:v}catch(e){return d}},
+ set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}},
+ del(k){try{sessionStorage.removeItem(k)}catch(e){}}
+};
+function loadTok(){
+ /* Spotify bearer/refresh tokens and PKCE verifier are session-only. Remove
+    older persistent copies on upgrade; users may need to sign in again. */
+ try{SP.tok=JSON.parse(secureSession.get('mp_sp','null'))}catch(e){SP.tok=null}
+ ls.del('mp_sp');ls.del('mp_ver');
+ SP.cid=SPOTIFY_CLIENT_ID||ls.get('mp_sp_cid','');
+}
 async function spLogin(cid){
  cid=cid.trim();if(!/^[a-f0-9]{32}$/i.test(cid)){toast('A Spotify Client ID is 32 characters (letters and numbers)');return}
  ls.set('mp_sp_cid',cid);
- const ver=b64u(crypto.getRandomValues(new Uint8Array(48))),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ver)));ls.set('mp_ver',ver);
+ const ver=b64u(crypto.getRandomValues(new Uint8Array(48))),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ver)));secureSession.set('mp_ver',ver);
  location.href='https://accounts.spotify.com/authorize?'+new URLSearchParams({response_type:'code',client_id:cid,scope:SP_SCOPES,redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch});
 }
 async function spTokenReq(body){
  const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});
  const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.error||'Spotify sign-in failed');
- SP.tok={access:j.access_token,refresh:j.refresh_token||(SP.tok&&SP.tok.refresh),exp:Date.now()+j.expires_in*1000};ls.set('mp_sp',JSON.stringify(SP.tok));
+ SP.tok={access:j.access_token,refresh:j.refresh_token||(SP.tok&&SP.tok.refresh),exp:Date.now()+j.expires_in*1000};secureSession.set('mp_sp',JSON.stringify(SP.tok));
 }
 async function spToken(){if(!SP.tok)throw new Error('Not connected to Spotify');if(Date.now()>SP.tok.exp-60000)await spTokenReq({grant_type:'refresh_token',refresh_token:SP.tok.refresh,client_id:SP.cid});return SP.tok.access}
 async function spApi(path,opt={}){
@@ -1120,7 +1131,7 @@ function tick(t){
  if(qs.get('code')||qs.get('error')){
   history.replaceState({},'',location.pathname);
   if(qs.get('error'))toast('Spotify connection was cancelled');
-  else{try{await spTokenReq({grant_type:'authorization_code',code:qs.get('code'),redirect_uri:redirectUri(),client_id:SP.cid,code_verifier:ls.get('mp_ver','')});ls.del('mp_ver');toast('Spotify connected 🎧');showTab('spotify')}catch(e){toast(e.message,5000)}}
+  else{try{await spTokenReq({grant_type:'authorization_code',code:qs.get('code'),redirect_uri:redirectUri(),client_id:SP.cid,code_verifier:secureSession.get('mp_ver','')});secureSession.del('mp_ver');toast('Spotify connected 🎧');showTab('spotify')}catch(e){toast(e.message,5000)}}
  }else if(SP.tok)spBoot();
  try{const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative&&S.i>=0&&S.q[S.i]&&S.q[S.i].kind==='local'&&S.q[S.i].fid){playIndex(S.i)}}catch(e){}
  requestAnimationFrame(tick);

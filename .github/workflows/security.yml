@@ -1,0 +1,38 @@
+name: Privacy and security checks
+
+on:
+  push:
+    branches: [main, security/privacy-hardening]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-checks:
+    name: Source and dependency security checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d682002c3 # v4
+        with:
+          node-version: 20
+      - name: Check app JavaScript syntax
+        run: node --check app/app.js
+      - name: Run repository validation
+        run: node scripts/validate-repo.js
+      - name: Run privacy and security source checks
+        run: node scripts/security-check.js
+      - name: Resolve Android dependency lock for audit
+        working-directory: native
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+      - name: Audit Android production dependencies
+        working-directory: native
+        run: npm audit --omit=dev --audit-level=high

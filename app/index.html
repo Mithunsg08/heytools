@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HeyTools | All your private tools in one app</title>
 <meta name="description" content="HeyTools is one app with 46 private tools: media players, editors, calculators, trackers and utilities. Everything runs on your device and your files never leave it.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
-<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#F5F5F7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,10 +16,7 @@
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="app.css">
-<script>
-/* apply the saved theme before first paint so there is no flash */
-try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme&&p.theme!=='light')document.documentElement.setAttribute('data-theme',p.theme)}catch(e){}
-</script>
+<script src="theme-init.js"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -170,7 +167,7 @@ try{var p=JSON.parse(localStorage.getItem('heytools.prefs.v2')||'{}');if(p.theme
           <button class="btn" id="checkUpdate" type="button" hidden>Check for updates</button>
         </div>
         <span class="set-l" style="margin-top:14px">Your data</span>
-        <p class="set-s">Back up your notes, to-dos, habits, expenses, alarms and settings to a file, and restore them on a new install or phone. Not included: videos, music, recordings and Geo Camera photos (they are large, and Geo Camera photos are already in your Gallery), and your Spotify login.</p>
+        <p class="set-s">Create a password-protected encrypted backup of your notes, to-dos, habits, expenses, alarms and settings. Restore it on a new install or phone. Keep the password safe; HeyTools cannot recover it. Not included: videos, music, recordings and Geo Camera photos (they are large, and Geo Camera photos are already in your Gallery), and your Spotify login.</p>
         <div class="row-btns">
           <button class="btn" id="backupBtn" type="button">Back up my data</button>
           <button class="btn" id="restoreBtn" type="button">Restore from backup</button>
