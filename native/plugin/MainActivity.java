@@ -126,6 +126,7 @@ public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(MediaLibraryPlugin.class);
+    registerPlugin(SecureStoragePlugin.class);
     registerPlugin(HeyAlarmPlugin.class);
     registerPlugin(ScreenRecordPlugin.class);
     super.onCreate(savedInstanceState);
