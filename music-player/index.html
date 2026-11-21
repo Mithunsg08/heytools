@@ -98,6 +98,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 .panel{min-width:0;margin:clamp(10px,2vh,22px) clamp(10px,1.6vw,22px) clamp(10px,2vh,22px) 0;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border:1px solid var(--line);backdrop-filter:blur(28px);display:flex;flex-direction:column;overflow:hidden;transition:.5s}
 body.focus .panel{opacity:0;pointer-events:none;transform:translateX(30px);margin:0}
 [hidden]{display:none!important}
+body.lite *,body.lite *::before,body.lite *::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.lite #fx,body.lite .stars{will-change:auto}
 .pane.on>*{flex-shrink:0}
 .tabs{display:flex;gap:4px;padding:10px;border-bottom:1px solid var(--line)}
 .tab{flex:1;padding:10px 6px;border-radius:14px;font-weight:700;font-size:14px;color:var(--mut);display:flex;gap:7px;align-items:center;justify-content:center}.tab svg{width:17px;height:17px}.tab.on{background:var(--g2);color:var(--ink)}
@@ -294,7 +296,7 @@ body{transition:background 1.2s}#toast,#drop{color:#fff}
    <div class="card"><h3><i data-i="palette"></i>Look &amp; feel</h3>
     <p>Theme</p><div class="sw" id="themes"></div>
     <p>Dance buddy</p><div class="btns" style="justify-content:flex-start" id="buddies"></div>
-    <p>Effects</p><div class="btns" style="justify-content:flex-start"><button class="chip on" id="fxStars">Stars</button><button class="chip on" id="fxNotes">Floating notes</button><button class="chip on" id="fxRings">3D rings</button></div></div>
+    <p>Effects</p><div class="btns" style="justify-content:flex-start"><button class="chip on" id="fxStars">Stars</button><button class="chip on" id="fxNotes">Floating notes</button><button class="chip on" id="fxRings">3D rings</button><button class="chip" id="fxLite">Smooth mode (faster)</button></div></div>
    <div class="card"><h3><i data-i="play"></i>Playback</h3>
     <p>Speed</p><div class="btns" style="justify-content:flex-start"><button class="chip" data-rate="0.75">0.75×</button><button class="chip on" data-rate="1">1×</button><button class="chip" data-rate="1.25">1.25×</button><button class="chip" data-rate="1.5">1.5×</button><button class="chip" data-rate="2">2×</button></div>
     <p>Loop a section (A–B)</p><div class="btns" style="justify-content:flex-start"><button class="chip" id="abBtn">Set A</button></div>
@@ -1058,9 +1060,11 @@ const NOTES=['♪','♫','♬','♩'];
 setInterval(()=>{if(!S.playing||reduce||document.hidden||document.body.classList.contains('nonotes')||document.body.dataset.mode!=='disc')return;
  const n=$('#notes');if(n.children.length>10)return;const e=document.createElement('span');e.className='nt';e.textContent=NOTES[Math.random()*4|0];
  e.style.left=(20+Math.random()*60)+'%';e.style.setProperty('--dx',(Math.random()*120-60)+'px');e.style.setProperty('--r',(Math.random()*60-30)+'deg');n.appendChild(e);setTimeout(()=>e.remove(),3300)},650);
+let LITE=ls.get('mp_lite',(window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative)?'1':'0')==='1';
 const FX={stars:ls.get('mp_stars','1')==='1',notes:ls.get('mp_notes','1')==='1',rings:ls.get('mp_rings','1')==='1'};
-function applyFx(){STARS=FX.stars;document.body.classList.toggle('nonotes',!FX.notes);document.body.classList.toggle('norings',!FX.rings);$('#fxStars').classList.toggle('on',FX.stars);$('#fxNotes').classList.toggle('on',FX.notes);$('#fxRings').classList.toggle('on',FX.rings)}
+function applyFx(){STARS=FX.stars&&!LITE;document.body.classList.toggle('lite',LITE);$('#fxLite').classList.toggle('on',LITE);document.body.classList.toggle('nonotes',!FX.notes||LITE);document.body.classList.toggle('norings',!FX.rings||LITE);$('#fxStars').classList.toggle('on',FX.stars);$('#fxNotes').classList.toggle('on',FX.notes);$('#fxRings').classList.toggle('on',FX.rings)}
 [['stars','#fxStars'],['notes','#fxNotes'],['rings','#fxRings']].forEach(([k,id])=>$(id).onclick=()=>{FX[k]=!FX[k];ls.set('mp_'+k,FX[k]?'1':'0');applyFx()});
+$('#fxLite').onclick=()=>{LITE=!LITE;ls.set('mp_lite',LITE?'1':'0');applyFx();toast(LITE?'Smooth mode on: simpler visuals, faster app':'Smooth mode off: full visuals',2000)};
 applyTheme(theme);setBuddy(buddy);applyFx();
 addEventListener('deviceorientation',e=>{if(reduce||e.gamma==null)return;try_=Math.max(-26,Math.min(26,e.gamma*.6));trx=Math.max(-18,Math.min(18,(e.beta-50)*-.35))},{passive:true});
 
@@ -1068,7 +1072,7 @@ addEventListener('deviceorientation',e=>{if(reduce||e.gamma==null)return;try_=Ma
 const cv=$('#fx'),g=cv.getContext('2d'),au=$('.aurora');let W=0,H=0,dpr=1;
 function resize(){dpr=Math.min(2,devicePixelRatio||1);W=cv.width=innerWidth*dpr;H=cv.height=innerHeight*dpr}
 addEventListener('resize',resize);resize();
-const stars=Array.from({length:reduce?50:110},()=>({x:(Math.random()-.5)*2,y:(Math.random()-.5)*2,z:Math.random()}));
+const stars=Array.from({length:reduce?40:70},()=>({x:(Math.random()-.5)*2,y:(Math.random()-.5)*2,z:Math.random()}));
 const BARS=96,SPEC=new Float32Array(BARS);let bass=0,lastT=0,rx=0,ry=0,trx=0,try_=0;
 addEventListener('pointermove',e=>{if(reduce)return;trx=-(e.clientY/innerHeight-.5)*22;try_=(e.clientX/innerWidth-.5)*30});
 const tilt=$('#tilt'),scene=$('#scene');
@@ -1084,6 +1088,7 @@ function spectrum(t){
  }
  let b=0;for(let k=0;k<6;k++)b+=SPEC[k];bass=b/6;
 }
+let rectAt=0,rectBox=null,lastBeat='';
 function drawFx(t){
  const dt=Math.min(50,t-lastT||16);lastT=t;spectrum(t);g.clearRect(0,0,W,H);
  const h=S.hue,cx=W/2,cy=H/2,sp=(S.playing?1:.25)*dt*.00009*(1+bass*9);g.lineCap='round';
@@ -1095,7 +1100,7 @@ function drawFx(t){
   g.strokeStyle=`hsla(${h+s.x*40},90%,${72+bass*20+LS}%,${(1-s.z)*.9})`;g.lineWidth=((1-s.z)*2.2+.4)*dpr;g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
  }
  if(document.body.dataset.mode==='disc'&&VIZ===0){
-  const r=scene.getBoundingClientRect();
+  if(t-rectAt>400||!rectBox){rectBox=scene.getBoundingClientRect();rectAt=t}const r=rectBox;
   if(r.width){
    const cX=(r.left+r.width/2)*dpr,cY=(r.top+r.height/2)*dpr,R=r.width/2*1.08*dpr;
    for(let k=0;k<BARS;k++){
@@ -1111,7 +1116,8 @@ function drawFx(t){
   if(VIZ===1){g.beginPath();for(let k=0;k<BARS;k++){const x=k*bw+bw/2,y=base-SPEC[k]*H*.3;k?g.lineTo(x,y):g.moveTo(x,y)}g.strokeStyle=`hsla(${h},95%,70%,.9)`;g.lineWidth=3*dpr;g.shadowColor=`hsl(${h} 95% 60%)`;g.shadowBlur=18*dpr;g.stroke();g.shadowBlur=0}
   else for(let k=0;k<BARS;k++){const v=SPEC[k],hh=v*H*.34+4*dpr;g.fillStyle=`hsla(${h+k/BARS*70},95%,${60+v*25}%,.85)`;g.fillRect(k*bw+1,base-hh,bw-3,hh*2)}
  }
- au.style.setProperty('--beat',bass.toFixed(2));tilt.style.setProperty('--beat',bass.toFixed(2));
+ {const bs=bass.toFixed(2);if(bs!==lastBeat){lastBeat=bs;au.style.setProperty('--beat',bs);tilt.style.setProperty('--beat',bs)}}
+ if(LITE){tilt.style.transform='none';return}
  rx+=(trx-rx)*.08;ry+=(try_-ry)*.08;
  const sway=reduce?0:Math.sin(t*.0006)*(S.playing?2:3.5);
  tilt.style.transform=`rotateX(${rx+sway*.4+8}deg) rotateY(${ry+sway}deg) scale(${1+bass*.018})`;
@@ -1119,9 +1125,16 @@ function drawFx(t){
 addEventListener('pagehide',()=>{try{if(active&&trackKey(cur()))ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:active.time()||S.time||0}))}catch(e){}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){try{if(active&&trackKey(cur()))ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:active.time()||S.time||0}))}catch(e){}}});
 let lastPositionSave=0;
+let perfLvl=0,costEma=0,lastTickT=0;
 function tick(t){
+ /* adaptive speed: 30 fps at most, slower (and plainer) if this phone struggles, so taps and scrolling stay smooth */
+ if(document.hidden||t-lastTickT<(LITE?50:perfLvl===0?32:perfLvl===1?50:100)){requestAnimationFrame(tick);return}
+ lastTickT=t;const c0=performance.now();
  if(active){S.time=active.time()||0;const d=active.dur();if(d&&isFinite(d))S.dur=d;else if(!cur()||cur().kind!=='demo')S.dur=cur()?cur().dur||0:0;if(S.playing&&trackKey(cur())&&Date.now()-lastPositionSave>2500){lastPositionSave=Date.now();ls.set('mp_position',JSON.stringify({key:trackKey(cur()),time:S.time}))}}
- if(S.ab[1]!=null&&active&&S.time>=S.ab[1]){active.seek(S.ab[0]);S.time=S.ab[0]}updateProgress();drawFx(t);requestAnimationFrame(tick);
+ if(S.ab[1]!=null&&active&&S.time>=S.ab[1]){active.seek(S.ab[0]);S.time=S.ab[0]}updateProgress();drawFx(t);
+ costEma=costEma*.9+(performance.now()-c0)*.1;
+ if(perfLvl<2&&costEma>(perfLvl===0?9:14)){perfLvl++;costEma=0;if(perfLvl===1)stars.length=Math.min(stars.length,30);else{STARS=false}try{window.parent.__heyLog&&window.parent.__heyLog('slow phone: visuals simplified (level '+perfLvl+')')}catch(e){}}
+ requestAnimationFrame(tick);
 }
 
 /* boot */
