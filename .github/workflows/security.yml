@@ -24,6 +24,8 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d682002c3 # v4
         with:
           node-version: 20
+      - name: Check app JavaScript syntax
+        run: node --check app/app.js
       - name: Run repository validation
         run: node scripts/validate-repo.js
       - name: Run privacy and security source checks
