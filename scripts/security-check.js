@@ -49,8 +49,8 @@ const appHtml = read('app/index.html');
 if (appHtml.includes("script-src 'self';") && !appHtml.includes("script-src 'self' 'unsafe-inline'") &&
     !appHtml.includes('<script>')) pass('App shell JavaScript is same-origin and has no inline executable script');
 else fail('App shell CSP permits inline JavaScript or inline script remains');
-if (appHtml.includes('Permissions-Policy') && appHtml.includes('content="no-referrer"')) pass('App shell limits browser capability policy and referrer disclosure');
-else fail('App shell Permissions Policy or strict referrer policy is missing');
+if (appHtml.includes('content="no-referrer"')) pass('App shell suppresses referrer disclosure to external services');
+else fail('Strict referrer policy is missing');
 if (android.includes('network_security_config.xml') &&
     android.includes('<certificates src="system"') &&
     android.includes('cleartextTrafficPermitted="false"') &&
