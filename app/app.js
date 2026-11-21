@@ -1026,38 +1026,103 @@
     for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (KEY_OK.test(k) && !SKIP.test(k)) data[k] = localStorage.getItem(k); }
     return { app: 'heytools', v: BACKUP_VERSION, saved: new Date().toISOString(), build: BUILD.run || 0, data: data };
   }
-  function saveTextFile(name, text) {
+  function saveTextFile(name, text, mime) {
+    mime = mime || 'application/json';
     var b64 = btoa(unescape(encodeURIComponent(text)));
     if (NATIVE.hasSave) {
-      NATIVE.saveStart(name, 'application/json').then(function (r) { return NATIVE.saveChunk(r.id, b64).then(function () { return NATIVE.saveFinish(r.id); }); })
+      NATIVE.saveStart(name, mime).then(function (r) { return NATIVE.saveChunk(r.id, b64).then(function () { return NATIVE.saveFinish(r.id); }); })
         .then(function (r) { toast('Saved to ' + ((r && r.where) || 'your phone')); }).catch(function () { toast('Could not save the backup'); });
       return;
     }
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); toast('Saving ' + name);
   }
+  function bytesToB64(bytes) {
+    var s = '', step = 0x8000;
+    for (var i = 0; i < bytes.length; i += step) s += String.fromCharCode.apply(null, bytes.subarray(i, i + step));
+    return btoa(s);
+  }
+  function b64ToBytes(value) {
+    var raw = atob(value), out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function deriveBackupKey(password, salt, iterations) {
+    var subtle = window.crypto && window.crypto.subtle;
+    if (!subtle || !window.crypto.getRandomValues) return Promise.reject(new Error('Secure encryption is not available on this device. Update Android System WebView or use a supported browser.'));
+    return subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+      return subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' }, base,
+        { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    });
+  }
+  function encryptBackup(payload, password) {
+    var iterations = 310000, salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    return deriveBackupKey(password, salt, iterations).then(function (key) {
+      return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: new TextEncoder().encode('heytools-backup-v1') },
+        key, new TextEncoder().encode(JSON.stringify(payload)));
+    }).then(function (ciphertext) {
+      return JSON.stringify({ app: 'heytools-encrypted-backup', v: 1, cipher: 'AES-256-GCM', kdf: 'PBKDF2-SHA-256',
+        iterations: iterations, salt: bytesToB64(salt), iv: bytesToB64(iv), ciphertext: bytesToB64(new Uint8Array(ciphertext)) });
+    });
+  }
+  function decryptBackup(envelope, password) {
+    if (!envelope || envelope.app !== 'heytools-encrypted-backup' || envelope.v !== 1 ||
+        envelope.cipher !== 'AES-256-GCM' || envelope.kdf !== 'PBKDF2-SHA-256' ||
+        !Number.isInteger(envelope.iterations) || envelope.iterations < 200000 || envelope.iterations > 1000000) {
+      return Promise.reject(new Error('Unsupported or invalid encrypted backup'));
+    }
+    var salt, iv, data;
+    try { salt = b64ToBytes(envelope.salt); iv = b64ToBytes(envelope.iv); data = b64ToBytes(envelope.ciphertext); }
+    catch (e) { return Promise.reject(new Error('Invalid encrypted backup data')); }
+    if (salt.length !== 16 || iv.length !== 12 || data.length < 16 || data.length > 10 * 1024 * 1024) return Promise.reject(new Error('Invalid encrypted backup size'));
+    return deriveBackupKey(password, salt, envelope.iterations).then(function (key) {
+      return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv, additionalData: new TextEncoder().encode('heytools-backup-v1') }, key, data);
+    }).then(function (plain) { return JSON.parse(new TextDecoder().decode(plain)); });
+  }
   $('backupBtn').addEventListener('click', function () {
+    var password = prompt('Create a password for this encrypted backup. Use at least 12 characters. HeyTools cannot recover it if you forget it.');
+    if (password === null) return;
+    if (password.length < 12) { toast('Use a backup password of at least 12 characters'); return; }
+    var again = prompt('Enter the backup password again to confirm.');
+    if (again === null) return;
+    if (password !== again) { toast('Passwords do not match. Nothing was saved.'); return; }
     var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
-    saveTextFile('heytools-backup-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.json', JSON.stringify(collectBackup()));
+    encryptBackup(collectBackup(), password).then(function (text) {
+      saveTextFile('heytools-encrypted-backup-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.htbackup', text, 'application/vnd.heytools.encrypted-backup+json');
+      password = ''; again = '';
+    }).catch(function (err) { password = ''; again = ''; toast(err && err.message ? err.message : 'Could not encrypt the backup'); });
   });
   $('restoreBtn').addEventListener('click', function () { $('restoreFile').click(); });
   $('restoreFile').addEventListener('change', function (e) {
     var f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (f.size > 12 * 1024 * 1024) { toast('That file is too large to be a HeyTools backup'); return; }
+    if (f.size > 16 * 1024 * 1024) { toast('That file is too large to be a HeyTools backup'); return; }
     var fr = new FileReader();
     fr.onload = function () {
       var j; try { j = JSON.parse(fr.result); } catch (err) { toast('That is not a HeyTools backup'); return; }
-      if (!j || j.app !== 'heytools' || !j.data || typeof j.data !== 'object' || Array.isArray(j.data)) { toast('That is not a HeyTools backup'); return; }
-      if (typeof j.v === 'number' && j.v > BACKUP_VERSION) { toast('This backup is from a newer HeyTools. Update the app first.'); return; }
-      /* only plain text values under safe names are restored, so a edited or hostile file cannot overwrite login tokens or flood storage */
-      var keys = Object.keys(j.data).filter(function (k) { return KEY_OK.test(k) && !SKIP.test(k) && typeof j.data[k] === 'string' && j.data[k].length <= MAX_VALUE; });
-      var total = keys.reduce(function (s, k) { return s + j.data[k].length; }, 0);
-      if (!keys.length) { toast('Nothing to restore in that file'); return; }
-      if (keys.length > MAX_KEYS || total > MAX_TOTAL) { toast('That backup is larger than HeyTools allows'); return; }
-      if (!confirm('Restore ' + keys.length + ' saved items from the backup of ' + (j.saved ? String(j.saved).slice(0, 10) : 'an earlier day') + '? This replaces the matching data in this app.')) return;
-      var failed = 0;
-      keys.forEach(function (k) { try { localStorage.setItem(k, j.data[k]); } catch (err) { failed++; } });
-      toast(failed ? 'Restored with ' + failed + ' items skipped (storage full)' : 'Backup restored'); setTimeout(function () { location.reload(); }, 900);
+      var ready = Promise.resolve(j);
+      if (j && j.app === 'heytools-encrypted-backup') {
+        var password = prompt('Enter the password for this encrypted HeyTools backup.');
+        if (password === null) return;
+        ready = decryptBackup(j, password).then(function (plain) { password = ''; return plain; }).catch(function () {
+          password = ''; toast('Could not decrypt this backup. Check the password or file.'); return null;
+        });
+      } else if (j && j.app === 'heytools') {
+        if (!confirm('This is an older, unencrypted backup. Its contents can be read by anyone who gets the file. Restore it anyway?')) return;
+      }
+      ready.then(function (backup) {
+        if (!backup) return;
+        if (!backup || backup.app !== 'heytools' || !backup.data || typeof backup.data !== 'object' || Array.isArray(backup.data)) { toast('That is not a valid HeyTools backup'); return; }
+        if (typeof backup.v === 'number' && backup.v > BACKUP_VERSION) { toast('This backup is from a newer HeyTools. Update the app first.'); return; }
+        /* Only plain text values under safe names can be restored; encrypted files are authenticated before this validation. */
+        var keys = Object.keys(backup.data).filter(function (k) { return KEY_OK.test(k) && !SKIP.test(k) && typeof backup.data[k] === 'string' && backup.data[k].length <= MAX_VALUE; });
+        var total = keys.reduce(function (s, k) { return s + backup.data[k].length; }, 0);
+        if (!keys.length) { toast('Nothing to restore in that file'); return; }
+        if (keys.length > MAX_KEYS || total > MAX_TOTAL) { toast('That backup is larger than HeyTools allows'); return; }
+        if (!confirm('Restore ' + keys.length + ' saved items from the backup of ' + (backup.saved ? String(backup.saved).slice(0, 10) : 'an earlier day') + '? This replaces the matching data in this app.')) return;
+        var failed = 0;
+        keys.forEach(function (k) { try { localStorage.setItem(k, backup.data[k]); } catch (err) { failed++; } });
+        toast(failed ? 'Restored with ' + failed + ' items skipped (storage full)' : 'Backup restored'); setTimeout(function () { location.reload(); }, 900);
+      });
     };
     fr.readAsText(f);
   });
