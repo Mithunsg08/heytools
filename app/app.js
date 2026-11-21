@@ -541,11 +541,14 @@
   /* Background and lock screen: when the app is hidden while a song or video plays, Android's own foreground player takes over the sound
      (it does not depend on the web page staying alive). When you come back, the page gets the position back and carries on. */
   var handoff = null;
+  var plogBuf = null, plogTimer = 0;
   function plog(msg) {
     try {
-      var l = JSON.parse(localStorage.getItem('heytools.playlog') || '[]'), t = new Date();
-      l.push(('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + String(msg).slice(0, 170));
-      localStorage.setItem('heytools.playlog', JSON.stringify(l.slice(-60)));
+      if (!plogBuf) plogBuf = JSON.parse(localStorage.getItem('heytools.playlog') || '[]');
+      var t = new Date();
+      plogBuf.push(('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + String(msg).slice(0, 170));
+      if (plogBuf.length > 60) plogBuf = plogBuf.slice(-60);
+      if (!plogTimer) plogTimer = setTimeout(function () { plogTimer = 0; try { localStorage.setItem('heytools.playlog', JSON.stringify(plogBuf)); } catch (e) { /* ignore */ } }, 1500);
     } catch (e) { /* ignore */ }
   }
   function mediaEls(f) {
@@ -1139,7 +1142,7 @@
   }
   function paintMusicLog() {
     var box = $('musicLog'); if (!box) return;
-    var web = []; try { web = JSON.parse(localStorage.getItem('heytools.playlog') || '[]'); } catch (e) { /* ignore */ }
+    var web = plogBuf || []; if (!plogBuf) { try { web = JSON.parse(localStorage.getItem('heytools.playlog') || '[]'); } catch (e) { /* ignore */ } }
     var show = function (native) {
       box.textContent = 'APP (web player):\n' + (web.slice(-30).join('\n') || '(nothing yet)') + '\n\nANDROID (background player):\n' + (native || '(nothing yet)');
     };
@@ -1228,7 +1231,7 @@
     try { navigator.clipboard.writeText(t).then(done, done); } catch (e) { done(); }
   });
   if ($('musicLogClear')) $('musicLogClear').addEventListener('click', function () {
-    try { localStorage.removeItem('heytools.playlog'); } catch (e) { /* ignore */ }
+    plogBuf = []; try { localStorage.removeItem('heytools.playlog'); } catch (e) { /* ignore */ }
     if (NATIVE.clearLogs) NATIVE.clearLogs().then(paintMusicLog, paintMusicLog); else paintMusicLog();
   });
   if ($('relAutoBtn')) $('relAutoBtn').addEventListener('click', function () { if (HN.openAutostartSettings) HN.openAutostartSettings(); });
