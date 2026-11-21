@@ -610,14 +610,17 @@ main { padding-top: 4px; }
 
 <script src="../tones.js"></script>
 <script src="../heynotify.js"></script>
+<script src="../heysecure.js"></script>
 <script>
-(function () {
+(async function () {
   'use strict';
   document.documentElement.lang = 'en';
 
   var KEY = 'notes-and-todo:v1';
   var storageOk = true;
   var state;
+  var preloaded = null, lockedErr = false;
+  try { preloaded = await HeySecure.getJSON(KEY, null); } catch (e) { lockedErr = true; }
   var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var COLORS = ['amber', 'green', 'blue', 'pink', 'violet', 'peach'];
   var OLD_NOTES = ['Welcome to Notes and To Do', 'Groceries', 'Weekend ideas', 'Meeting notes'];
@@ -720,21 +723,14 @@ main { padding-top: 4px; }
     return s;
   }
   function load() {
-    storageOk = probe();
-    var raw = null;
-    if (storageOk) { try { raw = localStorage.getItem(KEY); } catch (e) { storageOk = false; } }
-    if (raw) {
-      try {
-        var s = JSON.parse(raw);
-        if (s && Array.isArray(s.notes) && Array.isArray(s.todos)) return normalise(s);
-      } catch (e) { /* fall through */ }
-    }
+    storageOk = !lockedErr;
+    var s = preloaded;
+    if (s && Array.isArray(s.notes) && Array.isArray(s.todos)) return normalise(s);
     return base();
   }
   function save() {
     if (!storageOk) return;
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { storageOk = false; toast('Storage is full or blocked, so new changes may not be kept.'); }
+    HeySecure.setJSON(KEY, state).catch(function (e) { toast('Could not save securely, so new changes may not be kept.'); });
     syncPhoneReminders();
   }
   /* Phone reminders: in the HeyTools Android app every reminder is a real system notification, so it arrives even when the app is closed. */
@@ -1277,6 +1273,7 @@ main { padding-top: 4px; }
 
   /* ---------- start ---------- */
   state = load();
+  if (lockedErr) toast('Your notes could not be unlocked. Changes will not be saved. Please restart the app.');
   el.todayLabel.textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
   renderNotes(); renderTodos(); renderTabs(); renderPerm(); syncCompRem();
   save();

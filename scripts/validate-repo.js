@@ -68,7 +68,7 @@ if (!swBlock) {
 }
 
 const jsFiles = [
-  'app/app.js', 'app/native.js', 'app/tools.js', 'heynotify.js', 'heytrack.js',
+  'app/app.js', 'app/native.js', 'app/tools.js', 'heynotify.js', 'heysecure.js', 'heytrack.js',
   'heytools-sw.js', 'tones.js', 'track-config.js', 'install-prompt.js',
   'native/scripts/patch-android.js', 'native/scripts/prepare-web.js',
   'scripts/test-notifications.js', 'dashboard/Code.gs'

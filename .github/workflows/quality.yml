@@ -23,6 +23,8 @@ jobs:
         run: node scripts/validate-repo.js
       - name: Test notification scheduling and action routing
         run: node scripts/test-notifications.js
+      - name: Secure storage tests
+        run: node scripts/test-heysecure.js
       - name: Install browser test dependency
         run: npm install --no-save playwright
       - name: Install Chromium

@@ -92,11 +92,12 @@ ul.h{list-style:none;margin:0;padding:0}.h li{display:grid;grid-template-columns
 </div>
 <script src="../tones.js"></script>
 <script src="../heynotify.js"></script>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
 const $=id=>document.getElementById(id),K='heytools.habits.v1';
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.h=st.h||[];
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+let st,locked=false;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};locked=true;setTimeout(()=>alert('Your habits could not be unlocked, so changes will not be saved to avoid overwriting them. Please restart the app.'),300)}st.h=st.h||[];
+const save=()=>{if(locked)return;HeySecure.setJSON(K,st).catch(e=>{HeySecure.onError(e);if(!save.warned){save.warned=1;alert('Could not save securely: '+(e&&e.message))}})};
 const key=d=>{const t=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return t.toISOString().slice(0,10)};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const T=key(new Date());$('today').textContent='· '+new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});

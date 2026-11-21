@@ -66,6 +66,7 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 </style>
 <script src="../install-prompt.js" defer></script>
 <script src="../heynotify.js"></script>
+<script src="../heysecure.js"></script>
 <meta property="og:site_name" content="HeyTools">
 <meta property="og:url" content="https://mithunsg08.github.io/heytools/expense-tracker/">
 <meta property="og:image" content="https://mithunsg08.github.io/heytools/og/expense-tracker.jpg">
@@ -99,11 +100,11 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 
 </div>
 <script>
-(function(){
+(async function(){
 const $=id=>document.getElementById(id),K='heytools.expenses.v1';
 const CATS=[['🍽️','Food'],['🛒','Groceries'],['🚌','Transport'],['🏠','Home & bills'],['🛍️','Shopping'],['🎬','Fun'],['💊','Health'],['📚','Learning'],['✨','Other']];
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.items=st.items||[];st.budget=st.budget||'';st.cur=st.cur||'₹';st.alerts=st.alerts||{};
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+let st,locked=false;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};locked=true;setTimeout(()=>alert('Your expenses could not be unlocked, so changes will not be saved to avoid overwriting them. Please restart the app.'),300)}st.items=st.items||[];st.budget=st.budget||'';st.cur=st.cur||'₹';st.alerts=st.alerts||{};
+const save=()=>{if(locked)return;HeySecure.setJSON(K,st).catch(e=>{HeySecure.onError(e);if(!save.warned){save.warned=1;alert('Could not save securely: '+(e&&e.message))}})};
 const today=()=>new Date().toISOString().slice(0,10),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=n=>st.cur+(+n).toLocaleString(undefined,{maximumFractionDigits:2});
 $('cat').innerHTML=CATS.map(c=>`<option>${c[0]} ${c[1]}</option>`).join('');$('date').value=today();$('month').value=today().slice(0,7);$('budget').value=st.budget;$('cur').value=st.cur;
