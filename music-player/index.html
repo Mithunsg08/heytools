@@ -397,6 +397,17 @@ const DB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(th
  async tx(mode,fn){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('files',mode),st=t.objectStore('files'),rq=fn(st);t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error)})},
  put(k,v){return this.tx('readwrite',s=>s.put(v,k))},get(k){return this.tx('readonly',s=>s.get(k))},del(k){return this.tx('readwrite',s=>s.delete(k)).catch(()=>{})},clear(){return this.tx('readwrite',s=>s.clear())}};
 const P={};P.local=audioProv(aLocal,true);P.url=audioProv(aUrl,false);
+/* Streams are played by Android itself (so they keep going in the background). The page then follows Android's clock instead of its own idle element. */
+const HN=()=>window.parent&&window.parent.HeyNative;
+const nativeStream=it=>!!(it&&it.kind==='url'&&HN()&&HN().isNative&&isWeb(it.src));
+const NAT={own:false,pos:0,dur:0};
+{const ul=P.url.load,ut=P.url.time,ud=P.url.dur,us=P.url.seek,ust=P.url.stop,upa=P.url.pause;
+ P.url.load=function(it){NAT.own=nativeStream(it);NAT.pos=0;NAT.dur=it.dur||0;if(NAT.own){try{aUrl.pause();aUrl.removeAttribute('src');aUrl.load()}catch(e){}return}return ul(it)};
+ P.url.time=()=>NAT.own?NAT.pos:ut();
+ P.url.dur=()=>NAT.own?(NAT.dur||0):ud();
+ P.url.seek=t=>{if(NAT.own){NAT.pos=t;try{HN().controlNativeAudio('seek',Math.round(t*1000))}catch(e){}hlog('seek to '+Math.round(t)+'s');return}us(t)};
+ P.url.stop=()=>{if(NAT.own){NAT.own=false;try{HN().controlNativeAudio('stop')}catch(e){}}ust()};
+ setInterval(()=>{if(!NAT.own||active!==P.url)return;try{HN().getNativeAudioState().then(st=>{if(!st||!st.active||!NAT.own)return;NAT.pos=(st.position||0)/1000;if(st.duration>0){NAT.dur=st.duration/1000;const c=cur();if(c&&!c.dur){c.dur=NAT.dur}}if(!!st.playing!==S.playing)setPlaying(!!st.playing)}).catch(()=>{})}catch(e){}},1000)}
 {const ll=P.local.load;P.local.load=async function(it){if(!it.src&&it.fid){let b=null;try{b=await DB.get(it.fid)}catch(e){}if(!b){toast('This file is no longer stored. Add it again.');throw new Error('sp')}it.src=URL.createObjectURL(b);try{window.parent.__heyPrepare&&window.parent.__heyPrepare(it.src,b)}catch(e){}}ll(it)}}
 
 /* YouTube */
@@ -549,7 +560,7 @@ async function playIndex(i){
  hlog('play '+it.kind+': '+String(it.title||'').slice(0,28)+' src='+String(it.src||('stored '+(it.fid||''))).slice(0,36));
  if(active&&active!==next){try{active.stop()}catch(e){}}
  abReset();S.i=i;S.time=0;S.dur=it.dur||0;active=next;setMode(it.kind);document.body.dataset.mkind=it.kind;applyItem(it);renderQueue();
- try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);try{const saved=JSON.parse(ls.get('mp_position','null'));if(saved&&saved.key===trackKey(it)&&saved.time>3&&(!it.dur||saved.time<it.dur-5)){next.seek(saved.time);S.time=saved.time}}catch(e){}if(it.kind==='url'&&window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative&&isWeb(it.src)){try{await window.parent.HeyNative.startNativeAudio(it.src,it.title||'HeyTools',it.artist||'Now playing');setPlaying(true);hlog('stream sent to Android player: '+String(it.src).slice(0,40))}catch(ne){hlog('Android could not start the stream: '+((ne&&ne.message)||ne));await next.play()}}else{await next.play()}if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp'){console.warn(e);hlog('play failed: '+((e&&e.message)||e))}setPlaying(false)}
+ try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);try{const saved=JSON.parse(ls.get('mp_position','null'));if(saved&&saved.key===trackKey(it)&&saved.time>3&&(!it.dur||saved.time<it.dur-5)){next.seek(saved.time);S.time=saved.time}}catch(e){}if(it.kind==='url'&&window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative&&isWeb(it.src)){try{await window.parent.HeyNative.startNativeAudio(it.src,it.title||'HeyTools',it.artist||'Now playing',Math.round((S.time||0)*1000));setPlaying(true);hlog('stream sent to Android player: '+String(it.src).slice(0,40))}catch(ne){hlog('Android could not start the stream: '+((ne&&ne.message)||ne));await next.play()}}else{await next.play()}if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp'){console.warn(e);hlog('play failed: '+((e&&e.message)||e))}setPlaying(false)}
 }
 function setPlaying(v){const was=S.playing;S.playing=v;if(v&&!was)sayHi();document.body.classList.toggle('playing',v);if('mediaSession'in navigator)navigator.mediaSession.playbackState=v?'playing':'paused';try{const it=cur()||{};if(!v&&active&&trackKey(it))ls.set('mp_position',JSON.stringify({key:trackKey(it),time:active.time()||S.time||0}));const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative){if(v)n.startPlayback(it.title||'HeyTools',it.artist||'Music Player',true);else n.updatePlayback(it.title||'HeyTools',it.artist||'Music Player',false)}}catch(e){}}
 function toggle(){

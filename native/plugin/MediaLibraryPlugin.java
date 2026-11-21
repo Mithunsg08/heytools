@@ -231,6 +231,7 @@ public class MediaLibraryPlugin extends Plugin {
     if (!PlaybackService.isRunning) { call.resolve(); return; }
     try {
       String action=call.getString("action","pause");
+      if("seek".equals(action)){ PlaybackService.seekAudioMs(call.getInt("position",0)); call.resolve(); return; }
       Intent i=new Intent(getContext(),PlaybackService.class);
       if("stop".equals(action))i.setAction("com.heytools.STOP_URL");
       else if("play".equals(action))i.setAction("com.heytools.RESUME_URL");

@@ -78,6 +78,7 @@ public class PlaybackService extends Service {
   /** Next / previous pressed while the native player owns playback; the app forwards it to the open player. */
   public static volatile ActionListener actionListener;
   public static int audioPositionMs() { PlaybackService s = inst; try { return s != null && s.audioPlayer != null ? s.audioPlayer.getCurrentPosition() : 0; } catch (Exception e) { return 0; } }
+  public static void seekAudioMs(int ms) { PlaybackService s = inst; try { if (s != null && s.audioPlayer != null) { s.audioPlayer.seekTo(Math.max(0, ms)); note(s, "seek to " + (ms / 1000) + "s"); } } catch (Exception e) { /* ignore */ } }
   public static int audioDurationMs() { PlaybackService s = inst; try { return s != null && s.audioPlayer != null ? s.audioPlayer.getDuration() : 0; } catch (Exception e) { return 0; } }
   public static boolean audioActive() { PlaybackService s = inst; return s != null && s.audioPlayer != null; }
   private String title = "HeyTools";

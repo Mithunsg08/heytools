@@ -77,7 +77,7 @@
     getNativeAudioState: function () { return P.getNativeAudioState ? P.getNativeAudioState() : Promise.resolve({ active: false }); },
     onNativeMediaAction: function (cb) { try { return P.addListener('mediaAction', cb); } catch (e) { return null; } },
     onNativeAudioEnded: function (cb) { try { return P.addListener('audioEnded', cb); } catch (e) { return null; } },
-    controlNativeAudio: function (action) { return P.controlNativeAudio({action:action||"pause"}); },
+    controlNativeAudio: function (action, position) { return P.controlNativeAudio({action:action||"pause",position:position||0}); },
     startPlayback: function (title, artist, playing) { if (P && P.startPlayback) P.startPlayback({ title: title || 'HeyTools', artist: artist || 'Now playing', playing: playing !== false }).catch(function () {}); },
     updatePlayback: function (title, artist, playing) { if (P && P.updatePlayback) P.updatePlayback({ title: title || 'HeyTools', artist: artist || 'Now playing', playing: playing !== false }).catch(function () {}); },
     stopPlayback: function () { if (P && P.stopPlayback) P.stopPlayback().catch(function () {}); },
