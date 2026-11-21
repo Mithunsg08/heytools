@@ -163,6 +163,10 @@ public class MediaLibraryPlugin extends Plugin {
 
 
   /** Event logs and what Android says about notifications, read through the plugin the player already uses. */
+  @PluginMethod public void clearLogs(PluginCall call) {
+    try { getContext().getSharedPreferences("heytools_play_log", 0).edit().remove("log").apply(); } catch (Exception ignored) {}
+    call.resolve();
+  }
   @PluginMethod public void getLogs(PluginCall call) {
     JSObject o=new JSObject();
     try { o.put("alarmLog", AlarmScheduler.noteLog(getContext())); } catch(Exception ignored) {}

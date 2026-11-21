@@ -377,7 +377,9 @@ function ensureCtx(){
 function audioProv(el,viz){
  el.preload='auto';const me=()=>active===prov;
  const L=m=>{try{window.parent.__heyLog&&window.parent.__heyLog('audio '+m+(document.hidden?' (app hidden)':' (app open)')+' t='+Math.round(el.currentTime))}catch(e){}};
- el.addEventListener('pause',()=>L('paused'));el.addEventListener('play',()=>L('playing'));el.addEventListener('error',()=>L('error '+(el.error?el.error.code:'?')));
+ el.addEventListener('pause',()=>L('paused'));el.addEventListener('play',()=>L('playing'));
+ el.addEventListener('error',()=>L('ERROR code '+(el.error?el.error.code:'?')+' '+((el.error&&el.error.message)||'')+' net='+el.networkState+' rs='+el.readyState));
+ ['loadstart','loadedmetadata','canplay','stalled','waiting','ended','abort','suspend'].forEach(ev=>el.addEventListener(ev,()=>{if(ev==='suspend')return;L(ev)}));
  el.addEventListener('ended',()=>{if(me())onEnded()});
  el.addEventListener('play',()=>{if(me())setPlaying(true)});
  el.addEventListener('pause',()=>{if(me())setPlaying(false)});
@@ -505,6 +507,7 @@ P.demo=demo;
 /* playback core */
 const modeOf=k=>(k==='yt'||k==='sc'||k==='embed')?'embed':'disc';
 function setMode(k){document.body.dataset.mode=modeOf(k);$('#stage').dataset.ctl=k==='embed'?'none':'';$('#ytWrap').classList.toggle('show',k==='yt');$('#frameWrap').classList.toggle('show',k==='sc'||k==='embed')}
+const isWeb=u=>{u=String(u||'');return(u.indexOf('https://')===0||u.indexOf('http://')===0)&&u.indexOf(location.origin)!==0};
 const hlog=m=>{try{window.parent.__heyLog&&window.parent.__heyLog(m)}catch(e){}};
 async function playIndex(i){
  if(i<0||i>=S.q.length)return;
@@ -512,15 +515,16 @@ async function playIndex(i){
  if(it.kind==='match'){S.i=i;applyItem(it);renderQueue();if(!await resolveMatch(it)){toast('No playable match found. Skipping…');setTimeout(()=>{if(S.i===i&&i<S.q.length-1)playIndex(i+1)},900);return}}
  if(it.kind==='arch'){S.i=i;applyItem(it);toast('Loading from the Internet Archive…',1800);if(!await resolveArch(i)){toast('No playable audio found in that item');return}return playIndex(i)}
  const next=P[it.kind];
+ hlog('play '+it.kind+': '+String(it.title||'').slice(0,28)+' src='+String(it.src||('stored '+(it.fid||''))).slice(0,36));
  if(active&&active!==next){try{active.stop()}catch(e){}}
  abReset();S.i=i;S.time=0;S.dur=it.dur||0;active=next;setMode(it.kind);document.body.dataset.mkind=it.kind;applyItem(it);renderQueue();
- try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);try{const saved=JSON.parse(ls.get('mp_position','null'));if(saved&&saved.key===trackKey(it)&&saved.time>3&&(!it.dur||saved.time<it.dur-5)){next.seek(saved.time);S.time=saved.time}}catch(e){}if(it.kind==='url'&&window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative&&(String(it.src||'').indexOf('https://')===0||String(it.src||'').indexOf('http://')===0)){try{await window.parent.HeyNative.startNativeAudio(it.src,it.title||'HeyTools',it.artist||'Now playing');setPlaying(true);hlog('stream sent to Android player: '+String(it.src).slice(0,40))}catch(ne){hlog('Android could not start the stream: '+((ne&&ne.message)||ne));await next.play()}}else{await next.play()}if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp'){console.warn(e);hlog('play failed: '+((e&&e.message)||e))}setPlaying(false)}
+ try{await next.load(it);next.vol(S.muted?0:S.vol);next.rate&&next.rate(S.rate);try{const saved=JSON.parse(ls.get('mp_position','null'));if(saved&&saved.key===trackKey(it)&&saved.time>3&&(!it.dur||saved.time<it.dur-5)){next.seek(saved.time);S.time=saved.time}}catch(e){}if(it.kind==='url'&&window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative&&isWeb(it.src)){try{await window.parent.HeyNative.startNativeAudio(it.src,it.title||'HeyTools',it.artist||'Now playing');setPlaying(true);hlog('stream sent to Android player: '+String(it.src).slice(0,40))}catch(ne){hlog('Android could not start the stream: '+((ne&&ne.message)||ne));await next.play()}}else{await next.play()}if(it.kind==='embed'||it.kind==='demo')setPlaying(true)}catch(e){if(!e||e.message!=='sp'){console.warn(e);hlog('play failed: '+((e&&e.message)||e))}setPlaying(false)}
 }
 function setPlaying(v){const was=S.playing;S.playing=v;if(v&&!was)sayHi();document.body.classList.toggle('playing',v);if('mediaSession'in navigator)navigator.mediaSession.playbackState=v?'playing':'paused';try{const it=cur()||{};if(!v&&active&&trackKey(it))ls.set('mp_position',JSON.stringify({key:trackKey(it),time:active.time()||S.time||0}));const n=window.parent&&window.parent.HeyNative;if(n&&n.isNative){if(v)n.startPlayback(it.title||'HeyTools',it.artist||'Music Player',true);else n.updatePlayback(it.title||'HeyTools',it.artist||'Music Player',false)}}catch(e){}}
 function toggle(){
  if(!active){if(S.q.length)playIndex(S.i<0?0:S.i);else toast('Add some music first, or try the demo');return}
  if(cur()&&cur().kind==='embed')return;
- if(cur()&&cur().kind==='url'&&window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative&&(String(cur().src||'').indexOf('https://')===0||String(cur().src||'').indexOf('http://')===0)){window.parent.HeyNative.controlNativeAudio(S.playing?'pause':'play');setPlaying(!S.playing);return}
+ if(cur()&&cur().kind==='url'&&window.parent&&window.parent.HeyNative&&window.parent.HeyNative.isNative&&isWeb(cur().src)){window.parent.HeyNative.controlNativeAudio(S.playing?'pause':'play');setPlaying(!S.playing);return}
  S.playing?active.pause():active.play();
 }
 function onEnded(){try{const it=cur();if(it)ls.set('mp_position',JSON.stringify({key:trackKey(it),time:0}))}catch(e){}if(S.repeat===2&&active){active.seek(0);active.play()}else next(true)}

@@ -33,7 +33,7 @@ public class PlaybackService extends Service {
       android.content.SharedPreferences sp = c.getSharedPreferences("heytools_play_log", 0);
       String[] old = sp.getString("log", "").split("\n");
       StringBuilder sb = new StringBuilder();
-      for (int i = Math.max(0, old.length - 9); i < old.length; i++) if (!old[i].isEmpty()) sb.append(old[i]).append('\n');
+      for (int i = Math.max(0, old.length - 39); i < old.length; i++) if (!old[i].isEmpty()) sb.append(old[i]).append('\n');
       sb.append(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date())).append(' ').append(msg);
       sp.edit().putString("log", sb.toString()).apply();
     } catch (Exception ignored) {}
@@ -202,9 +202,16 @@ public class PlaybackService extends Service {
       audioPlayer.setOnPreparedListener(mp -> { if(audioPlayer==mp){note(this,"native player started at "+(startMs/1000)+"s");requestFocus();mp.setVolume(1f,1f);if(startMs>0){try{mp.seekTo(startMs);}catch(Exception ignored){}}mp.start();playing=true;audioIsPlaying=true;setWake(true);refreshControls();} });
       audioPlayer.setOnCompletionListener(mp -> {note(this,"song finished");playing=false;audioIsPlaying=false;refreshControls();Runnable r=endedListener;if(r!=null){try{r.run();}catch(Exception ignored){}}else{sendAction("NEXT",7103);}});
       audioPlayer.setOnErrorListener((mp,what,extra)->{lastError="player error "+what+"/"+extra+" for "+audioSource;note(this,lastError);playing=false;audioIsPlaying=false;refreshControls();return true;});
-      audioPlayer.setDataSource(this,Uri.parse(source));
+      if (source.startsWith("file://")) {
+        /* open the file ourselves: names with spaces, + or % break when treated as an address */
+        String path=source.substring(7);
+        java.io.File f=new java.io.File(path);
+        note(this,"opening file "+f.getName()+" exists="+f.exists()+" readable="+f.canRead()+" size="+f.length());
+        java.io.FileInputStream in=new java.io.FileInputStream(f);
+        try{audioPlayer.setDataSource(in.getFD());}finally{try{in.close();}catch(Exception ignored){}}
+      } else audioPlayer.setDataSource(this,Uri.parse(source));
       audioPlayer.prepareAsync();
-    } catch(Exception e) { lastError="start: "+e; releaseAudio(); playing=false; refreshControls(); }
+    } catch(Exception e) { lastError="start: "+e; note(this,"could not open: "+e); releaseAudio(); playing=false; refreshControls(); }
   }
   public void controlAudio(String action) {
     if ("play".equals(action)) resumeAudio();

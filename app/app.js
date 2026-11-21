@@ -544,8 +544,8 @@
   function plog(msg) {
     try {
       var l = JSON.parse(localStorage.getItem('heytools.playlog') || '[]'), t = new Date();
-      l.push(('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + String(msg).slice(0, 110));
-      localStorage.setItem('heytools.playlog', JSON.stringify(l.slice(-10)));
+      l.push(('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + String(msg).slice(0, 170));
+      localStorage.setItem('heytools.playlog', JSON.stringify(l.slice(-60)));
     } catch (e) { /* ignore */ }
   }
   function mediaEls(f) {
@@ -730,8 +730,8 @@
     });
   }
   /* called by the Android activity itself as it pauses / resumes, which is earlier and more reliable than the page's own hidden event */
-  window.__heyPause = function () { hiddenAt = Date.now(); startHandoff(true); };
-  window.__heyResume = function () { endHandoff(); };
+  window.__heyPause = function () { hiddenAt = Date.now(); var before = handoff; startHandoff(true); return (handoff && handoff !== before) ? 'handed ' + handoff.id + ' to Android' : (handoff ? 'already with Android' : 'nothing handed over'); };
+  window.__heyResume = function () { var had = !!handoff; endHandoff(); return had ? 'took playback back' : 'no handoff to take back'; };
   window.__HEYTOOLS_READY = true;
   setInterval(syncPlayback, 1500);
   $('nowpToggle').addEventListener('click', function () {
@@ -1115,7 +1115,17 @@
     n.className = state === 'ok' ? 'ok' : state === 'bad' ? 'warn' : '';
     if (btn) $(btn).hidden = (state === 'ok');
   }
+  function paintMusicLog() {
+    var box = $('musicLog'); if (!box) return;
+    var web = []; try { web = JSON.parse(localStorage.getItem('heytools.playlog') || '[]'); } catch (e) { /* ignore */ }
+    var show = function (native) {
+      box.textContent = 'APP (web player):\n' + (web.slice(-30).join('\n') || '(nothing yet)') + '\n\nANDROID (background player):\n' + (native || '(nothing yet)');
+    };
+    if (NATIVE.isNative && NATIVE.getLogs) NATIVE.getLogs().then(function (l) { show((l && l.playLog || '').trim().split('\n').slice(-30).join('\n')); }).catch(function () { show('(could not read)'); });
+    else show('');
+  }
   function paintReliability() {
+    paintMusicLog();
     if (!NATIVE.isNative || !HN) return;
     HN.permission().then(function (r) {
       setRel('relNotif', 'Notifications', r === 'granted' ? 'ok' : 'bad', 'relNotifBtn');
@@ -1191,6 +1201,14 @@
   });
   $('relExactBtn').addEventListener('click', function () { HN.requestExactPermission().then(paintReliability); });
   $('relBattBtn').addEventListener('click', function () { HN.openBatterySettings(); });
+  if ($('musicLogCopy')) $('musicLogCopy').addEventListener('click', function () {
+    var t = $('musicLog').textContent; var done = function () { toast('Music log copied'); };
+    try { navigator.clipboard.writeText(t).then(done, done); } catch (e) { done(); }
+  });
+  if ($('musicLogClear')) $('musicLogClear').addEventListener('click', function () {
+    try { localStorage.removeItem('heytools.playlog'); } catch (e) { /* ignore */ }
+    if (NATIVE.clearLogs) NATIVE.clearLogs().then(paintMusicLog, paintMusicLog); else paintMusicLog();
+  });
   if ($('relAutoBtn')) $('relAutoBtn').addEventListener('click', function () { if (HN.openAutostartSettings) HN.openAutostartSettings(); });
   $('relTest').addEventListener('click', function () {
     HN.testAlarm().then(function (r) {

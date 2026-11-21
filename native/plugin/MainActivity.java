@@ -27,8 +27,18 @@ public class MainActivity extends BridgeActivity {
         getBridge().getWebView().evaluateJavascript("window." + fn + "&&window." + fn + "()", null);
     } catch (Throwable ignored) {}
   }
-  @Override public void onPause() { callPage("__heyPause"); super.onPause(); }
-  @Override public void onResume() { super.onResume(); callPage("__heyResume"); }
+  /** Runs a page function and writes what it answered into the music log. */
+  private void callPageLogged(String fn, final String what) {
+    try {
+      if (getBridge() != null && getBridge().getWebView() != null)
+        getBridge().getWebView().evaluateJavascript("window." + fn + "&&window." + fn + "()", new android.webkit.ValueCallback<String>() {
+          @Override public void onReceiveValue(String v) { PlaybackService.note(MainActivity.this, what + " -> page said " + v); }
+        });
+      else PlaybackService.note(this, what + " -> page not ready");
+    } catch (Throwable t) { PlaybackService.note(this, what + " failed: " + t); }
+  }
+  @Override public void onPause() { callPageLogged("__heyPause", "app left the screen"); super.onPause(); }
+  @Override public void onResume() { super.onResume(); callPageLogged("__heyResume", "app came back"); }
 
   @Override
   public void onNewIntent(Intent intent) {
