@@ -2,7 +2,7 @@ name: Privacy and security checks
 
 on:
   push:
-    branches: [main, security/privacy-hardening]
+    branches: [main, security/privacy-hardening, security/complete-privacy-encryption]
   pull_request:
   workflow_dispatch:
 
