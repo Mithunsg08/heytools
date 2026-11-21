@@ -105,10 +105,10 @@ public class MediaLibraryPlugin extends Plugin {
             ? new String[] {
                 MediaStore.Audio.Media._ID, MediaStore.Audio.Media.DISPLAY_NAME, MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.SIZE, MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.ALBUM }
+                MediaStore.Audio.Media.ALBUM, MediaStore.MediaColumns.DATE_ADDED }
             : new String[] {
                 MediaStore.Video.Media._ID, MediaStore.Video.Media.DISPLAY_NAME, MediaStore.Video.Media.DURATION,
-                MediaStore.Video.Media.SIZE, MediaStore.Video.Media.DATA };
+                MediaStore.Video.Media.SIZE, MediaStore.Video.Media.DATA, MediaStore.MediaColumns.DATE_ADDED };
           // music only: skip ringtones, notifications and alarms
           String sel = audio
             ? MediaStore.Audio.Media.IS_RINGTONE + "=0 AND " + MediaStore.Audio.Media.IS_NOTIFICATION + "=0 AND " + MediaStore.Audio.Media.IS_ALARM + "=0"
@@ -124,6 +124,7 @@ public class MediaLibraryPlugin extends Plugin {
               int iData = c.getColumnIndexOrThrow(proj[4]);
               int iArtist = audio ? c.getColumnIndexOrThrow(proj[5]) : -1;
               int iAlbum = audio ? c.getColumnIndexOrThrow(proj[6]) : -1;
+              int iAdded = c.getColumnIndex(MediaStore.MediaColumns.DATE_ADDED);
               int count = 0;
               total = c.getCount();
               next = offset;
@@ -138,6 +139,7 @@ public class MediaLibraryPlugin extends Plugin {
                 o.put("duration", c.getLong(iDur));
                 o.put("size", c.getLong(iSize));
                 o.put("path", path);
+                if (iAdded >= 0) o.put("added", c.getLong(iAdded));
                 if (audio) {
                   o.put("artist", c.getString(iArtist));
                   o.put("album", c.getString(iAlbum));

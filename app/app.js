@@ -604,16 +604,18 @@
     var tn = d && d.getElementById(id === 'music-player' ? 'nTitle' : 'tt'), ta = d && d.getElementById(id === 'music-player' ? 'nArtist' : 'mt');
     handoff = { id: id, el: el };
     f.__ctlAt = Date.now();
-    var p = NATIVE.startNativeAudio(src, (tn && tn.textContent.trim()) || byId[id].name, (ta && ta.textContent.trim()) || byId[id].name, Math.round((el.currentTime || 0) * 1000));
-    Promise.resolve(p).then(function () { setTimeout(function () { try { if (handoff && handoff.el === el) { f.__ctlAt = Date.now(); el.pause(); } } catch (e) { /* ignore */ } }, 350); })
-      .catch(function (e) { handoff = null; plog('Android refused: ' + ((e && e.message) || e)); });
+    /* stop the page's own sound first, then read where it stopped, so the song does not repeat the last second */
+    var pos = el.currentTime || 0;
+    try { f.__ctlAt = Date.now(); el.pause(); pos = el.currentTime || pos; } catch (e) { /* ignore */ }
+    var p = NATIVE.startNativeAudio(src, (tn && tn.textContent.trim()) || byId[id].name, (ta && ta.textContent.trim()) || byId[id].name, Math.round(pos * 1000));
+    Promise.resolve(p).catch(function (e) { handoff = null; plog('Android refused: ' + ((e && e.message) || e)); try { f.__ctlAt = Date.now(); el.play(); } catch (x) { /* ignore */ } });
   }
   function endHandoff() {
     var h = handoff; if (!h) return; handoff = null;
     NATIVE.getNativeAudioState().then(function (s) {
       plog('back in app; Android player ' + (s && s.active ? ((s.playing ? 'was playing at ' : 'paused at ') + Math.round((s.position || 0) / 1000) + 's') : 'was not active') + (s && s.error ? ' | ' + s.error : ''));
       try { NATIVE.controlNativeAudio('stop'); } catch (e) { /* ignore */ }
-      var el = h.el; if (!el || !el.isConnected || !s || !s.active) return;
+      var el = h.el; if (!el || !s || !s.active) return;
       var pos = (s.position || 0) / 1000;
       var resume = function (n) {
         try { if (pos > 0 && Math.abs(el.currentTime - pos) > 1.5) el.currentTime = pos; } catch (e) { plog('could not seek the page player: ' + e); }

@@ -41,7 +41,7 @@
     scan: function (kind, onProgress) {
       var all = [];
       function map(i) {
-        return { id: i.id, title: i.title, path: i.path, size: i.size, duration: i.duration, artist: i.artist || '', album: i.album || '',
+        return { id: i.id, title: i.title, path: i.path, size: i.size, added: i.added || 0, duration: i.duration, artist: i.artist || '', album: i.album || '',
                  folder: (i.path || '').split('/').slice(-2, -1)[0] || '', url: url(i.path) };
       }
       function page(offset) {

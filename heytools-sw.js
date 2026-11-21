@@ -6,7 +6,7 @@
    - Fonts and libraries are shipped with the app. Nothing is fetched from Google or a CDN.
    - Everything else (speed tests, streams, APIs, range requests) goes straight to the network.
    Bump VERSION whenever the app shell or any tool implementation changes. */
-const VERSION = 'heytools-app-v33';
+const VERSION = 'heytools-app-v34';
 const NETWORK_TIMEOUT_MS = 3000;
 
 const TOOLS = [
