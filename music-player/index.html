@@ -971,9 +971,16 @@ $('#sForm').onsubmit=async e=>{e.preventDefault();const q=$('#sQ').value.trim();
  $('#sList').innerHTML='<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
  try{results=await doSearch(q,srcSel)}catch(er){results=[]}drawResults()};
 function playResults(k){
- const now=Date.now();const have=new Set(S.q.map(histKey));
- const items=results.slice(k,k+25).map((x,j)=>mk(Object.assign({},x,{added:now-j*1000}))).filter((x,j)=>j===0||!have.has(histKey(x)));
- addAndPlay(items)}
+ /* the tapped song and the results after it go to the top of the library, in order, so "next" follows what you searched */
+ const now=Date.now();
+ const items=results.slice(k,k+25).map((x,j)=>mk(Object.assign({},x,{added:now-j*1000})));
+ const keys=new Set(items.map(histKey)),c=cur();
+ S.q=S.q.filter(x=>!keys.has(histKey(x)));
+ S.q.unshift(...items);S.i=c?S.q.indexOf(c):-1;
+ if(sortMode!=='new'){sortMode='manual';ls.set('mp_sort','manual');drawSortSel()}
+ if(S.shuffle){S.shuffle=false;$('#bShuf').classList.remove('on');toast('Shuffle turned off so the search results play in order',2200)}
+ hlog('search tap: playing "'+String(items[0].title).slice(0,30)+'" then '+(items.length-1)+' more');
+ renderQueue();showTab('queue',true);playIndex(0)}
 $('#sList').addEventListener('click',e=>{const r=e.target.closest('.row');if(!r)return;const it=results[+r.dataset.k];if(!it)return;
  if(e.target.closest('[data-add]')){S.q.push(mk(Object.assign({},it)));sortLib();renderQueue();toast('Added to library',1200);return}
  if(innerWidth<=900)document.body.classList.remove('open');playResults(+r.dataset.k)});
