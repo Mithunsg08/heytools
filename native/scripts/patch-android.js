@@ -33,7 +33,10 @@ const perms = [
 const add = perms.filter(p => !m.includes('"' + p[0] + '"'))
   .map(p => `    <uses-permission android:name="${p[0]}"${p[1] || ''} />`).join('\n');
 m = m.replace('<application', add + '\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />\n\n    <application');
-if (!m.includes('requestLegacyExternalStorage')) m = m.replace('<application', '<application android:requestLegacyExternalStorage="true"');
+/* Do not opt into legacy shared-storage access. Android's scoped-storage model
+   limits the app to media selected or explicitly granted by the user. Also strip
+   the attribute if an older generated manifest already contains it. */
+m = m.replace(/\s+android:requestLegacyExternalStorage="true"/g, '');
 /* Privacy and security: keep app data out of cloud / adb backups (notes, expenses and Spotify tokens live in it) and refuse plain-http traffic. */
 m = m.replace(/android:allowBackup="true"/, 'android:allowBackup="false"');
 if (!m.includes('android:allowBackup')) m = m.replace('<application', '<application android:allowBackup="false"');
