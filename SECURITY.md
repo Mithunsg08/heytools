@@ -6,13 +6,13 @@ Please open a private report through GitHub: **Security → Report a vulnerabili
 
 ## How HeyTools is built to protect people
 
-- **No accounts, no ads, no third-party analytics code.** Data stays in on-device storage.
-- **Optional anonymous counts are opt-in** (`heytools.track.consent`) and send nothing until the person turns them on. The endpoint is configured in `track-config.js` and is empty by default.
+- **No accounts or advertising SDKs.** The website contains an optional first-party download-count feature; it is disabled for each person until they explicitly opt in. When enabled, it sends limited event/device metadata to the configured endpoint in `track-config.js`.
+- **Optional anonymous counts are opt-in** (`heytools.track.consent`). The endpoint is configured in `track-config.js`; no event is sent until the person turns the feature on.
 - **No code is fetched from the internet by offline tools.** Fonts and libraries live in `fonts/` and `vendor/` at exact versions. `scripts/validate-repo.js` fails the build if a tool loads Google Fonts, an unpinned library, or (for tools marked offline) any outside script.
-- **Android hardening** (see `native/scripts/patch-android.js`): `allowBackup=false` (no cloud or adb copy of app data), `usesCleartextTraffic=false`, the boot receiver is not exported, WebView debugging is off, and only the permissions listed on the privacy page are requested.
+- **Android hardening** (see `native/scripts/patch-android.js`): `allowBackup=false`, `usesCleartextTraffic=false`, the boot receiver is not exported, WebView debugging is off, and legacy shared-storage access is not requested. The app still requests feature-specific permissions listed on the privacy page.
 - **Backups are validated.** A backup file never contains login tokens or install ids, and a restored file is limited to plain text values under safe key names and a fixed size.
 - **Updates are only offered, never forced.** The APK must be signed with the same key as the installed app, so Android rejects a tampered file.
-- The app shell has a Content-Security-Policy (`app/index.html`) that blocks plugins, restricts framing and base URLs, and only allows the app's own scripts.
+- The app shell has a Content-Security-Policy (`app/index.html`). Current limitation: it permits inline scripts/styles and broad HTTPS connections/media because some embedded streaming and lookup tools need them. This is not a strict allowlist and remains a hardening item.
 
 ## Signing key (important)
 
@@ -31,4 +31,7 @@ Android updates only install if they are signed with the same key. Losing the ke
 ## Known limits
 
 - Notes and trackers are stored unencrypted in the app's private storage. Anyone who can unlock the phone or has root access can read them. Use a screen lock.
+- Spotify access and refresh tokens are kept in tab-scoped session storage, not persistent local storage. They are removed from the previous persistent key on first load after this change. Users may need to connect Spotify again after closing the tab/app.
+- Browser session storage is not equivalent to hardware-backed encryption. A compromised device, malicious same-origin script, or debugging/root access may still expose active session data.
+- The source-code checks in `.github/workflows/security.yml` are automated safeguards, not an independent penetration test or certification.
 - Public streaming and API services used by some tools (see the privacy page) can see the requests you make to them.
