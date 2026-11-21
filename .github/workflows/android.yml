@@ -3,7 +3,7 @@ name: Build Android app
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, security/complete-privacy-encryption]
     paths-ignore: ['**.md', 'dashboard/**']
 
 permissions:
@@ -75,6 +75,9 @@ jobs:
       - name: Install Capacitor
         working-directory: native
         run: npm install
+      - name: Patch Capacitor 6 tar compatibility
+        working-directory: native
+        run: node scripts/patch-capacitor-cli.js
 
       - name: Copy the website into the app
         working-directory: native
