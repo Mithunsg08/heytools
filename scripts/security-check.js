@@ -33,6 +33,18 @@ if (shell.includes("script-src 'self' 'unsafe-inline'") || shell.includes("style
 }
 if (/connect-src\s+'self'\s+https:/.test(shell)) console.log('WARN  CSP allows broad HTTPS connections for online tools; a per-provider allowlist remains future hardening');
 
+const appSource = read('app/app.js');
+if (appSource.includes("name: 'AES-GCM', length: 256") &&
+    appSource.includes("PBKDF2") &&
+    appSource.includes("iterations = 310000") &&
+    appSource.includes("additionalData: new TextEncoder().encode('heytools-backup-v1')")) pass('Exported backups use password-derived AES-256-GCM with authenticated metadata');
+else fail('Encrypted backup implementation or authenticated encryption parameters are missing');
+if (appSource.includes("heytools-encrypted-backup") &&
+    appSource.includes("This is an older, unencrypted backup")) pass('Encrypted backups are recognized and legacy plaintext restores require warning confirmation');
+else fail('Encrypted backup restore or legacy plaintext warning is missing');
+if (appSource.includes("SKIP.test(k)") && appSource.includes("backup.data[k]")) pass('Backup restore filters reserved credential and internal keys');
+else fail('Backup restore reserved-key filtering needs review');
+
 const tracking = read('heytrack.js');
 if (/heytools\.track\.consent['"]\)\s*!==\s*'yes'/.test(tracking)) pass('Optional event tracking requires explicit consent');
 else fail('Tracking consent guard is missing');
