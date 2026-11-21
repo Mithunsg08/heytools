@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "description": "Android wrapper for HeyTools. Adds access to the videos and music stored on the phone.",
   "dependencies": {
-    "@capacitor/android": "^6.2.0",
-    "@capacitor/cli": "^6.2.0",
-    "@capacitor/core": "^6.2.0",
-    "@capacitor/app": "^6.0.0",
-    "@capacitor/local-notifications": "^6.1.0",
-    "@capacitor/browser": "^6.0.0"
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/browser": "^8.0.5"
   }
 }
