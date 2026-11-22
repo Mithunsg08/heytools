@@ -46,7 +46,6 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   static final String ACTION_STOP = "com.heytools.GUARD_STOP";
   static final String ACTION_TEST = "com.heytools.GUARD_TEST";
   static final String ACTION_CONFIG = "com.heytools.GUARD_CONFIG";
-  static final String ACTION_TAMPER = "com.heytools.GUARD_TAMPER";
   static final String ACTION_BOOT = "com.heytools.GUARD_BOOT";
   static final String PREFS = "heytools_guard";
   private static final String CH_STATUS = "heytools_guard_status", CH_ALERT = "heytools_guard_alert", CH_LIMIT = "heytools_guard_limit";
@@ -135,7 +134,6 @@ public class ChargeGuardService extends Service implements SensorEventListener {
       case ACTION_STOP: if (state.equals("alarm") || testing) stopAlarm("Stopped from the app"); break;
       case ACTION_TEST: startTest(); break;
       case ACTION_CONFIG: applyConfig(); break;
-      case ACTION_TAMPER: if (state.equals("armed") || state.equals("arming")) trigger("Someone tried to switch the phone off"); break;
       case ACTION_BOOT:
         if (sp(this).getBoolean("armed", false)) { note(this, "Phone restarted while the guard was on"); trigger("Phone was switched off or restarted"); }
         else stopSelfClean();

@@ -26,7 +26,7 @@ public class ChargeGuardPlugin extends Plugin {
     s.put("trigUnplug", p.getBoolean("trigUnplug", true)); s.put("trigMotion", p.getBoolean("trigMotion", false));
     s.put("sens", p.getInt("sens", 2)); s.put("flash", p.getBoolean("flash", true)); s.put("vibrate", p.getBoolean("vibrate", true));
     s.put("unlockStops", p.getBoolean("unlockStops", true)); s.put("duration", p.getInt("duration", 15));
-    s.put("allowInUse", p.getBoolean("allowInUse", true)); s.put("blockPower", p.getBoolean("blockPower", true)); s.put("limit", p.getInt("limit", 0));
+    s.put("allowInUse", p.getBoolean("allowInUse", true)); s.put("limit", p.getInt("limit", 0));
     return s;
   }
 
@@ -46,8 +46,6 @@ public class ChargeGuardPlugin extends Plugin {
     KeyguardManager km = (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
     r.put("secure", km != null && km.isDeviceSecure());
     r.put("settings", settings(p));
-    String en = android.provider.Settings.Secure.getString(c.getContentResolver(), android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-    r.put("blockReady", en != null && en.contains(c.getPackageName() + "/") && en.contains("GuardAccessibilityService"));
     call.resolve(r);
   }
 
@@ -60,7 +58,7 @@ public class ChargeGuardPlugin extends Plugin {
       if (d.has("sens")) e.putInt("sens", Math.max(1, Math.min(3, d.optInt("sens", 2))));
       if (d.has("duration")) e.putInt("duration", Math.max(0, Math.min(60, d.optInt("duration", 15))));
       if (d.has("limit")) e.putInt("limit", Math.max(0, Math.min(100, d.optInt("limit", 0))));
-      String[] flags = {"trigUnplug", "trigMotion", "flash", "vibrate", "unlockStops", "allowInUse", "blockPower"};
+      String[] flags = {"trigUnplug", "trigMotion", "flash", "vibrate", "unlockStops", "allowInUse"};
       for (String f : flags) if (d.has(f)) e.putBoolean(f, d.optBoolean(f));
       e.apply();
       if (ChargeGuardService.running) send(ChargeGuardService.ACTION_CONFIG);
@@ -77,12 +75,6 @@ public class ChargeGuardPlugin extends Plugin {
     } catch (Exception e) { call.reject("Could not stop the guard: " + e.getMessage(), e); }
   }
   @PluginMethod public void stopAlarm(PluginCall call) { try { if (ChargeGuardService.running) send(ChargeGuardService.ACTION_STOP); call.resolve(); } catch (Exception e) { call.reject(e.getMessage(), e); } }
-  @PluginMethod public void openAccessibilitySettings(PluginCall call) {
-    try {
-      Intent i = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-      getContext().startActivity(i); call.resolve();
-    } catch (Exception e) { call.reject("Could not open Accessibility settings: " + e.getMessage(), e); }
-  }
   @PluginMethod public void test(PluginCall call) { try { send(ChargeGuardService.ACTION_TEST); call.resolve(); } catch (Exception e) { call.reject("Could not start the test: " + e.getMessage(), e); } }
 
   @PluginMethod
