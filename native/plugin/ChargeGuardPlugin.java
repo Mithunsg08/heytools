@@ -98,6 +98,13 @@ public class ChargeGuardPlugin extends Plugin {
       call.resolve();
     } catch (Exception e) { call.reject(e.getMessage(), e); }
   }
+  /** Opens HeyTools' own App info page, where "Allow restricted settings" lives for apps installed from outside the Play Store. */
+  @PluginMethod public void openAppSettings(PluginCall call) {
+    try {
+      Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(i); call.resolve();
+    } catch (Exception e) { call.reject("Could not open App info: " + e.getMessage(), e); }
+  }
   @PluginMethod public void test(PluginCall call) { try { send(ChargeGuardService.ACTION_TEST); call.resolve(); } catch (Exception e) { call.reject("Could not start the test: " + e.getMessage(), e); } }
 
   @PluginMethod

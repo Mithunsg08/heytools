@@ -53,7 +53,7 @@ a.dl{display:inline-block;margin-top:14px;padding:13px 20px;border-radius:14px;c
   <h1>Anti-Theft Guard</h1>
   <p class="sub">Switch it on and put the phone down. If someone grabs it or pulls the charger, the screen locks and a loud alarm rings until you unlock the phone.</p>
 
-  <div id="adminWarn" class="warn" hidden>To lock the screen when the alarm starts, Android needs your permission once. It is used for locking only.<div style="margin-top:10px"><button class="btn" id="adminBtn" type="button">Allow screen lock</button></div></div>
+  <div id="adminWarn" class="warn" hidden>To lock the screen when the alarm starts, Android needs your permission once. It is used for locking only.<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="adminBtn" type="button">Allow screen lock</button><button class="btn" id="appInfoBtn" type="button">Open App info</button></div><small style="display:block;margin-top:10px;color:#ffe2a8">If Android says "App was denied access": tap <b>Open App info</b>, then the <b>⋮</b> menu at the top right, choose <b>Allow restricted settings</b>, confirm with your PIN or fingerprint, then tap Allow screen lock again.</small></div>
 
   <div id="secWarn" class="warn" hidden>⚠ This phone has no screen lock. Anyone can stop the alarm just by waking the screen. Set a PIN, pattern or fingerprint in Android Settings first.</div>
 
@@ -195,6 +195,7 @@ $('testBtn').onclick=function(){G.test();setTimeout(loadLog,800);};
   $(p[0]).onclick=function(e){var b=e.target.closest('button');if(!b)return;var o={};o[p[1]]=p[2]?+b.dataset.v:b.dataset.v;opt(p[0],b.dataset.v);save(o);if(p[1]==='sound')setTimeout(function(){G.test();},350);};
 });
 $('adminBtn').onclick=function(){G.requestAdmin().catch(function(e){alert((e&&e.message)||'Could not open the permission screen');});};
+$('appInfoBtn').onclick=function(){G.openAppSettings().catch(function(){});};
 $('adminOff').onclick=function(){if(confirm('Remove the screen lock permission? The alarm will still ring, but the screen will not lock by itself.'))G.removeAdmin().then(poll);};
 $('bgBtn').onclick=function(){try{HeyNotify.openBatterySettings&&HeyNotify.openBatterySettings();}catch(e){}};
 $('autoBtn').onclick=function(){try{HeyNotify.openAutostartSettings&&HeyNotify.openAutostartSettings();}catch(e){}};
