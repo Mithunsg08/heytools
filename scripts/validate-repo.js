@@ -25,6 +25,7 @@ const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
 if (duplicates.length) fail('Duplicate tool IDs: ' + [...new Set(duplicates)].join(', '));
 else pass('No duplicate tool IDs (' + ids.length + ' registered)');
 
+const appOnlyIds = [...registry.matchAll(/\bid:\s*'([^']+)'[^}]*\bappOnly:/gs)].map((m) => m[1]);
 const localIds = ids.filter((id) => !externalIds.includes(id));
 for (const id of localIds) {
   const page = path.join(root, id, 'index.html');
@@ -148,6 +149,7 @@ for (const id of localIds) {
   if (/example\.com|YOUR-DOMAIN|YOUR-USERNAME|yourdomain\.com/i.test(html.replace(/<input[^>]*>|placeholder="[^"]*"|https?:\/\/(?:www\.)?example\.com\/?["'\s)]*(?=[^<]*<\/code>)/gi, ''))) {
     if (!['barcode-generate', 'dice-roller', 'image-compress', 'password-generator', 'word-counter', 'internet-speed', 'media-downloads'].includes(id) || /rel="canonical"[^>]*example\.com|og:url[^>]*example\.com/i.test(html)) problem(id + ': contains a placeholder domain (example.com / YOUR-DOMAIN).');
   }
+  if (appOnlyIds.includes(id)) continue;   // app-only pages are not public or indexed
   const canon = (html.match(/<link[^>]*rel="canonical"[^>]*href="([^"]+)"/i) || [])[1];
   const want = id === 'earth-zipcode' ? 'https://earthszipcode.com/' : BASE_URL + '/' + id + '/';
   if (canon !== want) problem(id + ': canonical is ' + canon + ', expected ' + want + '. Run: node scripts/seo-normalize.js');
@@ -172,7 +174,7 @@ else pass('Privacy page exists');
 /* sitemap lists every local tool */
 {
   const sm = read('sitemap.xml');
-  const miss = localIds.filter((id) => !sm.includes('<loc>' + BASE_URL + '/' + id + '/</loc>'));
+  const miss = localIds.filter((id) => !appOnlyIds.includes(id) && !sm.includes('<loc>' + BASE_URL + '/' + id + '/</loc>'));
   if (miss.length) fail('Sitemap is missing: ' + miss.join(', ') + '. Run: node scripts/seo-normalize.js');
   else pass('Sitemap lists all ' + localIds.length + ' local tools');
 }

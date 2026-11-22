@@ -6,7 +6,7 @@
    - Fonts and libraries are shipped with the app. Nothing is fetched from Google or a CDN.
    - Everything else (speed tests, streams, APIs, range requests) goes straight to the network.
    Bump VERSION whenever the app shell or any tool implementation changes. */
-const VERSION = 'heytools-app-v41';
+const VERSION = 'heytools-app-v42';
 const NETWORK_TIMEOUT_MS = 3000;
 
 const TOOLS = [
@@ -16,7 +16,7 @@ const TOOLS = [
   'password-generator', 'recorder', 'scientific-calculator', 'video-loop',
   'video-player', 'word-counter', 'world-clock',
   'unit-converter', 'qr-scanner', 'spirit-level', 'json-formatter', 'color-picker',
-  'expense-tracker', 'habit-tracker', 'focus-timer', 'geo-camera', 'alarm-clock',
+  'expense-tracker', 'habit-tracker', 'focus-timer', 'geo-camera', 'alarm-clock', 'charge-guard',
   'flashlight', 'countdown-timers', 'water-tracker', 'sleep-calculator', 'breathing', 'tally-counter', 'split-bills', 'date-calculator', 'encoder-hash', 'markdown-editor', 'image-resizer', 'spin-wheel', 'typing-test'
 ];
 

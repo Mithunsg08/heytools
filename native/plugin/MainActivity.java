@@ -128,6 +128,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(MediaLibraryPlugin.class);
     registerPlugin(SecureStoragePlugin.class);
     registerPlugin(HeyAlarmPlugin.class);
+    registerPlugin(ChargeGuardPlugin.class);
     registerPlugin(ScreenRecordPlugin.class);
     super.onCreate(savedInstanceState);
     getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);

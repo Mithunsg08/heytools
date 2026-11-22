@@ -28,6 +28,7 @@ window.HEY_TOOLS = [
   { id: 'expense-tracker', name: 'Expense Tracker', cat: 'daily', icon: '💸', net: 'offline', isNew: true, desc: 'Log spending, see it by category, track a monthly budget.', themed: true, hide: '.seo,footer,.lead' },
   { id: 'habit-tracker', name: 'Habit Tracker', cat: 'daily', icon: '✅', net: 'offline', isNew: true, desc: 'One-tap daily check-ins with streaks.', themed: true, hide: '.seo,footer,.lead' },
   { id: 'focus-timer', name: 'Focus Timer', cat: 'daily', icon: '⏱️', net: 'offline', isNew: true, desc: 'Pomodoro work and break sessions with a chime.', themed: true, hide: '.seo,footer,.lead' },
+  { id: 'charge-guard', name: 'Charge Guard', cat: 'utility', icon: '🛡️', net: 'offline', isNew: true, appOnly: true, desc: 'Loud alarm if your phone is unplugged from the charger. Android app only.', hide: 'footer' },
   { id: 'alarm-clock', name: 'Alarm Clock', cat: 'daily', icon: '⏰', net: 'offline', isNew: true, desc: '14 alarm tones, repeat days and snooze. Rings even when the app is closed.', hide: '.seo,footer' },
   { id: 'notes-to-do-list', name: 'Notes & To Do', cat: 'daily', icon: '📝', net: 'offline', desc: 'Pinned notes and daily tasks with reminders.', hide: '.about' },
   { id: 'world-clock', name: 'World Clock & Stopwatch', cat: 'daily', icon: '🌐', net: 'offline', desc: 'Times in 400+ zones and a lap stopwatch.', hide: 'main>section:not(#pw):not(#ps),footer' },

@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
+for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -38,6 +38,7 @@ const perms = [
   ['android.permission.POST_NOTIFICATIONS'],
   ['android.permission.SCHEDULE_EXACT_ALARM'],
   ['android.permission.RECEIVE_BOOT_COMPLETED'],
+  ['android.permission.FOREGROUND_SERVICE_SPECIAL_USE'],
   ['android.permission.USE_FULL_SCREEN_INTENT'],
   ['android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS']
 ];
@@ -58,6 +59,8 @@ if (!m.includes('KeepAliveService')) m = m.replace('</application>', '    <servi
 if (!m.includes('ScreenRecordService')) m = m.replace('</application>', '    <service android:name=".ScreenRecordService" android:exported="false" android:foregroundServiceType="mediaProjection" />\n    </application>');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
+  '<service android:name=".ChargeGuardService" android:exported="false" android:foregroundServiceType="specialUse"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Watches the charger and sounds an alarm if it is unplugged" /></service>',
+  '<receiver android:name=".ChargeGuardBootReceiver" android:enabled="true" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter></receiver>',
   '<activity android:name=".AlarmRingActivity" android:exported="false" android:launchMode="singleInstance" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />',
   '<service android:name=".AlarmRingingService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="mediaPlayback" />',
   '<receiver android:name=".AlarmReceiver" android:exported="false" android:directBootAware="true" />',

@@ -1,7 +1,9 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var TOOLS = window.HEY_TOOLS, CATS = window.HEY_CATS, NATIVE = window.HeyNative || { isNative: false, hasMedia: false };
+  var NATIVE = window.HeyNative || { isNative: false, hasMedia: false };
+  /* tools marked appOnly need the Android app (background services), so the website and PWA do not list them */
+  var TOOLS = window.HEY_TOOLS.filter(function (t) { return !t.appOnly || NATIVE.isNative; }), CATS = window.HEY_CATS;
   var byId = {}, catLabel = {};
   TOOLS.forEach(function (t) { byId[t.id] = t; });
   CATS.forEach(function (c) { catLabel[c.id] = c.label; });
