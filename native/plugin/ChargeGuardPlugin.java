@@ -25,7 +25,7 @@ public class ChargeGuardPlugin extends Plugin {
     s.put("delay", p.getInt("delay", 10)); s.put("sound", p.getString("sound", "wail"));
     s.put("trigUnplug", p.getBoolean("trigUnplug", true)); s.put("trigMotion", p.getBoolean("trigMotion", false));
     s.put("sens", p.getInt("sens", 2)); s.put("flash", p.getBoolean("flash", true)); s.put("vibrate", p.getBoolean("vibrate", true));
-    s.put("unlockStops", p.getBoolean("unlockStops", true)); s.put("duration", p.getInt("duration", 15));
+    s.put("unlockStops", p.getBoolean("unlockStops", true)); s.put("duration", p.getInt("duration", 0));
     s.put("allowInUse", p.getBoolean("allowInUse", true)); s.put("limit", p.getInt("limit", 0));
     return s;
   }

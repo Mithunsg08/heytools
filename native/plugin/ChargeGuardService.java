@@ -248,9 +248,9 @@ public class ChargeGuardService extends Service implements SensorEventListener {
     setState("alarm");
     note(this, "ALARM: " + why + " (battery " + battery + "%)");
     startOutputs();
-    int mins = sp(this).getInt("duration", 15);
+    int mins = sp(this).getInt("duration", 0);          // 0 = keep ringing until the phone is unlocked
     h.removeCallbacks(timeoutRunnable);
-    h.postDelayed(timeoutRunnable, (mins <= 0 ? 60 : mins) * 60 * 1000L);
+    if (mins > 0) h.postDelayed(timeoutRunnable, mins * 60 * 1000L);
   }
   private final Runnable timeoutRunnable = new Runnable() { @Override public void run() { if (state.equals("alarm")) stopAlarm("Stopped: time limit reached"); } };
 
@@ -277,7 +277,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
 
   private void startOutputs() {
     PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-    if (pm != null && (wake == null || !wake.isHeld())) { wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HeyTools:Guard"); wake.acquire(65 * 60 * 1000L); }
+    if (pm != null && (wake == null || !wake.isHeld())) { wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HeyTools:Guard"); wake.acquire(); }
     forceVolume();
     h.removeCallbacks(volumeLock); h.postDelayed(volumeLock, 400);
     startSiren(sp(this).getString("sound", "wail"));
