@@ -1019,12 +1019,16 @@
   /* ---------- back up and restore ----------
      Saves the things you made (notes, to-dos, habits, expenses, alarms, settings) to a file, so a new install or a new phone can pick up where you stopped. */
   /* Never written to a backup file or restored from one: login tokens, install ids and notification plumbing. */
-  var SKIP = /^(heytools\.(update|notif|perm|iid|last|pending|track|onboarded)|mp_sp|mp_sp_cid|mp_ver|__probe)/;
+  var SKIP = /^(hs1:|hs2meta|heytools\.(update|notif|perm|iid|last|pending|track|onboarded)|mp_sp|mp_sp_cid|mp_ver|__probe)/;
   var BACKUP_VERSION = 2, KEY_OK = /^[A-Za-z0-9_.:\-]{1,120}$/, MAX_VALUE = 1500000, MAX_TOTAL = 6000000, MAX_KEYS = 600;
   function collectBackup() {
     var data = {};
     for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (KEY_OK.test(k) && !SKIP.test(k)) data[k] = localStorage.getItem(k); }
-    return { app: 'heytools', v: BACKUP_VERSION, saved: new Date().toISOString(), build: BUILD.run || 0, data: data };
+    /* private records are stored encrypted on the device; the backup file is encrypted again with the backup password */
+    return window.HeySecure.exportAll().then(function (r) {
+      Object.keys(r.data).forEach(function (k) { data[k] = r.data[k]; });
+      return { app: 'heytools', v: BACKUP_VERSION, saved: new Date().toISOString(), build: BUILD.run || 0, data: data, unreadable: r.failed };
+    });
   }
   function saveTextFile(name, text, mime) {
     mime = mime || 'application/json';
@@ -1087,7 +1091,7 @@
     if (again === null) return;
     if (password !== again) { toast('Passwords do not match. Nothing was saved.'); return; }
     var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
-    encryptBackup(collectBackup(), password).then(function (text) {
+    collectBackup().then(function (b) { return encryptBackup(b, password); }).then(function (text) {
       saveTextFile('heytools-encrypted-backup-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.htbackup', text, 'application/vnd.heytools.encrypted-backup+json');
       password = ''; again = '';
     }).catch(function (err) { password = ''; again = ''; toast(err && err.message ? err.message : 'Could not encrypt the backup'); });
@@ -1120,8 +1124,17 @@
         if (keys.length > MAX_KEYS || total > MAX_TOTAL) { toast('That backup is larger than HeyTools allows'); return; }
         if (!confirm('Restore ' + keys.length + ' saved items from the backup of ' + (backup.saved ? String(backup.saved).slice(0, 10) : 'an earlier day') + '? This replaces the matching data in this app.')) return;
         var failed = 0;
-        keys.forEach(function (k) { try { localStorage.setItem(k, backup.data[k]); } catch (err) { failed++; } });
-        toast(failed ? 'Restored with ' + failed + ' items skipped (storage full)' : 'Backup restored'); setTimeout(function () { location.reload(); }, 900);
+        var jobs = keys.map(function (k) {
+          if (window.HeySecure.isSecureKey(k)) {
+            var v; try { v = JSON.parse(backup.data[k]); } catch (err) { failed++; return Promise.resolve(); }
+            return window.HeySecure.setJSON(k, v).catch(function () { failed++; });
+          }
+          try { localStorage.setItem(k, backup.data[k]); } catch (err) { failed++; }
+          return Promise.resolve();
+        });
+        Promise.all(jobs).then(function () {
+          toast(failed ? 'Restored with ' + failed + ' items skipped' : 'Backup restored'); setTimeout(function () { location.reload(); }, 900);
+        });
       });
     };
     fr.readAsText(f);
@@ -1322,7 +1335,7 @@
     Object.keys(frames).forEach(function (k) { dropFrame(k); });
     if (HN) jobs.push(HN.cancelAll());
     if (NATIVE.isNative && NATIVE.stopPlayback) NATIVE.stopPlayback();
-    try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* ignore */ }
+    try { window.HeySecure.lock(); localStorage.clear(); sessionStorage.clear(); } catch (e) { /* ignore */ }
     if (window.indexedDB && indexedDB.databases) {
       jobs.push(indexedDB.databases().then(function (list) {
         return Promise.all(list.map(function (d) {
@@ -1382,4 +1395,14 @@
   }
   setVerInfo();
   if (window.HeyTrack && (NATIVE.isNative || standalone)) { try { if (!sessionStorage.getItem('hey.open')) { sessionStorage.setItem('hey.open', '1'); HeyTrack.event('app_open'); } } catch (e) { HeyTrack.event('app_open'); } }
+
+  /* ---------- password lock ---------- */
+  window.HeySecure.ensureUnlocked().catch(function () {});
+  if ($('lockBtn')) $('lockBtn').addEventListener('click', function () { location.reload(); });
+  if ($('pwBtn')) $('pwBtn').addEventListener('click', function () {
+    var o = prompt('Enter your current password.'); if (o === null) return;
+    var n = prompt('Enter a new password (at least ' + window.HeySecure.MIN_PASSWORD + ' characters). If you forget it, your data cannot be recovered.'); if (n === null) return;
+    if (n !== prompt('Enter the new password again.')) { toast('Passwords do not match. Nothing changed.'); return; }
+    window.HeySecure.changePassword(o, n).then(function () { toast('Password changed'); }, function (e) { toast(e && e.message || 'Could not change the password'); });
+  });
 })();

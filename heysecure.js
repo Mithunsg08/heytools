@@ -1,15 +1,19 @@
-/* HeySecure: encrypted storage for private HeyTools data.
-   Android app: AES-256-GCM with a hardware-backed Android Keystore key (SecureStorage plugin).
-   Browser / PWA: AES-256-GCM with a non-extractable WebCrypto key kept in IndexedDB.
-   Only ciphertext is written to localStorage ("hs1:<key>"). There is no plaintext fallback: if encryption
-   is unavailable, reads return the fallback and writes fail with an error instead of saving readable data. */
+/* HeySecure: password-protected encryption for private HeyTools data.
+   The person sets one password. A random 256-bit data key encrypts every record (AES-256-GCM); that key is itself
+   encrypted ("wrapped") with a key derived from the password (PBKDF2-SHA-256, 600,000 rounds, random salt).
+   The password and the unwrapped key live only in memory and are never stored, so a forgotten password cannot be recovered:
+   the data stays unreadable and the only way forward is to erase it. Only ciphertext is written to localStorage ("hs1:<key>").
+   There is no plaintext fallback. Records written by the earlier device-key version (v1) are upgraded on first unlock. */
 (function (root) {
   'use strict';
-  var PREFIX = 'hs1:', AAD = 'heytools-secure-record-v1:', KEY_RE = /^[A-Za-z0-9_.:-]{1,120}$/;
-  var MAX = 1024 * 1024;
+  /* Same-origin tool pages inside the app share the app shell's instance, so one unlock covers every tool. */
+  try { if (root.top && root.top !== root && root.top.HeySecure && root.top.HeySecure.__core) { root.HeySecure = root.top.HeySecure; return; } } catch (e) {}
+  var PREFIX = 'hs1:', META = 'hs2meta', AAD1 = 'heytools-secure-record-v1:', AAD2 = 'heytools-secure-record-v2:', AADW = 'heytools-key-wrap-v2';
+  var KEY_RE = /^[A-Za-z0-9_.:-]{1,120}$/, MAX = 1024 * 1024, ITER = 600000, MIN_PW = 10;
+  var SECURE_KEYS = ['notes-and-todo:v1', 'heytools.expenses.v1', 'heytools.habits.v1'];
   var te = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
   var td = typeof TextDecoder !== 'undefined' ? new TextDecoder() : null;
-
+  function subtle() { return root.crypto && root.crypto.subtle; }
   function store() { try { return root.localStorage; } catch (e) { return null; } }
   function b64(buf) { var s = '', b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
   function unb64(s) { var r = atob(s), b = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) b[i] = r.charCodeAt(i); return b; }
@@ -74,12 +78,12 @@
     encrypt: function (key, text) {
       var iv = root.crypto.getRandomValues(new Uint8Array(12));
       return getCryptoKey().then(function (k) {
-        return root.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: te.encode(AAD + key) }, k, te.encode(text));
+        return root.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: te.encode(AAD1 + key) }, k, te.encode(text));
       }).then(function (ct) { return { v: 1, alg: 'A256GCM', iv: b64(iv), data: b64(ct) }; });
     },
     decrypt: function (key, env) {
       return getCryptoKey().then(function (k) {
-        return root.crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv), additionalData: te.encode(AAD + key) }, k, unb64(env.data));
+        return root.crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv), additionalData: te.encode(AAD1 + key) }, k, unb64(env.data));
       }).then(function (pt) { return td.decode(pt); });
     }
   };
@@ -98,7 +102,31 @@
     });
   }
 
-  /* ---------- Repository ---------- */
+
+  /* ---------- Password key ---------- */
+  var dek = null, unlockP = null, fails = 0, lastFail = 0;
+  function deriveKek(pw, salt, iter) {
+    return subtle().importKey('raw', te.encode(pw), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+      return subtle().deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    });
+  }
+  function importDek(raw) { return subtle().importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); }
+  function readMeta() {
+    var s = store(); if (!s) return null;
+    try { var m = JSON.parse(s.getItem(META)); return m && m.v === 2 && m.salt && m.iv && m.wrapped ? m : null; } catch (e) { return null; }
+  }
+  function wrap(raw, pw) {
+    var salt = root.crypto.getRandomValues(new Uint8Array(16)), iv = root.crypto.getRandomValues(new Uint8Array(12));
+    return deriveKek(pw, salt, ITER).then(function (kek) {
+      return subtle().encrypt({ name: 'AES-GCM', iv: iv, additionalData: te.encode(AADW) }, kek, raw);
+    }).then(function (ct) { return { v: 2, kdf: 'PBKDF2-SHA256', iter: ITER, salt: b64(salt), iv: b64(iv), wrapped: b64(ct) }; });
+  }
+  function checkPw(pw) {
+    if (typeof pw !== 'string' || pw.length < MIN_PW) return new Error('Use a password of at least ' + MIN_PW + ' characters');
+    return null;
+  }
+
+  /* ---------- Records ---------- */
   function checkKey(k) { if (!KEY_RE.test(k || '')) throw new Error('Invalid secure storage key'); }
   var queues = Object.create(null);
   function enqueue(key, fn) {
@@ -109,53 +137,160 @@
   function readEnvelope(key) {
     var s = store(); if (!s) return null;
     var raw = s.getItem(PREFIX + key); if (!raw) return null;
-    try { var e = JSON.parse(raw); return e && e.v === 1 && e.iv && e.data ? e : null; } catch (x) { return null; }
+    try { var e = JSON.parse(raw); return e && (e.v === 1 || e.v === 2) && e.iv && e.data ? e : null; } catch (x) { return null; }
   }
-  function writeRaw(key, text) {
-    return waitBackend().then(function (b) {
-      if (!b) throw new Error('Encryption is not available on this device');
-      if (text.length > MAX / 2) throw new Error('Record too large for secure storage');
-      return b.encrypt(key, text).then(function (env) {
-        /* verify the record decrypts before the readable copy is ever touched */
-        return b.decrypt(key, env).then(function (back) {
-          if (back !== text) throw new Error('Encrypted record failed verification');
-          var s = store(); if (!s) throw new Error('Storage unavailable');
-          s.setItem(PREFIX + key, JSON.stringify(env));
-        });
+  function enc2(key, text) {
+    if (text.length > MAX / 2) return Promise.reject(new Error('Record too large for secure storage'));
+    var iv = root.crypto.getRandomValues(new Uint8Array(12));
+    return subtle().encrypt({ name: 'AES-GCM', iv: iv, additionalData: te.encode(AAD2 + key) }, dek, te.encode(text))
+      .then(function (ct) { return { v: 2, alg: 'A256GCM', iv: b64(iv), data: b64(ct) }; });
+  }
+  function dec2(key, env) {
+    return subtle().decrypt({ name: 'AES-GCM', iv: unb64(env.iv), additionalData: te.encode(AAD2 + key) }, dek, unb64(env.data)).then(function (pt) { return td.decode(pt); });
+  }
+  function writeText(key, text) {
+    return enc2(key, text).then(function (env) {
+      return dec2(key, env).then(function (back) {   /* verify before the old copy is replaced */
+        if (back !== text) throw new Error('Encrypted record failed verification');
+        var s = store(); if (!s) throw new Error('Storage unavailable');
+        s.setItem(PREFIX + key, JSON.stringify(env));
       });
     });
   }
+  function readText(key, env) {
+    if (env.v === 2) return dec2(key, env);
+    /* v1 (device key) record: read with the old backend and upgrade it */
+    return waitLegacy().then(function (b) {
+      if (!b) throw new Error('This record was made on a device key that is not available');
+      return b.decrypt(key, env);
+    }).then(function (t) { return writeText(key, t).then(function () { return t; }, function () { return t; }); });
+  }
+  function waitLegacy() {
+    return new Promise(function (res) {
+      var b = legacyBackend(), n = 0;
+      if (b) return res(b);
+      var t = setInterval(function () { b = legacyBackend(); if (b || ++n > 20) { clearInterval(t); res(b); } }, 150);
+    });
+  }
+  function legacyBackend() { if (nativeBackend.available()) return nativeBackend; if (webBackend.available()) return webBackend; return null; }
+
+  /* ---------- Lock screen ---------- */
+  var CSS = '#hs-lock{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(120% 90% at 50% 0%,#2a1f4d 0%,#0e1020 60%,#070810 100%);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#f3f1ff}' +
+    '#hs-lock *{box-sizing:border-box}#hs-card{width:100%;max-width:380px;padding:28px 24px;border-radius:24px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 30px 80px rgba(0,0,0,.5)}' +
+    '#hs-ico{width:56px;height:56px;border-radius:18px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(135deg,#8b7bff,#ff7bd0)}' +
+    '#hs-card h2{margin:0 0 6px;text-align:center;font-size:22px;font-weight:700}#hs-card p{margin:0 0 16px;text-align:center;font-size:14px;line-height:1.45;color:#c9c5e6}' +
+    '.hs-f{position:relative;margin-bottom:10px}.hs-f input{width:100%;padding:14px 46px 14px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.28);color:#fff;font-size:16px;outline:none}.hs-f input:focus{border-color:#a99bff}' +
+    '.hs-f button{position:absolute;right:6px;top:6px;width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:#c9c5e6;font-size:18px}' +
+    '#hs-go{width:100%;padding:14px;border:0;border-radius:14px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(135deg,#7c6bff,#ff6bc8);margin-top:4px}#hs-go[disabled]{opacity:.6}' +
+    '#hs-err{min-height:20px;margin:8px 0 0;text-align:center;font-size:13px;color:#ffb4c0}#hs-warn{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,200,90,.12);color:#ffe2a8;font-size:12.5px;line-height:1.4;text-align:left}' +
+    '#hs-forgot{display:block;margin:14px auto 0;background:none;border:0;color:#b9b4dd;font-size:13px;text-decoration:underline}';
+  function showLock(mode, done) {
+    var d = root.document; if (!d || !d.body) { return false; }
+    var el = d.createElement('div'); el.id = 'hs-lock'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+    var setup = mode === 'setup';
+    el.innerHTML = '<style>' + CSS + '</style><div id="hs-card"><div id="hs-ico">🔐</div>' +
+      '<h2>' + (setup ? 'Protect your data' : 'Unlock HeyTools') + '</h2>' +
+      '<p>' + (setup ? 'Choose a password. Your notes, expenses and habits are encrypted with it on this device.' : 'Enter your password to open your private data.') + '</p>' +
+      '<form id="hs-form" autocomplete="off"><div class="hs-f"><input id="hs-pw" type="password" placeholder="' + (setup ? 'New password (10+ characters)' : 'Password') + '" autocomplete="' + (setup ? 'new-password' : 'current-password') + '"><button type="button" id="hs-eye" aria-label="Show password">👁</button></div>' +
+      (setup ? '<div class="hs-f"><input id="hs-pw2" type="password" placeholder="Repeat password" autocomplete="new-password"></div><div id="hs-warn">⚠ There is no password reset. If you forget it, your encrypted data cannot be opened by anyone, including us.</div>' : '') +
+      '<div id="hs-err" role="alert"></div><button id="hs-go" type="submit">' + (setup ? 'Create password' : 'Unlock') + '</button></form>' +
+      (setup ? '' : '<button id="hs-forgot" type="button">Forgot password?</button>') + '</div>';
+    d.body.appendChild(el);
+    var pw = el.querySelector('#hs-pw'), pw2 = el.querySelector('#hs-pw2'), err = el.querySelector('#hs-err'), go = el.querySelector('#hs-go');
+    function say(m) { err.textContent = m || ''; }
+    el.querySelector('#hs-eye').onclick = function () { var t = pw.type === 'password' ? 'text' : 'password'; pw.type = t; if (pw2) pw2.type = t; };
+    el.querySelector('#hs-form').onsubmit = function (ev) {
+      ev.preventDefault(); say('');
+      if (setup && pw.value !== pw2.value) return say('The two passwords do not match');
+      go.disabled = true; var label = go.textContent; go.textContent = 'Working…';
+      (setup ? HS.setup(pw.value) : HS.unlock(pw.value)).then(function () {
+        pw.value = ''; if (pw2) pw2.value = ''; el.remove(); done();
+      }, function (e) { say(e && e.message || 'Something went wrong'); go.disabled = false; go.textContent = label; if (!setup) { pw.select(); } });
+    };
+    var fg = el.querySelector('#hs-forgot');
+    if (fg) fg.onclick = function () {
+      if (!root.confirm('There is no way to recover a forgotten password. To continue you must erase all encrypted data (notes, expenses, habits) on this device. Erase it now?')) return;
+      if (!root.confirm('This permanently deletes your encrypted data. You can restore it later only from a backup and its backup password. Erase everything?')) return;
+      HS.reset().then(function () { el.remove(); unlockP = null; HS.ensureUnlocked().then(done); });
+    };
+    setTimeout(function () { try { pw.focus(); } catch (e) {} }, 50);
+    return true;
+  }
 
   var HS = {
-    PREFIX: PREFIX,
-    status: function () { var b = backend(); return { available: !!b, backend: b ? b.name : null }; },
-    /* Resolves the stored JSON value, migrating a legacy plaintext copy the first time. Never throws for missing data. */
+    __core: true, PREFIX: PREFIX, MIN_PASSWORD: MIN_PW,
+    isSetUp: function () { return !!readMeta(); },
+    isUnlocked: function () { return !!dek; },
+    isSecureKey: function (k) { return SECURE_KEYS.indexOf(k) >= 0 || !!readEnvelope(k); },
+    /* Create the password for the first time. Also upgrades any records written by the earlier device-key version. */
+    setup: function (pw) {
+      var bad = checkPw(pw); if (bad) return Promise.reject(bad);
+      if (!subtle() || !te) return Promise.reject(new Error('This browser cannot encrypt data'));
+      if (readMeta()) return Promise.reject(new Error('A password is already set'));
+      var raw = root.crypto.getRandomValues(new Uint8Array(32));
+      return wrap(raw, pw).then(function (meta) {
+        return importDek(raw).then(function (k) { dek = k; store().setItem(META, JSON.stringify(meta)); });
+      }).then(function () { return upgradeAll(); }).then(function () { return true; });
+    },
+    unlock: function (pw) {
+      var wait = Math.min(30000, fails > 2 ? Math.pow(2, fails - 2) * 1000 : 0) - (Date.now() - lastFail);
+      var delay = wait > 0 ? new Promise(function (r) { setTimeout(r, wait); }) : Promise.resolve();
+      var m = readMeta();
+      if (!m) return Promise.reject(new Error('No password has been set yet'));
+      if (typeof pw !== 'string' || !pw) return Promise.reject(new Error('Enter your password'));
+      return delay.then(function () { return deriveKek(pw, unb64(m.salt), m.iter || ITER); }).then(function (kek) {
+        return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
+      }).then(function (raw) { return importDek(raw); }).then(function (k) {
+        dek = k; fails = 0; return upgradeAll().then(function () { return true; });
+      }, function () { fails++; lastFail = Date.now(); throw new Error('Wrong password'); });
+    },
+    lock: function () { dek = null; unlockP = null; },
+    /* Resolves when the data is unlocked, showing the password screen if needed. */
+    ensureUnlocked: function () {
+      if (dek) return Promise.resolve();
+      if (unlockP) return unlockP;
+      unlockP = new Promise(function (res, rej) {
+        function open() {
+          if (!showLock(readMeta() ? 'unlock' : 'setup', function () { res(); })) { if (!root.document || root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', open, { once: true }); else rej(new Error('Cannot show the password screen')); }
+        }
+        open();
+      });
+      return unlockP;
+    },
+    changePassword: function (oldPw, newPw) {
+      var bad = checkPw(newPw); if (bad) return Promise.reject(bad);
+      var m = readMeta(); if (!m || !dek) return Promise.reject(new Error('Unlock first'));
+      return deriveKek(oldPw, unb64(m.salt), m.iter || ITER).then(function (kek) {
+        return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
+      }).then(function (raw) { return wrap(raw, newPw); }, function () { throw new Error('Current password is wrong'); })
+        .then(function (meta) { store().setItem(META, JSON.stringify(meta)); return true; });
+    },
+    /* Erase every encrypted record and the password. Used for "forgot password" and "delete all my data". */
+    reset: function () {
+      var s = store(); dek = null; unlockP = null; fails = 0;
+      if (s) { HS.keys().forEach(function (k) { s.removeItem(PREFIX + k); }); s.removeItem(META); SECURE_KEYS.forEach(function (k) { s.removeItem(k); }); }
+      return new Promise(function (r) { try { var q = root.indexedDB.deleteDatabase('heysecure'); q.onsuccess = q.onerror = q.onblocked = function () { r(); }; } catch (e) { r(); } });
+    },
     getJSON: function (key, fallback) {
       checkKey(key);
-      return enqueue(key, function () {
-        var env = readEnvelope(key);
-        if (env) {
-          return waitBackend().then(function (b) {
-            if (!b) throw new Error('Encryption is not available on this device');
-            return b.decrypt(key, env);
-          }).then(function (t) { return JSON.parse(t); });
-        }
-        var s = store(), legacy = null;
-        try { legacy = s && s.getItem(key); } catch (e) {}
-        if (legacy == null) return fallback;
-        var val; try { val = JSON.parse(legacy); } catch (e) { return fallback; }
-        return writeRaw(key, JSON.stringify(val)).then(function () {
-          try { s.removeItem(key); } catch (e) {}      /* readable copy removed only after verified encryption */
-          return val;
-        }, function () { return val; });                /* encryption unavailable: keep legacy data readable but unchanged */
+      return HS.ensureUnlocked().then(function () {
+        return enqueue(key, function () {
+          var env = readEnvelope(key);
+          if (env) return readText(key, env).then(function (t) { return JSON.parse(t); });
+          var s = store(), legacy = null;
+          try { legacy = s && s.getItem(key); } catch (e) {}
+          if (legacy == null) return fallback;
+          var val; try { val = JSON.parse(legacy); } catch (e) { return fallback; }
+          return writeText(key, JSON.stringify(val)).then(function () { try { s.removeItem(key); } catch (e) {} return val; });
+        });
       });
     },
     setJSON: function (key, value) {
       checkKey(key);
       var text = JSON.stringify(value);
-      return enqueue(key, function () {
-        return writeRaw(key, text).then(function () {
-          try { var s = store(); if (s && s.getItem(key) != null) s.removeItem(key); } catch (e) {}
+      return HS.ensureUnlocked().then(function () {
+        return enqueue(key, function () {
+          return writeText(key, text).then(function () { try { var s = store(); if (s && s.getItem(key) != null) s.removeItem(key); } catch (e) {} });
         });
       });
     },
@@ -168,9 +303,23 @@
       if (s) for (var i = 0; i < s.length; i++) { var k = s.key(i); if (k && k.indexOf(PREFIX) === 0) out.push(k.slice(PREFIX.length)); }
       return out;
     },
-    /* Show a one-line notice when a save fails, so data is never silently lost */
+    /* Decrypted copy of every secure record as { data: { key: jsonText }, failed: [keys that could not be read] }, for building a backup. */
+    exportAll: function () {
+      return HS.ensureUnlocked().then(function () {
+        var names = HS.keys();
+        SECURE_KEYS.forEach(function (k) { if (names.indexOf(k) < 0 && store() && store().getItem(k) != null) names.push(k); });
+        var out = {}, failed = [];
+        return Promise.all(names.map(function (k) { return HS.getJSON(k, undefined).then(function (v) { if (v !== undefined) out[k] = JSON.stringify(v); }, function () { failed.push(k); }); })).then(function () { return { data: out, failed: failed }; });
+      });
+    },
     onError: function (e) { try { console.warn('HeySecure:', e && e.message); } catch (x) {} }
   };
+  /* Upgrade v1 device-key records and any readable copies of known keys now that the password key is open. */
+  function upgradeAll() {
+    var names = HS.keys();
+    SECURE_KEYS.forEach(function (k) { if (names.indexOf(k) < 0 && store() && store().getItem(k) != null) names.push(k); });
+    return Promise.all(names.map(function (k) { return HS.getJSON(k, undefined).catch(function () {}); }));
+  }
   root.HeySecure = HS;
   if (typeof module !== 'undefined' && module.exports) module.exports = HS;
 })(typeof window !== 'undefined' ? window : globalThis);
