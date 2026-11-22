@@ -45,6 +45,10 @@ public class ChargeGuardPlugin extends Plugin {
     long left = Math.max(0, ChargeGuardService.armAt - System.currentTimeMillis());
     r.put("armIn", st.equals("arming") ? (int) Math.ceil(left / 1000.0) : 0);
     r.put("alarmSince", ChargeGuardService.alarmSince);
+    long sa = ChargeGuardService.lastSensorAt;
+    r.put("sensorAge", sa == 0 ? -1 : (int) Math.min(600000, System.currentTimeMillis() - sa));
+    r.put("peak", Math.round(ChargeGuardService.peakDev * 10) / 10.0);
+    ChargeGuardService.peakDev = 0;
     KeyguardManager km = (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
     r.put("secure", km != null && km.isDeviceSecure());
     r.put("settings", settings(p));

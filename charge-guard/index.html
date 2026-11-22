@@ -61,7 +61,7 @@ a.dl{display:inline-block;margin-top:14px;padding:13px 20px;border-radius:14px;c
     <div class="shield" id="ico">🛡️</div>
     <p class="state" id="stTitle">Guard is off</p>
     <p class="why" id="stWhy"></p>
-    <div class="chips"><span class="pill" id="pBat">🔋 --%</span><span class="pill" id="pChg">🔌 --</span></div>
+    <div class="chips"><span class="pill" id="pBat">🔋 --%</span><span class="pill" id="pChg">🔌 --</span><span class="pill" id="pSen" hidden></span></div>
     <button class="go" id="mainBtn" type="button">Turn on guard</button>
   </section>
 
@@ -160,6 +160,8 @@ function render(s){
   $('stWhy').textContent=why;
   $('pBat').textContent='🔋 '+(s.battery>=0?s.battery+'%':'--%');
   $('pChg').textContent=s.plugged?'🔌 Charging':'🔌 Not charging';
+  var ps=$('pSen'); ps.hidden=!(st!=='off'&&st!=='stopped'&&s.settings&&s.settings.snatch);
+  if(!ps.hidden)ps.textContent=(s.sensorAge<0||s.sensorAge>3000)?'📡 No motion data':'📡 Motion '+(s.peak<1.5?'still':'moving')+' · '+s.peak;
   var b=$('mainBtn'); b.textContent=d[3]; b.className='go '+d[4];
   $('secWarn').hidden=!!s.secure;
   $('adminWarn').hidden=!!s.adminActive||!(s.settings&&s.settings.lockOnAlarm);$('adminOk').hidden=!s.adminActive;
