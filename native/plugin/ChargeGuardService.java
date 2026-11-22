@@ -99,6 +99,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   private long quietSince = 0, spikeAt = 0, sensorStart = 0, lastGentleT = 0;
   private int moveCount = 0;
   private double peakSpike = 0;
+  private long stillSeen = 0;
 
   @Override public IBinder onBind(Intent i) { return null; }
 
@@ -198,7 +199,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
     boolean gentle = state.equals("armed") && sp(this).getBoolean("trigMotion", false);
     boolean on = !state.equals("alarm") && !state.equals("off") && (gentle || snatchOn());
     setMotion(on);
-    quietSince = 0; spikeAt = 0; moveCount = 0; sensorStart = System.currentTimeMillis();
+    quietSince = 0; stillSeen = 0; spikeAt = 0; moveCount = 0; sensorStart = System.currentTimeMillis();
   }
 
   private final Runnable checkUnplug = new Runnable() { @Override public void run() {
@@ -421,8 +422,9 @@ public class ChargeGuardService extends Service implements SensorEventListener {
     /* snatch: the phone was still, then yanked hard and kept moving, as when it is grabbed and carried off */
     if (snatchOn()) {
       double dev = Math.abs(mag - 9.81);
-      boolean calm = quietSince > 0 && now - quietSince >= 1500;
-      if (dev < 2.0) { if (quietSince == 0) quietSince = now; } else if (spikeAt == 0) quietSince = 0;
+      /* "still" means a run of calm readings; a grab counts if the phone was still just before it, even if a hand moved it a little first */
+      if (dev < 2.0) { if (quietSince == 0) quietSince = now; if (now - quietSince >= 1200) stillSeen = now; } else if (spikeAt == 0) quietSince = 0;
+      boolean calm = stillSeen > 0 && now - stillSeen < 3000;
       int sn = sp(this).getInt("snatchSens", 2);
       double limit = sn >= 3 ? 7 : (sn <= 1 ? 16 : 10);
       if (spikeAt == 0) {
