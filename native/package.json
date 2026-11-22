@@ -10,5 +10,8 @@
     "@capacitor/app": "^6.0.0",
     "@capacitor/local-notifications": "^6.1.0",
     "@capacitor/browser": "^6.0.0"
+  },
+  "overrides": {
+    "tar": "^7.5.23"
   }
 }

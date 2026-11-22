@@ -42,7 +42,7 @@ a.dl{display:inline-block;margin-top:14px;padding:13px 20px;border-radius:14px;c
 </head>
 <body>
 <main>
-<section id="gate" class="card gate" hidden>
+<section id="gate" class="card gate">
   <div class="shield">🔒</div>
   <h1>Charge Guard is app only</h1>
   <p class="sub">It needs to run in the background and sound the alarm even when the screen is off, which a website cannot do. Open it in the HeyTools Android app.</p>
@@ -127,8 +127,8 @@ function plugin(){
 var G=null,last=null,busy=false,tries=0;
 function boot(){
   G=plugin();
-  if(!G){ if(++tries<14){setTimeout(boot,250);return;} $('gate').hidden=false; return; }
-  $('app').hidden=false; poll(); setInterval(function(){if(!document.hidden)poll();},1000); loadLog();
+  if(!G){ if(++tries<14){setTimeout(boot,250);} return; }
+  $('gate').hidden=true; $('app').hidden=false; poll(); setInterval(function(){if(!document.hidden)poll();},1000); loadLog();
 }
 var STATES={
   off:['🛡️','Guard is off','Plug in your phone, then turn it on.','Turn on guard',''],
