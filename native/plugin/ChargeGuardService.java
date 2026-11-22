@@ -24,6 +24,9 @@ import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -92,6 +95,8 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   private double lastMag = -1;
   private int origVolume = -1;
   private volatile boolean sirenOn = false;
+  private volatile AudioTrack curTrack;
+  private MediaPlayer backup;
   private Thread siren;
   private String cameraId = null;
   private Vibrator vibrator;
@@ -348,6 +353,8 @@ public class ChargeGuardService extends Service implements SensorEventListener {
           new AudioFormat.Builder().setSampleRate(rate).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
           bytes, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE);
         track.play();
+        curTrack = track;
+        note(ChargeGuardService.this, "Siren started (" + kind + ", buffer " + bytes + " bytes)");
         short[] buf = new short[1024];
         double phase = 0; long n = 0;
         while (sirenOn) {
@@ -364,14 +371,40 @@ public class ChargeGuardService extends Service implements SensorEventListener {
             if (v > 1) v = 1; else if (v < -1) v = -1;
             buf[i] = (short) (v * 32000);
           }
-          track.write(buf, 0, buf.length);
+          int w = track.write(buf, 0, buf.length);
+          if (w < 0) { note(ChargeGuardService.this, "Siren write error " + w); startBackupSound("write error " + w); break; }
         }
       } catch (Throwable e) { note(ChargeGuardService.this, "siren failed: " + e); }
       finally { if (track != null) { try { track.stop(); } catch (Exception ignored) { } try { track.release(); } catch (Exception ignored) { } } }
     } }, "guard-siren");
     siren.start();
+    h.postDelayed(sirenCheck, 1500);
   }
-  private void stopSiren() { sirenOn = false; siren = null; }
+  private void stopSiren() {
+    sirenOn = false; siren = null; curTrack = null;
+    h.removeCallbacks(sirenCheck);
+    if (backup != null) { try { backup.stop(); } catch (Exception ignored) { } try { backup.release(); } catch (Exception ignored) { } backup = null; }
+  }
+  /** If the generated siren is not actually moving audio after a moment, play the phone's own alarm tone instead so the alarm is never silent. */
+  private final Runnable sirenCheck = new Runnable() { @Override public void run() {
+    if (!sirenOn) return;
+    AudioTrack t = curTrack; int pos = -1;
+    try { if (t != null) pos = t.getPlaybackHeadPosition(); } catch (Exception ignored) { }
+    AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+    note(ChargeGuardService.this, "Siren check: position " + pos + ", alarm volume " + (am == null ? -1 : am.getStreamVolume(AudioManager.STREAM_ALARM)) + "/" + (am == null ? -1 : am.getStreamMaxVolume(AudioManager.STREAM_ALARM)));
+    if (pos <= 0) startBackupSound("siren produced no audio");
+  } };
+  private void startBackupSound(String why) {
+    if (backup != null) return;
+    try {
+      Uri u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+      if (u == null) u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+      MediaPlayer m = new MediaPlayer();
+      m.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+      m.setDataSource(this, u); m.setLooping(true); m.setVolume(1f, 1f); m.prepare(); m.start();
+      backup = m; note(this, "Backup alarm tone playing (" + why + ")");
+    } catch (Exception e) { note(this, "Backup alarm tone failed: " + e); }
+  }
 
   private final Runnable flashRunnable = new Runnable() { @Override public void run() {
     if (!state.equals("alarm") && !testing) return;
