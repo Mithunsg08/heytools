@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Charge Guard | HeyTools</title>
-<meta name="description" content="Charge Guard is part of the HeyTools Android app. It sounds a loud alarm if your phone is unplugged from the charger.">
+<title>Anti-Theft Guard | HeyTools</title>
+<meta name="description" content="Anti-Theft Guard is part of the HeyTools Android app. It locks the screen and sounds a loud alarm if your phone is snatched or unplugged.">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0b0d1a">
 <style>
@@ -31,7 +31,7 @@ h2{font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 .row b{display:block;font-weight:600;font-size:.98rem}.row small{color:var(--muted);font-size:.82rem;line-height:1.3;display:block}
 .sw{position:relative;flex:none;width:50px;height:30px}.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0}.sw i{position:absolute;inset:0;border-radius:99px;background:rgba(255,255,255,.18);transition:.2s}.sw i:after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}.sw input:checked+i{background:var(--ac)}.sw input:checked+i:after{transform:translateX(20px)}
 .opt{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.opt button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:12px;padding:8px 13px;font-size:.9rem}.opt button.on{background:linear-gradient(135deg,var(--ac),var(--ac2));border-color:transparent;font-weight:700}
-.col{padding:11px 0;border-top:1px solid var(--line)}.col:first-of-type{border-top:0}
+.col{padding:11px 0;border-top:1px solid var(--line)}.col small{display:block;margin-top:2px}.col:first-of-type{border-top:0}
 .btn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--ink);border-radius:12px;padding:9px 14px;font-weight:600;font-size:.9rem}
 .warn{background:rgba(255,198,90,.12);border:1px solid rgba(255,198,90,.35);color:#ffe2a8;border-radius:14px;padding:12px 14px;font-size:.9rem;margin-bottom:14px}
 pre{margin:0 0 10px;max-height:210px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:12px/1.5 ui-monospace,Menlo,monospace;color:#cfcdf0}
@@ -44,14 +44,16 @@ a.dl{display:inline-block;margin-top:14px;padding:13px 20px;border-radius:14px;c
 <main>
 <section id="gate" class="card gate">
   <div class="shield">🔒</div>
-  <h1>Charge Guard is app only</h1>
+  <h1>Anti-Theft Guard is app only</h1>
   <p class="sub">It needs to run in the background and sound the alarm even when the screen is off, which a website cannot do. Open it in the HeyTools Android app.</p>
   <a class="dl" href="https://github.com/Mithunsg08/heytools/releases/download/android-latest/HeyTools.apk" download>Get the Android app</a>
 </section>
 
 <div id="app" hidden>
-  <h1>Charge Guard</h1>
-  <p class="sub">Plug in, switch on, walk away. If anyone pulls the charger, a loud alarm rings until you unlock the phone.</p>
+  <h1>Anti-Theft Guard</h1>
+  <p class="sub">Switch it on and put the phone down. If someone grabs it or pulls the charger, the screen locks and a loud alarm rings until you unlock the phone.</p>
+
+  <div id="adminWarn" class="warn" hidden>To lock the screen when the alarm starts, Android needs your permission once. It is used for locking only.<div style="margin-top:10px"><button class="btn" id="adminBtn" type="button">Allow screen lock</button></div></div>
 
   <div id="secWarn" class="warn" hidden>⚠ This phone has no screen lock. Anyone can stop the alarm just by waking the screen. Set a PIN, pattern or fingerprint in Android Settings first.</div>
 
@@ -72,6 +74,15 @@ a.dl{display:inline-block;margin-top:14px;padding:13px 20px;border-radius:14px;c
     <div class="row" style="margin-top:8px"><div><b>Flashing light</b><small>Strobes the camera flash.</small></div><label class="sw"><input type="checkbox" id="cFlash"><i></i></label></div>
     <div class="row"><div><b>Vibrate</b><small>Buzzes while the alarm rings.</small></div><label class="sw"><input type="checkbox" id="cVibrate"><i></i></label></div>
     <small style="color:var(--muted)">The alarm always plays at full volume, even if someone turns the volume down.</small>
+  </section>
+
+  <section class="card">
+    <h2>Anti-snatch</h2>
+    <div class="row"><div><b>Alarm if the phone is grabbed</b><small>Rings when the phone has been still, then is yanked and carried off. Works whether or not it is charging. Ordinary walking will not set it off.</small></div><label class="sw"><input type="checkbox" id="cSnatch"><i></i></label></div>
+    <div class="col" id="snBox"><b style="font-weight:600">Snatch sensitivity</b><div class="opt" id="oSn"><button data-v="1">Low</button><button data-v="2">Medium</button><button data-v="3">High</button></div></div>
+    <div class="row"><div><b>Lock the screen at once</b><small>When any alarm starts, the screen locks so the thief must unlock to stop it.</small></div><label class="sw"><input type="checkbox" id="cLock"><i></i></label></div>
+    <div id="adminOk" style="color:var(--ok);font-size:.88rem;margin-top:6px" hidden>✓ Screen lock permission is on. <button class="btn" id="adminOff" type="button" style="padding:5px 10px;margin-left:6px">Remove</button></div>
+    <small style="color:var(--muted);display:block;margin-top:8px">Keeping the guard on uses some extra battery, because the motion sensor stays awake.</small>
   </section>
 
   <section class="card">
@@ -131,7 +142,7 @@ function boot(){
   $('gate').hidden=true; $('app').hidden=false; poll(); setInterval(function(){if(!document.hidden)poll();},1000); loadLog();
 }
 var STATES={
-  off:['🛡️','Guard is off','Plug in your phone, then turn it on.','Turn on guard',''],
+  off:['🛡️','Guard is off','Turn it on, then put the phone down.','Turn on protection',''],
   waiting:['🔌','Waiting for the charger','Plug in your charger. The guard starts by itself.','Turn off guard','stop'],
   arming:['⏳','Getting ready','','Turn off guard','stop'],
   armed:['✅','Guarding your phone','Pulling the charger will sound the alarm.','Turn off guard','stop'],
@@ -143,6 +154,7 @@ function render(s){
   var hero=$('hero'); hero.className='card hero s-'+st;
   $('ico').textContent=d[0]; $('stTitle').textContent=d[1];
   var why=d[2];
+  if(st==='waiting'&&s.settings&&s.settings.snatch){d=['🛡️','Snatch protection is on','Plug in the charger to guard against unplugging too.','Turn off guard','stop'];$('ico').textContent=d[0];$('stTitle').textContent=d[1];why=d[2];}
   if(st==='arming')why='Step away. Live in '+s.armIn+' s.';
   if(st==='alarm')why=(s.reason||'Alarm')+'. Unlock the phone to stop it.';
   $('stWhy').textContent=why;
@@ -150,7 +162,9 @@ function render(s){
   $('pChg').textContent=s.plugged?'🔌 Charging':'🔌 Not charging';
   var b=$('mainBtn'); b.textContent=d[3]; b.className='go '+d[4];
   $('secWarn').hidden=!!s.secure;
+  $('adminWarn').hidden=!!s.adminActive||!(s.settings&&s.settings.lockOnAlarm);$('adminOk').hidden=!s.adminActive;
   var c=s.settings||{}; if(!busy){
+    sw('cSnatch',c.snatch);sw('cLock',c.lockOnAlarm);opt('oSn',c.snatchSens);$('snBox').hidden=!c.snatch;
     sw('cFlash',c.flash);sw('cVibrate',c.vibrate);sw('cUnplug',c.trigUnplug);sw('cMotion',c.trigMotion);sw('cInUse',c.allowInUse);sw('cUnlock',c.unlockStops);
     opt('oSound',c.sound);opt('oSens',c.sens);opt('oDelay',c.delay);opt('oDur',c.duration);opt('oLimit',c.limit);
     $('sensBox').hidden=!c.trigMotion;
@@ -174,12 +188,14 @@ $('mainBtn').onclick=function(){
   G.disarm().then(function(){setTimeout(poll,300);});
 };
 $('testBtn').onclick=function(){G.test();setTimeout(loadLog,800);};
-[['cFlash','flash'],['cVibrate','vibrate'],['cUnplug','trigUnplug'],['cMotion','trigMotion'],['cInUse','allowInUse'],['cUnlock','unlockStops']].forEach(function(p){
-  $(p[0]).onchange=function(){var o={};o[p[1]]=this.checked;if(p[1]==='trigMotion')$('sensBox').hidden=!this.checked;save(o);};
+[['cSnatch','snatch'],['cLock','lockOnAlarm'],['cFlash','flash'],['cVibrate','vibrate'],['cUnplug','trigUnplug'],['cMotion','trigMotion'],['cInUse','allowInUse'],['cUnlock','unlockStops']].forEach(function(p){
+  $(p[0]).onchange=function(){var o={};o[p[1]]=this.checked;if(p[1]==='trigMotion')$('sensBox').hidden=!this.checked;if(p[1]==='snatch')$('snBox').hidden=!this.checked;save(o);};
 });
-[['oSound','sound',0],['oSens','sens',1],['oDelay','delay',1],['oDur','duration',1],['oLimit','limit',1]].forEach(function(p){
+[['oSn','snatchSens',1],['oSound','sound',0],['oSens','sens',1],['oDelay','delay',1],['oDur','duration',1],['oLimit','limit',1]].forEach(function(p){
   $(p[0]).onclick=function(e){var b=e.target.closest('button');if(!b)return;var o={};o[p[1]]=p[2]?+b.dataset.v:b.dataset.v;opt(p[0],b.dataset.v);save(o);if(p[1]==='sound')setTimeout(function(){G.test();},350);};
 });
+$('adminBtn').onclick=function(){G.requestAdmin().catch(function(e){alert((e&&e.message)||'Could not open the permission screen');});};
+$('adminOff').onclick=function(){if(confirm('Remove the screen lock permission? The alarm will still ring, but the screen will not lock by itself.'))G.removeAdmin().then(poll);};
 $('bgBtn').onclick=function(){try{HeyNotify.openBatterySettings&&HeyNotify.openBatterySettings();}catch(e){}};
 $('autoBtn').onclick=function(){try{HeyNotify.openAutostartSettings&&HeyNotify.openAutostartSettings();}catch(e){}};
 $('copyLog').onclick=function(){var t=$('log').textContent;try{navigator.clipboard.writeText(t);}catch(e){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();}};

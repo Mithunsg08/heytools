@@ -1,6 +1,8 @@
 package com.heytools.app;
 
 import android.app.KeyguardManager;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -26,7 +28,7 @@ public class ChargeGuardPlugin extends Plugin {
     s.put("trigUnplug", p.getBoolean("trigUnplug", true)); s.put("trigMotion", p.getBoolean("trigMotion", false));
     s.put("sens", p.getInt("sens", 2)); s.put("flash", p.getBoolean("flash", true)); s.put("vibrate", p.getBoolean("vibrate", true));
     s.put("unlockStops", p.getBoolean("unlockStops", true)); s.put("duration", p.getInt("duration", 0));
-    s.put("allowInUse", p.getBoolean("allowInUse", true)); s.put("limit", p.getInt("limit", 0));
+    s.put("allowInUse", p.getBoolean("allowInUse", true)); s.put("snatch", p.getBoolean("snatch", true)); s.put("snatchSens", p.getInt("snatchSens", 2)); s.put("lockOnAlarm", p.getBoolean("lockOnAlarm", true)); s.put("limit", p.getInt("limit", 0));
     return s;
   }
 
@@ -46,6 +48,8 @@ public class ChargeGuardPlugin extends Plugin {
     KeyguardManager km = (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
     r.put("secure", km != null && km.isDeviceSecure());
     r.put("settings", settings(p));
+    DevicePolicyManager dpm = (DevicePolicyManager) c.getSystemService(Context.DEVICE_POLICY_SERVICE);
+    r.put("adminActive", dpm != null && dpm.isAdminActive(new ComponentName(c, GuardAdminReceiver.class)));
     call.resolve(r);
   }
 
@@ -55,10 +59,11 @@ public class ChargeGuardPlugin extends Plugin {
       JSONObject d = call.getData(); SharedPreferences.Editor e = ChargeGuardService.sp(getContext()).edit();
       if (d.has("delay")) e.putInt("delay", Math.max(0, Math.min(120, d.optInt("delay", 10))));
       if (d.has("sound")) { String s = d.optString("sound", "wail"); for (String ok : SOUNDS) if (ok.equals(s)) e.putString("sound", s); }
+      if (d.has("snatchSens")) e.putInt("snatchSens", Math.max(1, Math.min(3, d.optInt("snatchSens", 2))));
       if (d.has("sens")) e.putInt("sens", Math.max(1, Math.min(3, d.optInt("sens", 2))));
       if (d.has("duration")) e.putInt("duration", Math.max(0, Math.min(60, d.optInt("duration", 15))));
       if (d.has("limit")) e.putInt("limit", Math.max(0, Math.min(100, d.optInt("limit", 0))));
-      String[] flags = {"trigUnplug", "trigMotion", "flash", "vibrate", "unlockStops", "allowInUse"};
+      String[] flags = {"trigUnplug", "trigMotion", "flash", "vibrate", "unlockStops", "allowInUse", "snatch", "lockOnAlarm"};
       for (String f : flags) if (d.has(f)) e.putBoolean(f, d.optBoolean(f));
       e.apply();
       if (ChargeGuardService.running) send(ChargeGuardService.ACTION_CONFIG);
@@ -75,6 +80,24 @@ public class ChargeGuardPlugin extends Plugin {
     } catch (Exception e) { call.reject("Could not stop the guard: " + e.getMessage(), e); }
   }
   @PluginMethod public void stopAlarm(PluginCall call) { try { if (ChargeGuardService.running) send(ChargeGuardService.ACTION_STOP); call.resolve(); } catch (Exception e) { call.reject(e.getMessage(), e); } }
+  /** Opens Android's own "activate device admin" screen so the person can allow screen locking. */
+  @PluginMethod public void requestAdmin(PluginCall call) {
+    try {
+      Intent i = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+      i.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, new ComponentName(getContext(), GuardAdminReceiver.class));
+      i.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Lets Charge Guard lock your screen the moment the theft alarm starts. It can do nothing else.");
+      if (getActivity() != null) getActivity().startActivity(i); else getContext().startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+      call.resolve();
+    } catch (Exception e) { call.reject("Could not open the permission screen: " + e.getMessage(), e); }
+  }
+  /** Gives the permission back, which also lets the app be uninstalled normally. */
+  @PluginMethod public void removeAdmin(PluginCall call) {
+    try {
+      DevicePolicyManager dpm = (DevicePolicyManager) getContext().getSystemService(Context.DEVICE_POLICY_SERVICE);
+      if (dpm != null) dpm.removeActiveAdmin(new ComponentName(getContext(), GuardAdminReceiver.class));
+      call.resolve();
+    } catch (Exception e) { call.reject(e.getMessage(), e); }
+  }
   @PluginMethod public void test(PluginCall call) { try { send(ChargeGuardService.ACTION_TEST); call.resolve(); } catch (Exception e) { call.reject("Could not start the test: " + e.getMessage(), e); } }
 
   @PluginMethod

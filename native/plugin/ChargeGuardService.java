@@ -1,6 +1,8 @@
 package com.heytools.app;
 
 import android.app.KeyguardManager;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -92,6 +94,8 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   private String cameraId = null;
   private Vibrator vibrator;
   private int lastNotifBattery = -2;
+  private long quietSince = 0, spikeAt = 0, sensorStart = 0, lastGentleT = 0;
+  private int moveCount = 0;
 
   @Override public IBinder onBind(Intent i) { return null; }
 
@@ -178,12 +182,20 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   private void setState(String s) {
     state = s;
     if (s.equals("armed")) { armedSince = System.currentTimeMillis(); hits = 0; lastMag = -1; }
-    setMotion(s.equals("armed") && sp(this).getBoolean("trigMotion", false));
+    refreshMotion();
     refreshNotification();
   }
   private void applyConfig() {
-    setMotion(state.equals("armed") && sp(this).getBoolean("trigMotion", false));
+    refreshMotion();
     refreshNotification();
+  }
+  /** The sensor runs for gentle-movement detection (armed) and for snatch detection (whenever the guard is on). */
+  private boolean snatchOn() { SharedPreferences p = sp(this); return p.getBoolean("armed", false) && p.getBoolean("snatch", true); }
+  private void refreshMotion() {
+    boolean gentle = state.equals("armed") && sp(this).getBoolean("trigMotion", false);
+    boolean on = !state.equals("alarm") && !state.equals("off") && (gentle || snatchOn());
+    setMotion(on);
+    quietSince = 0; spikeAt = 0; moveCount = 0; sensorStart = System.currentTimeMillis();
   }
 
   private final Runnable checkUnplug = new Runnable() { @Override public void run() {
@@ -247,11 +259,22 @@ public class ChargeGuardService extends Service implements SensorEventListener {
     startedLocked = km != null && km.isKeyguardLocked();
     setState("alarm");
     note(this, "ALARM: " + why + " (battery " + battery + "%)");
+    if (lockScreen()) startedLocked = true;
     startOutputs();
     int mins = sp(this).getInt("duration", 0);          // 0 = keep ringing until the phone is unlocked
     h.removeCallbacks(timeoutRunnable);
     if (mins > 0) h.postDelayed(timeoutRunnable, mins * 60 * 1000L);
   }
+  /** Locks the screen at once so a thief has to unlock to stop the alarm. Needs the device-admin "lock screen" permission. */
+  private boolean lockScreen() {
+    try {
+      if (!sp(this).getBoolean("lockOnAlarm", true)) return false;
+      DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+      if (dpm == null || !dpm.isAdminActive(new ComponentName(this, GuardAdminReceiver.class))) { note(this, "Screen not locked: permission not given"); return false; }
+      dpm.lockNow(); note(this, "Screen locked"); return true;
+    } catch (Exception e) { note(this, "Could not lock the screen: " + e); return false; }
+  }
+
   private final Runnable timeoutRunnable = new Runnable() { @Override public void run() { if (state.equals("alarm")) stopAlarm("Stopped: time limit reached"); } };
 
   private void startTest() {
@@ -378,7 +401,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
         Sensor acc = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER); if (acc == null) return;
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null && (wake == null || !wake.isHeld())) { wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HeyTools:Guard"); wake.acquire(); }
-        sensors.registerListener(this, acc, SensorManager.SENSOR_DELAY_NORMAL); motionOn = true;
+        sensors.registerListener(this, acc, SensorManager.SENSOR_DELAY_GAME); motionOn = true;
       } else {
         sensors.unregisterListener(this); motionOn = false;
         if (!state.equals("alarm") && !testing && wake != null && wake.isHeld()) { try { wake.release(); } catch (Exception ignored) { } }
@@ -386,19 +409,36 @@ public class ChargeGuardService extends Service implements SensorEventListener {
     } catch (Exception e) { note(this, "motion sensor: " + e); }
   }
   @Override public void onSensorChanged(SensorEvent e) {
-    if (!state.equals("armed")) return;
+    if (state.equals("alarm") || state.equals("off")) return;
     long now = System.currentTimeMillis();
-    if (now - armedSince < 3000) { lastMag = -1; return; }           // let the phone settle after arming
     double mag = Math.sqrt(e.values[0] * e.values[0] + e.values[1] * e.values[1] + e.values[2] * e.values[2]);
-    if (lastMag < 0) { lastMag = mag; return; }
-    int sens = sp(this).getInt("sens", 2);
-    double limit = sens >= 3 ? 0.6 : (sens <= 1 ? 2.2 : 1.2);
-    if (Math.abs(mag - lastMag) > limit) {
-      if (now - lastHit > 1500) hits = 0;
-      hits++; lastHit = now;
-      if (hits >= 2) { hits = 0; trigger("Phone was moved"); }
+    if (now - sensorStart < 3000) { lastMag = mag; return; }          // let the phone settle after a change
+    /* snatch: the phone was still, then yanked hard and kept moving, as when it is grabbed and carried off */
+    if (snatchOn()) {
+      double dev = Math.abs(mag - 9.81);
+      boolean calm = quietSince > 0 && now - quietSince >= 2500;
+      if (dev < 1.5) { if (quietSince == 0) quietSince = now; } else quietSince = 0;
+      int sn = sp(this).getInt("snatchSens", 2);
+      double limit = sn >= 3 ? 9 : (sn <= 1 ? 20 : 13);
+      if (spikeAt == 0) {
+        if (dev > limit && calm) { spikeAt = now; moveCount = 0; }
+      } else if (now - spikeAt > 1600) { spikeAt = 0; }
+      else if (dev > 3 && ++moveCount >= 8) { spikeAt = 0; moveCount = 0; trigger("Phone was snatched"); return; }
     }
-    lastMag = mag;
+    /* gentle movement while charging and armed */
+    if (state.equals("armed") && sp(this).getBoolean("trigMotion", false) && now - lastGentleT >= 200) {
+      lastGentleT = now;
+      if (now - armedSince < 3000) { lastMag = -1; return; }
+      if (lastMag < 0) { lastMag = mag; return; }
+      int sens = sp(this).getInt("sens", 2);
+      double lim = sens >= 3 ? 0.6 : (sens <= 1 ? 2.2 : 1.2);
+      if (Math.abs(mag - lastMag) > lim) {
+        if (now - lastHit > 1500) hits = 0;
+        hits++; lastHit = now;
+        if (hits >= 2) { hits = 0; trigger("Phone was moved"); }
+      }
+      lastMag = mag;
+    }
   }
   @Override public void onAccuracyChanged(Sensor s, int a) { }
 
@@ -414,7 +454,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
     if (s.equals("armed")) text = "Guarding" + (battery >= 0 ? " · battery " + battery + "%" : "") + ". Unplugging sets off the alarm.";
     else if (s.equals("arming")) text = "Getting ready. Guard starts in a few seconds.";
     else if (s.equals("alarm")) text = "ALARM: " + reason;
-    else text = "Waiting for you to plug in the charger.";
+    else text = snatchOn() ? "Snatch protection is on. Plug in to guard the charger too." : "Waiting for you to plug in the charger.";
     return new NotificationCompat.Builder(this, CH_STATUS).setSmallIcon(icon()).setContentTitle("Charge Guard")
       .setContentText(text).setOngoing(true).setOnlyAlertOnce(true).setContentIntent(openApp())
       .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setCategory(NotificationCompat.CATEGORY_SERVICE).build();

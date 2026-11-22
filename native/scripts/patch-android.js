@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
+for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'GuardAdminReceiver.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -18,6 +18,9 @@ fs.writeFileSync(path.join(xmlDir, 'network_security_config.xml'),
   '    <trust-anchors><certificates src="system" /></trust-anchors>\n' +
   '  </base-config>\n' +
   '</network-security-config>\n');
+
+fs.writeFileSync(path.join(xmlDir, 'guard_admin.xml'),
+  '<?xml version="1.0" encoding="utf-8"?>\n<device-admin xmlns:android="http://schemas.android.com/apk/res/android">\n  <uses-policies><force-lock /></uses-policies>\n</device-admin>\n');
 
 const perms = [
   ['android.permission.ACCESS_NETWORK_STATE'],
@@ -59,6 +62,7 @@ if (!m.includes('KeepAliveService')) m = m.replace('</application>', '    <servi
 if (!m.includes('ScreenRecordService')) m = m.replace('</application>', '    <service android:name=".ScreenRecordService" android:exported="false" android:foregroundServiceType="mediaProjection" />\n    </application>');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
+  '<receiver android:name=".GuardAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN"><meta-data android:name="android.app.device_admin" android:resource="@xml/guard_admin" /><intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter></receiver>',
   '<service android:name=".ChargeGuardService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="specialUse"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Watches the charger and sounds an alarm if it is unplugged" /></service>',
   '<receiver android:name=".ChargeGuardBootReceiver" android:enabled="true" android:exported="false" android:directBootAware="true"><intent-filter><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter></receiver>',
   '<activity android:name=".AlarmRingActivity" android:exported="false" android:launchMode="singleInstance" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />',

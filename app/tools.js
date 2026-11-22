@@ -12,6 +12,7 @@ window.HEY_CATS = [
   { id: 'business', label: 'Business' }
 ];
 window.HEY_TOOLS = [
+  { id: 'charge-guard', name: 'Anti-Theft Guard', cat: 'utility', icon: '🛡️', net: 'offline', isNew: true, appOnly: true, desc: 'Locks the screen and sounds a loud alarm if your phone is snatched or unplugged. Android app only.', hide: 'footer' },
   { id: 'video-player', name: 'Video Player', cat: 'media', media: true, icon: '▶️', net: 'partial', perm: 'video', netNote: 'Videos on your phone work offline. Live TV and streaming need internet.', desc: 'Plays every video on your phone, live TV and streaming links.', hide: '.seo,footer' },
   { id: 'music-player', name: 'Music Player', cat: 'media', media: true, icon: '🎵', net: 'partial', perm: 'audio', netNote: 'Music on your phone works offline. Streaming needs internet.', desc: '3D player for all the music on your phone, plus streaming.', hide: '#about,footer' },
   { id: 'recorder', name: 'Recorder', cat: 'media', icon: '🎙️', net: 'offline', perm: 'mic', desc: 'Record voice, video or your screen. Saved on your device.', hide: 'article.seo,footer' },
@@ -28,7 +29,6 @@ window.HEY_TOOLS = [
   { id: 'expense-tracker', name: 'Expense Tracker', cat: 'daily', icon: '💸', net: 'offline', isNew: true, desc: 'Log spending, see it by category, track a monthly budget.', themed: true, hide: '.seo,footer,.lead' },
   { id: 'habit-tracker', name: 'Habit Tracker', cat: 'daily', icon: '✅', net: 'offline', isNew: true, desc: 'One-tap daily check-ins with streaks.', themed: true, hide: '.seo,footer,.lead' },
   { id: 'focus-timer', name: 'Focus Timer', cat: 'daily', icon: '⏱️', net: 'offline', isNew: true, desc: 'Pomodoro work and break sessions with a chime.', themed: true, hide: '.seo,footer,.lead' },
-  { id: 'charge-guard', name: 'Charge Guard', cat: 'utility', icon: '🛡️', net: 'offline', isNew: true, appOnly: true, desc: 'Loud alarm if your phone is unplugged from the charger. Android app only.', hide: 'footer' },
   { id: 'alarm-clock', name: 'Alarm Clock', cat: 'daily', icon: '⏰', net: 'offline', isNew: true, desc: '14 alarm tones, repeat days and snooze. Rings even when the app is closed.', hide: '.seo,footer' },
   { id: 'notes-to-do-list', name: 'Notes & To Do', cat: 'daily', icon: '📝', net: 'offline', desc: 'Pinned notes and daily tasks with reminders.', hide: '.about' },
   { id: 'world-clock', name: 'World Clock & Stopwatch', cat: 'daily', icon: '🌐', net: 'offline', desc: 'Times in 400+ zones and a lap stopwatch.', hide: 'main>section:not(#pw):not(#ps),footer' },

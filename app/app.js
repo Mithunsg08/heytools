@@ -47,6 +47,13 @@
     LAYOUT.pinned = (LAYOUT.pinned || []).filter(function (id, i, a) { return byId[id] && a.indexOf(id) === i; }).slice(0, 8);
   }
   normalizeLayout();
+  /* once: put the Anti-Theft Guard first in the list and pinned at the top, where it is one tap away */
+  if (byId['charge-guard'] && !LAYOUT.guardFirst) {
+    LAYOUT.order = ['charge-guard'].concat(LAYOUT.order.filter(function (id) { return id !== 'charge-guard'; }));
+    LAYOUT.pinned = ['charge-guard'].concat((LAYOUT.pinned || []).filter(function (id) { return id !== 'charge-guard'; })).slice(0, 8);
+    LAYOUT.hidden = (LAYOUT.hidden || []).filter(function (id) { return id !== 'charge-guard'; });
+    LAYOUT.guardFirst = 1; put('heytools.layout.v1', LAYOUT);
+  }
   RECENT = RECENT.filter(function (r) { return r && byId[r.id]; }).slice(0, 12);
   function saveLayout() { put('heytools.layout.v1', LAYOUT); }
   function savePrefs() { put('heytools.prefs.v2', PREFS); }
