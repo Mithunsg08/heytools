@@ -46,6 +46,8 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   static final String ACTION_STOP = "com.heytools.GUARD_STOP";
   static final String ACTION_TEST = "com.heytools.GUARD_TEST";
   static final String ACTION_CONFIG = "com.heytools.GUARD_CONFIG";
+  static final String ACTION_TAMPER = "com.heytools.GUARD_TAMPER";
+  static final String ACTION_BOOT = "com.heytools.GUARD_BOOT";
   static final String PREFS = "heytools_guard";
   private static final String CH_STATUS = "heytools_guard_status", CH_ALERT = "heytools_guard_alert", CH_LIMIT = "heytools_guard_limit";
   private static final int NID = 83001, NID_LIMIT = 83002;
@@ -57,7 +59,12 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   static volatile int battery = -1;
   static volatile boolean plugged = false, running = false, testing = false;
 
-  static SharedPreferences sp(Context c) { return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
+  /** Device-protected storage, so the guard can read its settings right after a restart, before the phone is unlocked. */
+  static SharedPreferences sp(Context c) {
+    Context d = c;
+    if (Build.VERSION.SDK_INT >= 24) { try { d = c.createDeviceProtectedStorageContext(); } catch (Exception ignored) { } }
+    return d.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+  }
 
   /** Event log kept on the device (last 60 lines). */
   static synchronized void note(Context c, String text) {
@@ -128,6 +135,11 @@ public class ChargeGuardService extends Service implements SensorEventListener {
       case ACTION_STOP: if (state.equals("alarm") || testing) stopAlarm("Stopped from the app"); break;
       case ACTION_TEST: startTest(); break;
       case ACTION_CONFIG: applyConfig(); break;
+      case ACTION_TAMPER: if (state.equals("armed") || state.equals("arming")) trigger("Someone tried to switch the phone off"); break;
+      case ACTION_BOOT:
+        if (sp(this).getBoolean("armed", false)) { note(this, "Phone restarted while the guard was on"); trigger("Phone was switched off or restarted"); }
+        else stopSelfClean();
+        break;
       default: break;
     }
     return START_STICKY;
@@ -135,6 +147,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
 
   /* ---------- state machine ---------- */
   private void arm() {
+    if (running && (state.equals("armed") || state.equals("arming") || state.equals("alarm")) && sp(this).getBoolean("armed", false)) return;   // already guarding
     sp(this).edit().putBoolean("armed", true).apply();
     note(this, "Guard turned on (battery " + battery + "%, " + (plugged ? "charging" : "not charging") + ")");
     if (plugged) startArming(); else setState("waiting");

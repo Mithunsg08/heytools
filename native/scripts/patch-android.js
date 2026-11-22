@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
+for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'GuardAccessibilityService.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
@@ -18,6 +18,18 @@ fs.writeFileSync(path.join(xmlDir, 'network_security_config.xml'),
   '    <trust-anchors><certificates src="system" /></trust-anchors>\n' +
   '  </base-config>\n' +
   '</network-security-config>\n');
+
+fs.writeFileSync(path.join(xmlDir, 'guard_accessibility.xml'),
+  '<?xml version="1.0" encoding="utf-8"?>\n' +
+  '<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"\n' +
+  '  android:accessibilityEventTypes="typeWindowStateChanged" android:accessibilityFeedbackType="feedbackGeneric"\n' +
+  '  android:accessibilityFlags="flagDefault" android:canRetrieveWindowContent="false" android:notificationTimeout="50"\n' +
+  '  android:description="@string/hey_guard_a11y_desc" />\n');
+const valuesDir = path.join(root, 'app/src/main/res/values');
+fs.mkdirSync(valuesDir, { recursive: true });
+fs.writeFileSync(path.join(valuesDir, 'hey_guard_strings.xml'),
+  '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n' +
+  '  <string name="hey_guard_a11y_desc">Used only by Charge Guard to close the power-off menu while the guard is on. HeyTools does not read or store what is on your screen.</string>\n</resources>\n');
 
 const perms = [
   ['android.permission.ACCESS_NETWORK_STATE'],
@@ -59,8 +71,9 @@ if (!m.includes('KeepAliveService')) m = m.replace('</application>', '    <servi
 if (!m.includes('ScreenRecordService')) m = m.replace('</application>', '    <service android:name=".ScreenRecordService" android:exported="false" android:foregroundServiceType="mediaProjection" />\n    </application>');
 if (!m.includes('PlaybackService')) m = m.replace('</application>', '    <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>');
 const alarmComponents = [
-  '<service android:name=".ChargeGuardService" android:exported="false" android:foregroundServiceType="specialUse"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Watches the charger and sounds an alarm if it is unplugged" /></service>',
-  '<receiver android:name=".ChargeGuardBootReceiver" android:enabled="true" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter></receiver>',
+  '<service android:name=".ChargeGuardService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="specialUse"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Watches the charger and sounds an alarm if it is unplugged" /></service>',
+  '<receiver android:name=".ChargeGuardBootReceiver" android:enabled="true" android:exported="false" android:directBootAware="true"><intent-filter><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter></receiver>',
+  '<service android:name=".GuardAccessibilityService" android:exported="true" android:label="HeyTools Charge Guard" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/guard_accessibility" /></service>',
   '<activity android:name=".AlarmRingActivity" android:exported="false" android:launchMode="singleInstance" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />',
   '<service android:name=".AlarmRingingService" android:exported="false" android:directBootAware="true" android:foregroundServiceType="mediaPlayback" />',
   '<receiver android:name=".AlarmReceiver" android:exported="false" android:directBootAware="true" />',
