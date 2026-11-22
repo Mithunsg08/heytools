@@ -315,9 +315,11 @@ public class ChargeGuardService extends Service implements SensorEventListener {
       try {
         final int rate = 22050;
         int min = AudioTrack.getMinBufferSize(rate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        int bytes = Math.max(min, rate);
+        bytes -= bytes % 2;                                    // must be a whole number of 16-bit frames
         track = new AudioTrack(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
           new AudioFormat.Builder().setSampleRate(rate).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
-          Math.max(min, rate / 2), AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE);
+          bytes, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE);
         track.play();
         short[] buf = new short[1024];
         double phase = 0; long n = 0;
