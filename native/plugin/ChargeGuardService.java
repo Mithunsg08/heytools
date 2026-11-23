@@ -104,7 +104,7 @@ public class ChargeGuardService extends Service implements SensorEventListener {
   private long quietSince = 0, spikeAt = 0, sensorStart = 0, lastGentleT = 0;
   private int moveCount = 0;
   private double peakSpike = 0;
-  private long stillSeen = 0;
+  private long stillSeen = 0, winStill = 0;
 
   @Override public IBinder onBind(Intent i) { return null; }
 
@@ -459,17 +459,22 @@ public class ChargeGuardService extends Service implements SensorEventListener {
       if (dev < 2.0) { if (quietSince == 0) quietSince = now; if (now - quietSince >= 1200) stillSeen = now; } else if (spikeAt == 0) quietSince = 0;
       boolean calm = stillSeen > 0 && now - stillSeen < 3000;
       int sn = sp(this).getInt("snatchSens", 2);
-      double limit = sn >= 3 ? 7 : (sn <= 1 ? 16 : 10);
+      double limit = sn >= 3 ? 9 : (sn <= 1 ? 18 : 12);
       if (spikeAt == 0) {
         if (dev > limit) {
-          if (calm) { spikeAt = now; moveCount = 0; peakSpike = dev; }
-          else if (now - lastJerkLog > 8000) { lastJerkLog = now; note(this, "Jerk " + Math.round(dev * 10) / 10.0 + " ignored: the phone was not still first"); }
+          if (calm) { spikeAt = now; moveCount = 0; winStill = 0; peakSpike = dev; }
+          else if (now - lastJerkLog > 8000) { lastJerkLog = now; note(this, "Jerk " + Math.round(dev * 10) / 10.0 + " ignored: the phone had not been still just before"); }
         }
-      } else if (now - spikeAt > 1600) {
-        note(this, "Jerk " + Math.round(peakSpike * 10) / 10.0 + " then little movement (" + moveCount + "): not a snatch"); spikeAt = 0;
       } else {
+        /* a real snatch keeps moving (carried or run off with). Picking the phone up and putting it back settles within a moment. */
+        long el = now - spikeAt;
         if (dev > peakSpike) peakSpike = dev;
-        if (dev > 2.5 && ++moveCount >= 5) { spikeAt = 0; moveCount = 0; trigger("Phone was snatched"); return; }
+        if (dev > 1.5) moveCount++;
+        if (dev < 1.0) { if (winStill == 0) winStill = now; } else winStill = 0;
+        String pk = String.valueOf(Math.round(peakSpike * 10) / 10.0);
+        if (winStill > 0 && now - winStill >= 800) { note(this, "Jerk " + pk + " then the phone was put down: not a snatch"); spikeAt = 0; quietSince = 0; }
+        else if (el >= 2000 && moveCount >= 45) { spikeAt = 0; moveCount = 0; trigger("Phone was snatched"); return; }
+        else if (el >= 3500) { note(this, "Jerk " + pk + " then too little movement (" + moveCount + "): not a snatch"); spikeAt = 0; quietSince = 0; }
       }
     }
     /* gentle movement while charging and armed */

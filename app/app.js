@@ -1414,4 +1414,52 @@
     if (n !== prompt('Enter the new password again.')) { toast('Passwords do not match. Nothing changed.'); return; }
     window.HeySecure.changePassword(o, n).then(function () { toast('Password changed'); }, function (e) { toast(e && e.message || 'Could not change the password'); });
   });
+
+  /* ---------- app lock: the phone's own screen lock (fingerprint, face, PIN, pattern) ---------- */
+  (function () {
+    var AL = null;
+    try { var C = window.Capacitor; if (C && C.isNativePlatform && C.isNativePlatform()) AL = C.registerPlugin ? C.registerPlugin('AppLock') : C.Plugins.AppLock; } catch (e) { AL = null; }
+    var row = $('lockRow'), box = $('optLock');
+    if (!AL || !AL.authenticate) return;
+    if (row) row.hidden = false;
+    var KEY = 'heytools.applock', GRACE = 15000, authing = false, locked = false, hiddenAt = 0, el = null;
+    function enabled() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+    function setEnabled(v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) { /* ignore */ } }
+    if (box) box.checked = enabled();
+    function ask(title, sub) {
+      authing = true;
+      return AL.authenticate({ title: title, subtitle: sub }).then(function (r) { authing = false; return !!(r && r.ok); }, function (e) { authing = false; return e && e.message === 'no_lock' ? 'no_lock' : false; });
+    }
+    function show() {
+      if (el) return;
+      el = document.createElement('div');
+      el.style.cssText = 'position:fixed;inset:0;z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:#f3f1ff;font-family:system-ui,sans-serif;background:radial-gradient(120% 90% at 50% 0%,#2a1f4d 0%,#0e1020 60%,#070810 100%)';
+      el.innerHTML = '<div style="width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:36px;background:linear-gradient(135deg,#8b7bff,#ff7bd0)">🔒</div><div style="font-size:22px;font-weight:700">HeyTools is locked</div><div style="color:#c9c5e6;font-size:14px">Use your fingerprint, face or phone lock to open it.</div><button type="button" id="alGo" style="margin-top:8px;padding:14px 28px;border:0;border-radius:14px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(135deg,#7c6bff,#ff6bc8)">Unlock</button>';
+      document.body.appendChild(el);
+      el.querySelector('#alGo').onclick = tryUnlock;
+    }
+    function tryUnlock() {
+      if (authing) return;
+      ask('HeyTools', 'Unlock to open the app').then(function (ok) {
+        if (ok === true || ok === 'no_lock') { locked = false; if (el) { el.remove(); el = null; } }   // no phone lock set anymore: do not trap the person out
+      });
+    }
+    function lock() { if (locked) return; locked = true; show(); tryUnlock(); }
+    if (enabled()) lock();
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { hiddenAt = authing ? 0 : Date.now(); return; }
+      var away = hiddenAt ? Date.now() - hiddenAt : 0; hiddenAt = 0;
+      if (enabled() && !authing && !locked && away > GRACE) lock();
+    });
+    if (box) box.addEventListener('change', function () {
+      var want = box.checked;
+      AL.isAvailable().then(function (r) {
+        if (want && !(r && r.available)) { box.checked = false; alert('Set a screen lock first (fingerprint, face, PIN or pattern) in Android Settings, then try again.'); return; }
+        /* turning it on or off needs the phone lock, so nobody else can switch it off */
+        ask('HeyTools', want ? 'Confirm to turn on app lock' : 'Confirm to turn off app lock').then(function (ok) {
+          if (ok === true) setEnabled(want); else box.checked = !want;
+        });
+      }, function () { box.checked = !want; });
+    });
+  })();
 })();

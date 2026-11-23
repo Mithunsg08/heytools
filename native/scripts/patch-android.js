@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.resolve(__dirname, '../android');
 const pkgDir = path.join(root, 'app/src/main/java/com/heytools/app');
 fs.mkdirSync(pkgDir, { recursive: true });
-for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'GuardAdminReceiver.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
+for (const f of ['MediaLibraryPlugin.java', 'SecureStoragePlugin.java', 'ChargeGuardService.java', 'ChargeGuardPlugin.java', 'ChargeGuardBootReceiver.java', 'AppLockPlugin.java', 'GuardAdminReceiver.java', 'PlaybackService.java', 'MainActivity.java', 'UpdateWorker.java', 'HeyAlarmPlugin.java', 'AlarmScheduler.java', 'AlarmReceiver.java', 'AlarmActionReceiver.java', 'AlarmBootReceiver.java', 'AlarmRingingService.java', 'AlarmRingActivity.java', 'ScreenRecordPlugin.java', 'ScreenRecordService.java', 'KeepAliveService.java'])
   fs.copyFileSync(path.resolve(__dirname, '../plugin', f), path.join(pkgDir, f));
 
 const mp = path.join(root, 'app/src/main/AndroidManifest.xml');
