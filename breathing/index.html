@@ -93,11 +93,13 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 
 
 </div>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.breath.v1';
 const PAT=[{n:'Box 4-4-4-4',p:[['Breathe in',4],['Hold',4],['Breathe out',4],['Hold',4]]},{n:'Relax 4-7-8',p:[['Breathe in',4],['Hold',7],['Breathe out',8]]},{n:'Calm 5-5',p:[['Breathe in',5],['Breathe out',5]]},{n:'Energise 6-2',p:[['Breathe in',6],['Hold',2],['Breathe out',4]]}];
-let pat=0,mins=3,run=false,raf=0,t0=0,st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.n=st.n||0;
+let pat=0,mins=3,run=false,raf=0,t0=0,st;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};LOCK()}st.n=st.n||0;
 $('pat').innerHTML=PAT.map((x,i)=>'<button class="chip" data-i="'+i+'" aria-pressed="'+(i===0)+'" type="button">'+x.n+'</button>').join('');
 $('done').textContent=st.n?'Sessions completed: '+st.n:'';
 $('pat').onclick=e=>{const b=e.target.closest('[data-i]');if(!b||run)return;pat=+b.dataset.i;document.querySelectorAll('#pat .chip').forEach(x=>x.setAttribute('aria-pressed',x===b))};
@@ -115,7 +117,7 @@ function frame(now){if(!run)return;const t=(now-t0)/1000,total=mins*60;if(t>=tot
  const key=Math.floor(t/phases.reduce((s,x)=>s+x[1],0))*10+r.i;if(key!==lastI){lastI=key;if($('vb').checked&&navigator.vibrate)navigator.vibrate(r.name==='Hold'?[30]:[60])}
  $('msg').textContent=Math.ceil(total-t)+' seconds left';raf=requestAnimationFrame(frame)}
 function stop(done){run=false;cancelAnimationFrame(raf);$('go').textContent='Start';$('orb').style.transform='scale(.55)';$('ph').textContent=done?'Well done':'Ready';$('sec').textContent='';
- if(done){st.n++;try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}$('done').textContent='Sessions completed: '+st.n;$('msg').textContent='Session complete. Notice how you feel.';if(navigator.vibrate)navigator.vibrate([80,60,80])}else $('msg').textContent='Stopped.'}
+ if(done){st.n++;SAVE(K,st);$('done').textContent='Sessions completed: '+st.n;$('msg').textContent='Session complete. Notice how you feel.';if(navigator.vibrate)navigator.vibrate([80,60,80])}else $('msg').textContent='Stopped.'}
 $('go').onclick=()=>{if(run){stop(false);return}run=true;lastI=-1;t0=performance.now();$('go').textContent='Stop';raf=requestAnimationFrame(frame)};
 $('orb').style.transition='none';
 })();

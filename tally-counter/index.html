@@ -94,12 +94,14 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 
 
 </div>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.tally.v1';
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}
+let st;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};LOCK()}
 if(!st.c||!st.c.length)st.c=[{id:1,n:'Counter',v:0,t:0}];st.a=st.a||st.c[0].id;
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+const save=()=>SAVE(K,st);
 const cur=()=>st.c.find(x=>x.id===st.a)||st.c[0];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let wake=null;

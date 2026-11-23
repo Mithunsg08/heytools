@@ -94,12 +94,14 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 </div>
 <script src="../tones.js"></script>
 <script src="../heynotify.js"></script>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.focus.v1';
 let cfg={work:25,short:5,long:15},mode='work',left=25*60,end=0,tm=0,done=0,day=new Date().toDateString();
-try{const s=JSON.parse(localStorage.getItem(K)||'{}');if(s.cfg)cfg=s.cfg;if(s.day===day)done=s.done||0}catch(e){}
-const save=()=>{try{localStorage.setItem(K,JSON.stringify({cfg,done,day}))}catch(e){}};
+try{const s=(await HeySecure.getJSON(K,{}))||{};if(s.cfg)cfg=s.cfg;if(s.day===day)done=s.done||0}catch(e){LOCK()}
+const save=()=>SAVE(K,{cfg,done,day});
 $('mw').value=cfg.work;$('ms').value=cfg.short;$('ml').value=cfg.long;
 const names={work:'Focus',short:'Short break',long:'Long break'},total=()=>cfg[mode]*60;
 function show(){const s=Math.max(0,Math.ceil(left)),m=String(Math.floor(s/60)).padStart(2,'0'),r=String(s%60).padStart(2,'0');$('time').textContent=m+':'+r;document.title=(tm?m+':'+r+' · ':'')+'Focus Timer';

@@ -184,6 +184,7 @@ footer{text-align:center;color:var(--mut);font-size:.85rem;padding:60px 0 40px}
 </div>
 <div id="toast" role="status"></div>
 
+<script src="../heysecure.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -293,11 +294,12 @@ function save(it){
 
 // history
 const HK='md-history';
-function getH(){try{return JSON.parse(localStorage.getItem(HK))||[]}catch(e){return[]}}
-function pushHist(u){try{const h=getH().filter(x=>x!==u);h.unshift(u);localStorage.setItem(HK,JSON.stringify(h.slice(0,12)));renderH()}catch(e){}}
+let H=[],hOk=true;const APP=HeySecure.inApp();function getH(){return H}
+function pushHist(u){try{const h=getH().filter(x=>x!==u);h.unshift(u);H=h.slice(0,12);if(APP&&hOk)HeySecure.setJSON(HK,H).catch(()=>{});renderH()}catch(e){}}
 function renderH(){const h=getH(),box=$('#history'),l=$('#histList');box.style.display=h.length?'block':'none';
  l.innerHTML='';h.forEach(u=>{const b=document.createElement('button');b.className='btn ghost sm';b.style.cssText='text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';b.textContent=u;b.onclick=()=>{links.value+=(links.value?'\n':'')+u;links.focus()};l.append(b)})}
-$('#clearHist').onclick=()=>{try{localStorage.removeItem(HK)}catch(e){}renderH()};renderH();
+$('#clearHist').onclick=()=>{H=[];if(APP)HeySecure.remove(HK);else{try{localStorage.removeItem(HK)}catch(e){}}renderH()};renderH();
+if(APP){HeySecure.getJSON(HK,[]).then(h=>{H=h||[];renderH()},()=>{hOk=false})}else{try{localStorage.removeItem(HK)}catch(e){}}
 
 // events
 $('#go').onclick=()=>addLinks(parse(links.value));

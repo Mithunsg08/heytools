@@ -182,6 +182,7 @@
 <div id="gallery"><div class="tiles" id="tiles"></div></div>
 <canvas id="canvas" hidden></canvas>
 
+<script src="../heysecure.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -462,6 +463,8 @@
     addEventListener('keydown', e => { if ($('preview').style.display !== 'block') return; if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); });
   })();
   async function showPreview(rec, autosave, keepScroll) {
+    if (!rec.blob && rec.getBlob) rec.blob = await rec.getBlob();
+    if (current && current !== rec && current.getBlob) delete current.blob;
     current = rec; if (curUrl) URL.revokeObjectURL(curUrl); curUrl = URL.createObjectURL(rec.blob);
     if (!list.some(r => r.id === rec.id)) await loadList();
     idx = list.findIndex(r => r.id === rec.id); navUI();
@@ -481,7 +484,28 @@
   /* ---------- Gallery (kept in this browser, on this device) ---------- */
   const dbp = new Promise((res, rej) => { try { const r = indexedDB.open('geocam', 1); r.onupgradeneeded = () => r.result.createObjectStore('p', {keyPath:'id'}); r.onsuccess = () => res(r.result); r.onerror = rej; } catch (e) { rej(e); } });
   const dbDo = (mode, fn) => dbp.then(db => new Promise((res, rej) => { const t = db.transaction('p', mode), rq = fn(t.objectStore('p')); t.oncomplete = () => res(rq && rq.result); t.onerror = rej; })).catch(() => []);
-  const dbAdd = r => dbDo('readwrite', s => s.put(r)), dbDel = id => dbDo('readwrite', s => s.delete(id)), dbAll = () => dbDo('readonly', s => s.getAll());
+  /* Inside the app each photo, its thumbnail and its name are encrypted with the data password before they are stored. */
+  const APP = HeySecure.inApp(); if (APP) HeySecure.ensureUnlocked().catch(() => {});
+  async function sealPhoto(r) {
+    const id = r.id;
+    return { id, e: { m: await HeySecure.sealJSON('gc:' + id + ':m', { name: r.name }), b: await HeySecure.sealBlob('gc:' + id + ':b', r.blob), t: r.thumb ? await HeySecure.sealBlob('gc:' + id + ':t', r.thumb) : null } };
+  }
+  async function openPhoto(row) {
+    const meta = await HeySecure.openJSON('gc:' + row.id + ':m', row.e.m);
+    const rec = { id: row.id, name: meta.name, _e: row.e };
+    rec.getBlob = () => HeySecure.openBlob('gc:' + row.id + ':b', row.e.b);
+    rec.thumb = row.e.t ? await HeySecure.openBlob('gc:' + row.id + ':t', row.e.t) : await rec.getBlob();
+    return rec;
+  }
+  const dbPut = r => dbDo('readwrite', s => s.put(r));
+  const dbAdd = async r => APP ? dbPut(await sealPhoto(r)) : dbPut(r), dbDel = id => dbDo('readwrite', s => s.delete(id));
+  const dbAll = async () => {
+    const rows = (await dbDo('readonly', s => s.getAll())) || [];
+    if (!APP) return rows.filter(x => !x.e);
+    const out = [];
+    for (const row of rows) { try { if (row.e) out.push(await openPhoto(row)); else if (row.blob) { const sealed = await sealPhoto(row); await dbPut(sealed); out.push(await openPhoto(sealed)); } } catch (e) { console.warn('Photo could not be opened', e); } }
+    return out;
+  };
   async function openGallery() {
     const all = await loadList(), box = $('tiles'); box.innerHTML = '';
     if (!all.length) box.innerHTML = '<div class="empty" style="grid-column:1/-1">No photos yet. Take one and it appears here.</div>';

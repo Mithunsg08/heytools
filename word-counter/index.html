@@ -232,7 +232,9 @@ footer{margin-top:80px;padding:28px 0 40px;border-top:1px solid var(--line);colo
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="../heysecure.js"></script>
 <script>
+var wcReady=false;
 (function(){
 var $=function(i){return document.getElementById(i)},ta=$('text');
 var SW=window.Intl&&Intl.Segmenter?new Intl.Segmenter(undefined,{granularity:'word'}):null;
@@ -286,7 +288,7 @@ function update(){
     li.append(s,e,b);ul.appendChild(li);
   });
   $('kw-empty').hidden=top.length>0;
-  try{localStorage.setItem('wc-text',t)}catch(e){}
+  if(wcReady&&HeySecure.inApp())HeySecure.setJSON('wc-text',t).catch(function(){});
 }
 var raf;ta.addEventListener('input',function(){cancelAnimationFrame(raf);raf=requestAnimationFrame(update)});
 $('preset').addEventListener('change',function(){limit();update()});
@@ -334,7 +336,8 @@ $('theme').addEventListener('click',function(){
   document.documentElement.dataset.theme=n;try{localStorage.setItem('wc-theme',n)}catch(e){}paint();
 });
 paint();$('yr').textContent=new Date().getFullYear();
-try{var s=localStorage.getItem('wc-text');if(s)ta.value=s}catch(e){}
+if(HeySecure.inApp()){HeySecure.getJSON('wc-text','',{raw:true}).then(function(s){if(s&&!ta.value){ta.value=s;update()}wcReady=true},function(){/* locked: never overwrite */});}
+else{try{localStorage.removeItem('wc-text')}catch(e){}}
 limit();update();
 })();
 </script>

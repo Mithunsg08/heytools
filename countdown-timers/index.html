@@ -97,11 +97,13 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 </div>
 <script src="../tones.js"></script>
 <script src="../heynotify.js"></script>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.timers.v1';
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.t=st.t||[];st.n=st.n||1;
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+let st;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};LOCK()}st.t=st.t||[];st.n=st.n||1;
+const save=()=>SAVE(K,st);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=s=>{s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60,p=n=>String(n).padStart(2,'0');return (h?h+':':'')+p(m)+':'+p(r)};
 const PRE=[['1 min',60],['5 min',300],['10 min',600],['15 min',900],['30 min',1800],['1 hour',3600]];

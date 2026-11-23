@@ -394,6 +394,7 @@ body.camopen{overflow:hidden}
 <div id="camfs" hidden><button id="camClose" class="cam-x" type="button" aria-label="Close camera">✕</button></div>
 <div class="toast" id="toast"></div>
 
+<script src="../heysecure.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -718,7 +719,18 @@ function db(){return dbp||(dbp=new Promise((res,rej)=>{
   r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
 }))}
 async function tx(m,fn){const d=await db();return new Promise((res,rej)=>{const t=d.transaction('recs',m);const q=fn(t.objectStore('recs'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})}
-const addRec=r=>tx('readwrite',s=>s.add(r)),allRecs=()=>tx('readonly',s=>s.getAll()),putRec=r=>tx('readwrite',s=>s.put(r)),delRec=id=>tx('readwrite',s=>s.delete(id)),clearRecs=()=>tx('readwrite',s=>s.clear());
+/* Inside the app every recording and its details are encrypted with the data password before they reach IndexedDB.
+   The website keeps plain local storage as before. */
+const APP=HeySecure.inApp();if(APP)HeySecure.ensureUnlocked().catch(()=>{});let lastId=0;
+const nextId=()=>(lastId=Math.max(Date.now()*1000,lastId+1));
+async function sealRec(r){const{blob,getBlob,_e,...meta}=r;return{id:r.id,e:{m:await HeySecure.sealJSON('hb:'+r.id+':m',meta),b:_e?_e.b:await HeySecure.sealBlob('hb:'+r.id+':b',blob)}}}
+async function openRec(row){const meta=await HeySecure.openJSON('hb:'+row.id+':m',row.e.m);const rec=Object.assign({},meta,{id:row.id,_e:row.e});rec.getBlob=()=>HeySecure.openBlob('hb:'+row.id+':b',row.e.b);return rec}
+const addRaw=r=>tx('readwrite',s=>s.add(r)),putRaw=r=>tx('readwrite',s=>s.put(r));
+const addRec=async r=>{if(!APP)return addRaw(r);r.id=nextId();return addRaw(await sealRec(r))};
+const putRec=async r=>{if(!APP)return putRaw(r);return putRaw(await sealRec(r))};
+const allRecs=async()=>{const rows=await tx('readonly',s=>s.getAll());if(!APP)return rows.filter(x=>!x.e);const out=[];
+  for(const row of rows){try{if(row.e)out.push(await openRec(row));else if(row.blob){const sealed=await sealRec(row);await putRaw(sealed);out.push(await openRec(sealed))}}catch(e){console.warn('Recording could not be opened',e)}}return out};
+const delRec=id=>tx('readwrite',s=>s.delete(id)),clearRecs=()=>tx('readwrite',s=>s.clear());
 
 /* library */
 const urls=new Map(),ICON={voice:'🎙️',video:'🎥',screen:'🖥️'};
@@ -733,10 +745,10 @@ async function updStorage(){
   try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();if(e.quota){$('#mbar').style.width=Math.min(100,(e.usage||0)/e.quota*100)+'%';txt+=' · device storage '+size(e.usage||0)+' of '+size(e.quota)}}}catch(e){}
   $('#minfo').textContent=cache.length?txt:'';
 }
-function player(el,r,at){
+async function player(el,r,at){
   let p=el.querySelector('.player'),m;
   if(!p){
-    const u=URL.createObjectURL(r.blob);urls.set(r.id,u);
+    const u=URL.createObjectURL(r.blob||await r.getBlob());urls.set(r.id,u);
     p=document.createElement('div');p.className='player';
     p.innerHTML=(r.kind==='voice'?`<audio controls src="${u}"></audio>`:`<video controls playsinline src="${u}"></video>`)+'<button class="chip spd">Speed 1×</button>';
     el.appendChild(p);
@@ -768,12 +780,12 @@ function renderList(){
     };
     el.querySelectorAll('.mk button').forEach(b=>b.onclick=()=>player(el,r,Number(b.dataset.t)));
     const fname=()=>(r.name.replace(/[^\w\- ]+/g,'').trim()||'recording')+'.'+ext(r.type);
-    el.querySelector('.dl').onclick=()=>{
-      const u=URL.createObjectURL(r.blob),a=document.createElement('a');
+    el.querySelector('.dl').onclick=async()=>{
+      const u=URL.createObjectURL(r.blob||await r.getBlob()),a=document.createElement('a');
       a.href=u;a.download=fname();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Downloading…');
     };
     el.querySelector('.shr').onclick=async()=>{
-      const f=new File([r.blob],fname(),{type:r.type});
+      const f=new File([r.blob||await r.getBlob()],fname(),{type:r.type});
       try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:r.name});return}}catch(e){if(e.name==='AbortError')return}
       toast('Sharing not supported here – use download');
     };

@@ -96,12 +96,14 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 </div>
 <script src="../tones.js"></script>
 <script src="../heynotify.js"></script>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.water.v1';
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}
+let st;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};LOCK()}
 st.goal=st.goal||2500;st.days=st.days||{};st.ev=st.ev==null?2:st.ev;st.st=st.st||'08:00';st.en=st.en||'21:00';
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+const save=()=>SAVE(K,st);
 const key=d=>{const t=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return t.toISOString().slice(0,10)};
 const today=()=>key(new Date());
 const log=()=>st.days[today()]=st.days[today()]||[];

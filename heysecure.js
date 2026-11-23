@@ -10,7 +10,10 @@
   try { if (root.top && root.top !== root && root.top.HeySecure && root.top.HeySecure.__core) { root.HeySecure = root.top.HeySecure; return; } } catch (e) {}
   var PREFIX = 'hs1:', META = 'hs2meta', AAD1 = 'heytools-secure-record-v1:', AAD2 = 'heytools-secure-record-v2:', AADW = 'heytools-key-wrap-v2';
   var KEY_RE = /^[A-Za-z0-9_.:-]{1,120}$/, MAX = 1024 * 1024, ITER = 600000, MIN_PW = 10;
-  var SECURE_KEYS = ['notes-and-todo:v1', 'heytools.expenses.v1', 'heytools.habits.v1'];
+  var SECURE_KEYS = ['notes-and-todo:v1', 'heytools.expenses.v1', 'heytools.habits.v1', 'heytools.split.v1', 'heytools.water.v1',
+    'heytools.focus.v1', 'heytools.breath.v1', 'heytools.tally.v1', 'heytools.timers.v1', 'heytools.wheel.v1', 'heytools.markdown.v1',
+    'wc-text', 'md-history'];
+  var CHUNK = 4 * 1024 * 1024, QUICK = 'hs2quick';
   var te = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
   var td = typeof TextDecoder !== 'undefined' ? new TextDecoder() : null;
   function subtle() { return root.crypto && root.crypto.subtle; }
@@ -19,6 +22,16 @@
   function unb64(s) { var r = atob(s), b = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) b[i] = r.charCodeAt(i); return b; }
 
   /* ---------- Android Keystore backend ---------- */
+  function pluginNamed(name) {
+    var tries = [function () { return root.top; }, function () { return root.parent; }, function () { return root; }];
+    for (var i = 0; i < tries.length; i++) {
+      try {
+        var w = tries[i](), c = w && w.Capacitor;
+        if (c && c.isNativePlatform && c.isNativePlatform()) { var p = (c.Plugins && c.Plugins[name]) || (c.registerPlugin && c.registerPlugin(name)); if (p) return p; }
+      } catch (e) {}
+    }
+    return null;
+  }
   function nativePlugin() {
     var tries = [function () { return root.top; }, function () { return root.parent; }, function () { return root; }];
     for (var i = 0; i < tries.length; i++) {
@@ -128,7 +141,7 @@
 
   /* ---------- Records ---------- */
   function checkKey(k) { if (!KEY_RE.test(k || '')) throw new Error('Invalid secure storage key'); }
-  var queues = Object.create(null);
+  var queues = Object.create(null), latest = Object.create(null);
   function enqueue(key, fn) {
     var p = (queues[key] || Promise.resolve()).then(fn, fn);
     queues[key] = p.catch(function () {});
@@ -191,6 +204,7 @@
     el.innerHTML = '<style>' + CSS + '</style><div id="hs-card"><div id="hs-ico">🔐</div>' +
       '<h2>' + (setup ? 'Protect your data' : 'Unlock HeyTools') + '</h2>' +
       '<p>' + (setup ? 'Choose a password. Your notes, expenses and habits are encrypted with it on this device.' : 'Enter your password to open your private data.') + '</p>' +
+      (!setup && HS.quickReady() ? '<button id="hs-quick" type="button" style="width:100%;padding:14px;margin:0 0 12px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:700">🔓 Unlock with fingerprint or face</button><p style="margin:-4px 0 10px">or enter your password</p>' : '') +
       '<form id="hs-form" autocomplete="off"><div class="hs-f"><input id="hs-pw" type="password" placeholder="' + (setup ? 'New password (10+ characters)' : 'Password') + '" autocomplete="' + (setup ? 'new-password' : 'current-password') + '"><button type="button" id="hs-eye" aria-label="Show password">👁</button></div>' +
       (setup ? '<div class="hs-f"><input id="hs-pw2" type="password" placeholder="Repeat password" autocomplete="new-password"></div><div id="hs-warn">⚠ There is no password reset. If you forget it, your encrypted data cannot be opened by anyone, including us.</div>' : '') +
       '<div id="hs-err" role="alert"></div><button id="hs-go" type="submit">' + (setup ? 'Create password' : 'Unlock') + '</button></form>' +
@@ -207,6 +221,14 @@
         pw.value = ''; if (pw2) pw2.value = ''; el.remove(); done();
       }, function (e) { say(e && e.message || 'Something went wrong'); go.disabled = false; go.textContent = label; if (!setup) { pw.select(); } });
     };
+    var qk = el.querySelector('#hs-quick');
+    if (qk) {
+      var tryQuick = function () {
+        say('');
+        HS.unlockQuick().then(function () { pw.value = ''; el.remove(); done(); }, function (e) { if (e && e.message !== 'Not confirmed') say(e.message); });
+      };
+      qk.onclick = tryQuick; setTimeout(tryQuick, 350);
+    }
     var fg = el.querySelector('#hs-forgot');
     if (fg) fg.onclick = function () {
       if (!root.confirm('There is no way to recover a forgotten password. To continue you must erase all encrypted data (notes, expenses, habits) on this device. Erase it now?')) return;
@@ -220,6 +242,11 @@
   var HS = {
     __core: true, PREFIX: PREFIX, MIN_PASSWORD: MIN_PW,
     isSetUp: function () { return !!readMeta(); },
+    /* true inside the HeyTools app (native app, or a tool page shown inside the app shell). Public website pages return false and do not keep private text. */
+    inApp: function () {
+      try { if (root.top && root.top !== root && root.top.HeySecure && root.top.HeySecure.__core) return true; } catch (e) {}
+      try { var c = root.Capacitor; return !!(c && c.isNativePlatform && c.isNativePlatform()); } catch (e) { return false; }
+    },
     isUnlocked: function () { return !!dek; },
     isSecureKey: function (k) { return SECURE_KEYS.indexOf(k) >= 0 || !!readEnvelope(k); },
     /* Create the password for the first time. Also upgrades any records written by the earlier device-key version. */
@@ -268,11 +295,14 @@
     /* Erase every encrypted record and the password. Used for "forgot password" and "delete all my data". */
     reset: function () {
       var s = store(); dek = null; unlockP = null; fails = 0;
-      if (s) { HS.keys().forEach(function (k) { s.removeItem(PREFIX + k); }); s.removeItem(META); SECURE_KEYS.forEach(function (k) { s.removeItem(k); }); }
+      if (s) { HS.keys().forEach(function (k) { s.removeItem(PREFIX + k); }); s.removeItem(META); s.removeItem(QUICK); SECURE_KEYS.forEach(function (k) { s.removeItem(k); }); }
       return new Promise(function (r) { try { var q = root.indexedDB.deleteDatabase('heysecure'); q.onsuccess = q.onerror = q.onblocked = function () { r(); }; } catch (e) { r(); } });
     },
-    getJSON: function (key, fallback) {
+    getJSON: function (key, fallback, opts) {
       checkKey(key);
+      if (!HS.inApp()) {                                   // public website page: data stays a plain, local-only setting as before
+        try { var pv = store().getItem(key); if (pv == null) return Promise.resolve(fallback); try { return Promise.resolve(JSON.parse(pv)); } catch (e) { return Promise.resolve(opts && opts.raw ? pv : fallback); } } catch (e) { return Promise.resolve(fallback); }
+      }
       return HS.ensureUnlocked().then(function () {
         return enqueue(key, function () {
           var env = readEnvelope(key);
@@ -280,16 +310,19 @@
           var s = store(), legacy = null;
           try { legacy = s && s.getItem(key); } catch (e) {}
           if (legacy == null) return fallback;
-          var val; try { val = JSON.parse(legacy); } catch (e) { return fallback; }
+          var val; try { val = JSON.parse(legacy); } catch (e) { if (opts && opts.raw) val = legacy; else return fallback; }
           return writeText(key, JSON.stringify(val)).then(function () { try { s.removeItem(key); } catch (e) {} return val; });
         });
       });
     },
     setJSON: function (key, value) {
       checkKey(key);
-      var text = JSON.stringify(value);
+      if (!HS.inApp()) { try { store().setItem(key, JSON.stringify(value)); return Promise.resolve(); } catch (e) { return Promise.reject(e); } }
+      latest[key] = JSON.stringify(value);                 // while a write is running, newer values replace queued ones
       return HS.ensureUnlocked().then(function () {
         return enqueue(key, function () {
+          var text = latest[key]; if (text === undefined) return;
+          delete latest[key];
           return writeText(key, text).then(function () { try { var s = store(); if (s && s.getItem(key) != null) s.removeItem(key); } catch (e) {} });
         });
       });
@@ -312,6 +345,57 @@
         return Promise.all(names.map(function (k) { return HS.getJSON(k, undefined).then(function (v) { if (v !== undefined) out[k] = JSON.stringify(v); }, function () { failed.push(k); }); })).then(function () { return { data: out, failed: failed }; });
       });
     },
+    /* Unlock with the phone's own lock (fingerprint, face, PIN) instead of typing the password. The data key is kept
+       encrypted by the Android Keystore and is only released after the phone's lock screen confirms the person.
+       The password still works and is still needed on a new phone or after a reinstall. */
+    canQuick: function () { return !!(pluginNamed('SecureStorage') && pluginNamed('AppLock')); },
+    quickReady: function () { var s = store(); return HS.canQuick() && !!(s && s.getItem(QUICK)); },
+    enableQuick: function (pw) {
+      var m = readMeta(); if (!m || !dek) return Promise.reject(new Error('Unlock first'));
+      if (!HS.canQuick()) return Promise.reject(new Error('Not available on this device'));
+      return deriveKek(pw, unb64(m.salt), m.iter || ITER).then(function (kek) {
+        return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
+      }).then(function (raw) { return nativeBackend.encrypt(QUICK, b64(raw)); }, function () { throw new Error('Wrong password'); })
+        .then(function (env) { store().setItem(QUICK, JSON.stringify(env)); return true; });
+    },
+    disableQuick: function () { var s = store(); if (s) s.removeItem(QUICK); return Promise.resolve(true); },
+    unlockQuick: function () {
+      if (!HS.quickReady()) return Promise.reject(new Error('Fingerprint unlock is not set up'));
+      return pluginNamed('AppLock').authenticate({ title: 'HeyTools', subtitle: 'Unlock your private data' }).then(function (r) {
+        if (!r || !r.ok) throw new Error('Not confirmed');
+        return nativeBackend.decrypt(QUICK, JSON.parse(store().getItem(QUICK)));
+      }).then(function (b) { return importDek(unb64(b)); }).then(function (k) {
+        dek = k; fails = 0; return upgradeAll().then(function () { return true; });
+      }, function (e) { throw new Error(e && e.message === 'Not confirmed' ? 'Not confirmed' : 'Could not unlock with your phone lock. Use your password.'); });
+    },
+    /* Encrypts a Blob (or any JSON value) for IndexedDB storage. Big files are cut into 4 MB pieces, each with its own IV;
+       the piece number and count are bound into the tag so pieces cannot be reordered or dropped. ctx names the record. */
+    sealBlob: function (ctx, blob) {
+      return HS.ensureUnlocked().then(function () {
+        var n = Math.max(1, Math.ceil(blob.size / CHUNK)), out = [], p = Promise.resolve();
+        for (var i = 0; i < n; i++) (function (i) {
+          p = p.then(function () { return blob.slice(i * CHUNK, Math.min(blob.size, (i + 1) * CHUNK)).arrayBuffer(); }).then(function (buf) {
+            var iv = root.crypto.getRandomValues(new Uint8Array(12));
+            return subtle().encrypt({ name: 'AES-GCM', iv: iv, additionalData: te.encode('heytools-blob-v2:' + ctx + ':' + i + ':' + n) }, dek, buf).then(function (ct) { out.push({ iv: iv, data: ct }); });
+          });
+        })(i);
+        return p.then(function () { return { v: 2, type: blob.type || '', size: blob.size, chunks: out }; });
+      });
+    },
+    openBlob: function (ctx, env) {
+      return HS.ensureUnlocked().then(function () {
+        var n = env.chunks.length, parts = [], p = Promise.resolve();
+        for (var i = 0; i < n; i++) (function (i) {
+          p = p.then(function () {
+            var c = env.chunks[i];
+            return subtle().decrypt({ name: 'AES-GCM', iv: c.iv, additionalData: te.encode('heytools-blob-v2:' + ctx + ':' + i + ':' + n) }, dek, c.data).then(function (pt) { parts.push(pt); });
+          });
+        })(i);
+        return p.then(function () { return new Blob(parts, { type: env.type || '' }); });
+      });
+    },
+    sealJSON: function (ctx, value) { return HS.sealBlob(ctx, new Blob([JSON.stringify(value)])); },
+    openJSON: function (ctx, env) { return HS.openBlob(ctx, env).then(function (b) { return b.text(); }).then(JSON.parse); },
     onError: function (e) { try { console.warn('HeySecure:', e && e.message); } catch (x) {} }
   };
   /* Upgrade v1 device-key records and any readable copies of known keys now that the password key is open. */

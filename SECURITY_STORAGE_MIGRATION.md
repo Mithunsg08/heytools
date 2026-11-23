@@ -58,3 +58,22 @@ These contain binary media or structured metadata and cannot be considered prote
 ## Important limitation
 
 This audit is based on source inspection, not a penetration test or independent security certification. Android's app sandbox and device encryption already protect app-private files at rest; application-managed encryption is additional defense-in-depth and does not protect against a compromised running app, malicious same-origin script, rooted device, or an unlocked device being used by an attacker.
+
+## Implementation status (current)
+
+Implemented in `heysecure.js` and used inside the HeyTools app (native app and the app shell, including the installed PWA):
+
+- **Password-based key.** The person sets one password. A random 256-bit data key encrypts every record (AES-256-GCM). That key is itself wrapped with a key derived from the password (PBKDF2-SHA-256, 600,000 rounds, random salt). Nothing recoverable is stored: a forgotten password means the data stays unreadable, and "Forgot password" erases it.
+- **Quick unlock.** On Android the data key can also be kept in the Android Keystore (`SecureStoragePlugin`) and released only after the phone's own lock screen (fingerprint, face, PIN or pattern) confirms the person. Turning it on needs the password once. The password always still works.
+- **Encrypted JSON records** (`hs1:<key>` in localStorage): notes and to-dos, expenses, habits, split bills, water, focus, breathing, tally, countdown timers, spin wheel, markdown, word-counter text, download history. Existing plaintext is encrypted and verified before the readable copy is removed.
+- **Encrypted IndexedDB payloads:** Recorder (`hushbloom`) and Geo Camera (`geocam`): the media, thumbnails and names are sealed in 4 MB pieces with the record id and piece number bound into the tag. Existing plaintext rows are encrypted on first open.
+- **Backup / restore:** the backup file is encrypted with its own password. Private records are decrypted from the data store into the backup, and re-encrypted under the data key on restore.
+- **Delete all** removes encrypted records, the wrapped key, the quick-unlock record and the key database.
+- **Website pages** outside the app keep plain local settings and never show the lock screen.
+
+Deliberately not encrypted:
+
+- **Alarms** stay readable by native code so they can ring after a restart before the phone is unlocked.
+- **Music and video library files** (large media the person chose to import) are not encrypted, to avoid loading multi-gigabyte files into memory. Their play history is treated as ordinary app data.
+- Theme, calculator, speed-test and game settings contain nothing private.
+- **Hardware limits:** the app cannot protect data from someone who already has the unlocked phone, or from malware with root access.

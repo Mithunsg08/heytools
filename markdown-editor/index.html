@@ -95,8 +95,10 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 
 
 </div>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.markdown.v1';
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function inline(s){s=esc(s);const codes=[];s=s.replace(/`([^`]+)`/g,(m,c)=>{codes.push(c);return '\u0000'+(codes.length-1)+'\u0000'});
@@ -118,8 +120,8 @@ function md(src){const L=src.replace(/\r/g,'').split('\n');let out=[],i=0,para=[
 const TB=[['B','**','**','bold'],['I','*','*','italic'],['H','## ','','heading'],['• List','- ','','item'],['1. List','1. ','','item'],['Quote','> ','','quote'],['Code','`','`','code'],['Link','[','](https://)','text']];
 $('tb').innerHTML=TB.map((t,i)=>'<button class="g" type="button" data-i="'+i+'">'+t[0]+'</button>').join('');
 $('tb').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const t=TB[+b.dataset.i],s=$('src'),a=s.selectionStart,z=s.selectionEnd,sel=s.value.slice(a,z)||t[3];s.setRangeText(t[1]+sel+t[2],a,z,'select');s.focus();upd()};
-function upd(){const v=$('src').value;$('pv').innerHTML=md(v);const w=(v.trim()?v.trim().split(/\s+/).length:0);$('wc').textContent=w+' words · '+v.length+' characters';try{localStorage.setItem(K,v)}catch(e){}}
-let v0='';try{v0=localStorage.getItem(K)||''}catch(e){}
+function upd(){const v=$('src').value;$('pv').innerHTML=md(v);const w=(v.trim()?v.trim().split(/\s+/).length:0);$('wc').textContent=w+' words · '+v.length+' characters';clearTimeout(upd.t);upd.t=setTimeout(()=>SAVE(K,v),400)}
+let v0='';try{v0=(await HeySecure.getJSON(K,'',{raw:true}))||''}catch(e){LOCK()}
 $('src').value=v0||'# Welcome\n\nThis is **HeyTools Markdown**. Edit this text and the preview updates.\n\n- Make lists\n- Add *emphasis* and `code`\n- Share the HTML\n\n> Your notes stay on this device.\n';
 $('src').addEventListener('input',upd);
 const file=(name,mime,text)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)};

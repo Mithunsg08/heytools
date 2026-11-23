@@ -1462,4 +1462,22 @@
       }, function () { box.checked = !want; });
     });
   })();
+
+  /* ---------- quick unlock for the private-data password ---------- */
+  (function () {
+    var HS = window.HeySecure, row = $('quickRow'), box = $('optQuick');
+    if (!HS || !HS.canQuick || !HS.canQuick() || !row || !box) return;
+    row.hidden = false; box.checked = HS.quickReady();
+    box.addEventListener('change', function () {
+      var want = box.checked;
+      HS.ensureUnlocked().then(function () {
+        if (want) {
+          var pw = prompt('Enter your data password once to turn this on.');
+          if (pw === null) { box.checked = false; return; }
+          return HS.enableQuick(pw).then(function () { toast('Fingerprint unlock is on'); }, function (e) { box.checked = false; toast(e && e.message || 'Could not turn it on'); });
+        }
+        return HS.disableQuick().then(function () { toast('Fingerprint unlock is off'); });
+      });
+    });
+  })();
 })();

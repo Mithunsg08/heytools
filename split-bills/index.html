@@ -95,11 +95,13 @@ footer{margin-top:26px;font-size:.84rem;color:var(--muted)}footer a{color:inheri
 
 
 </div>
+<script src="../heysecure.js"></script>
 <script>
-(function(){
+(async function(){
+let locked=false;const SAVE=(k,v)=>{if(locked)return;HeySecure.setJSON(k,v).catch(e=>{HeySecure.onError(e);if(!SAVE.w){SAVE.w=1;alert('Could not save securely: '+(e&&e.message))}})};const LOCK=()=>{locked=true;setTimeout(()=>alert('Your saved data could not be unlocked, so changes will not be saved to avoid overwriting it. Please restart the app.'),300)};
 const $=id=>document.getElementById(id),K='heytools.split.v1';
-let st;try{st=JSON.parse(localStorage.getItem(K))||{}}catch(e){st={}}st.p=st.p||[];st.e=st.e||[];st.cur=st.cur||'₹';
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+let st;try{st=(await HeySecure.getJSON(K,{}))||{}}catch(e){st={};LOCK()}st.p=st.p||[];st.e=st.e||[];st.cur=st.cur||'₹';
+const save=()=>SAVE(K,st);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const m=n=>st.cur+(Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
 $('cur').value=st.cur;$('cur').oninput=()=>{st.cur=$('cur').value||'₹';save();draw()};
