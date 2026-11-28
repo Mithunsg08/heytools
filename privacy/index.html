@@ -38,20 +38,60 @@ small,.muted{color:var(--muted)}
 </head>
 <body>
 <main>
-  <nav class="top" aria-label="Breadcrumb"><a href="../">← All tools</a><span class="muted">Last updated 21 November 2026</span></nav>
-  <h1>Your data stays yours</h1>
-  <p class="lead">HeyTools is a set of small tools that run on your phone or in your browser. This page says, in plain words, what the app can see, what stays on your device, and the few cases where something goes over the internet.</p>
+  <nav class="top" aria-label="Breadcrumb"><a href="../">← All tools</a><span class="muted">Last updated 28 November 2026</span></nav>
+  <h1>Your data stays yours, with clear limits</h1>
+  <p class="lead">HeyTools has no accounts and no advertising, and works local-first. But some tools exist to talk to the internet (streaming, weather, speed tests, downloads). This page separates three things so you can judge each one: what <b>never leaves your device</b>, what is sent <b>only when you use an online feature</b>, and what is <b>optional analytics</b>.</p>
 
   <div class="promise" role="list">
-    <div class="card" role="listitem"><strong>No accounts</strong>There is no sign-up and no login to HeyTools.</div>
-    <div class="card" role="listitem"><strong>No ads</strong>No advertising SDKs. Optional download counts are off until you explicitly opt in.</div>
-    <div class="card" role="listitem"><strong>On-device by default</strong>Notes, to-dos, habits, expenses, alarms, recordings and photos are stored on your device only.</div>
-    <div class="card" role="listitem"><strong>You are in control</strong>Turn notifications off, export a backup, or delete everything from Settings at any time.</div>
+    <div class="card" role="listitem"><strong>1 · Never leaves your device</strong>Your notes, trackers, expenses, recordings, photos, passwords and settings.</div>
+    <div class="card" role="listitem"><strong>2 · Sent only when you use an online feature</strong>Searches and links go straight from your device to the service that provides that feature.</div>
+    <div class="card" role="listitem"><strong>3 · Optional analytics</strong>Anonymous download counts. Off until you switch them on.</div>
   </div>
 
-  <h2>What is stored on your device</h2>
-  <p>Each tool keeps its data in your browser or app storage on the device: for example your notes and to-do lists, habit and water logs, expenses, alarm times, timer presets, theme and layout choices, and files you pick in the media tools. HeyTools has no server that receives this information, so we cannot read it, recover it or share it.</p>
-  <p>Because the data lives only on your device, <strong>if you uninstall the app or clear its storage, it is gone</strong>. Use <em>Settings → Back up</em> to create a password-protected encrypted file of your notes, to-dos, trackers and settings. New backups are encrypted on your device using AES-256-GCM. Keep the password safe; HeyTools cannot recover it. Older backups made before encryption are not encrypted and require a warning before restore. The backup does not include videos, music, recordings, Geo Camera photos or your Spotify login.</p>
+  <h2 id="local">1. Information that never leaves your device</h2>
+  <p>HeyTools has no server that receives your tool data and no account system, so we cannot read it, recover it or share it. This stays on the device:</p>
+  <ul>
+    <li>Notes and to-dos, habit, water, focus, breathing, tally, timer and spin-wheel data, expense and bill-splitting records, Markdown drafts, and word-counter text.</li>
+    <li>Voice, video and screen recordings (Recorder) and Geo Camera photos.</li>
+    <li>Alarms, Anti-Theft Guard settings and its event history, theme, layout and other preferences.</li>
+    <li>Files you pick in the video, music, image, PDF, QR, hashing, converter, JSON and password tools. These tools process the file in your browser or app; the file is not uploaded.</li>
+    <li>Your data password, your fingerprint or face (Android keeps these; the app only learns "confirmed" or "not confirmed"), and the encryption keys.</li>
+  </ul>
+  <div class="card"><b>How it is protected on the device.</b> Private tool data is always encrypted (AES-256-GCM). You choose how it opens:
+    <ul>
+      <li><b>Password.</b> A key derived from your password (PBKDF2-SHA-256, 600,000 rounds) unlocks a random data key. Forget the password and nobody can open the data, including us. You can optionally add fingerprint or face unlock; it can only be turned on by entering the password, and typing the password never triggers the fingerprint prompt.</li>
+      <li><b>No password.</b> The data is still encrypted, but the key is kept by Android Keystore (the app) or a non-extractable browser key on this device and the data opens automatically. This protects copied files and backups, not a phone that is unlocked in someone’s hand.</li>
+    </ul>
+    Backups you export are encrypted with their own password (AES-256-GCM) and need that password to restore. Not encrypted: video and music library files, alarm times, and general preferences. Encryption does not protect against malware running as you, a rooted phone that is unlocked, or someone who knows your password. If you uninstall the app or clear its storage, the data is gone unless you made a backup.</div>
+
+  <h2 id="online">2. Information sent only when you use an online feature</h2>
+  <p>Nothing here is sent in the background. A request is made only when you open or use that feature. The service receives what it needs to answer (the search words, link, coordinates or file request), plus what any website receives: your IP address, your browser or app type and the time. Those services have their own privacy policies, and HeyTools does not control them.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Feature</th><th>Who receives the request</th><th>What it receives</th></tr></thead>
+    <tbody>
+      <tr><td>Music streaming and search (Music Player)</td><td>Audius, Deezer, Apple iTunes search, Openverse, Internet Archive, YouTube, SoundCloud and Apple Music embeds, public Piped servers; Spotify only if you connect it</td><td>Your search words, or the song you open. Spotify uses PKCE; its tokens are held in tab-scoped session storage and cleared when the session ends. Songs on your phone are played locally.</td></tr>
+      <tr><td>Video streaming, live TV and subtitles (Video Player)</td><td>YouTube, Dailymotion, Vimeo, Twitch, Internet Archive, OpenSubtitles, public Piped servers, the public IPTV channel list and each channel’s own stream host</td><td>The link, search or channel you open, and the stream request itself. Videos from your device are never uploaded.</td></tr>
+      <tr><td>Weather, place name, map and time zone (Geo Camera)</td><td>Open-Meteo, OpenStreetMap Nominatim, Esri ArcGIS map tiles, timeapi.io / worldtimeapi.org, flagcdn.com</td><td>Your approximate coordinates when you use the camera or locate buttons. Photos themselves stay on the phone.</td></tr>
+      <tr><td>Places and ZIP codes (Earth ZIP code)</td><td>OpenStreetMap Nominatim, earthszipcode.com, cdn.tailwindcss.com (page styling helper)</td><td>The place or ZIP code you search for.</td></tr>
+      <tr><td>Internet speed test</td><td>Cloudflare speed test, ipify.org</td><td>Test traffic, and a request that returns your public IP address.</td></tr>
+      <tr><td>Media downloads</td><td>The website of the link you paste</td><td>A request from your device straight to that site. Nothing passes through HeyTools. Only download content you have the right to download.</td></tr>
+      <tr><td>Background removal</td><td>jsDelivr and IMG.LY</td><td>Only the AI model files are downloaded, once. Your picture is processed on the device and is never uploaded.</td></tr>
+      <tr><td>Image to PDF (Word, Excel, PowerPoint or video conversion only)</td><td>cdnjs, jsDelivr</td><td>Only helper code is downloaded. Your files stay on the device.</td></tr>
+      <tr><td>OpsReveal (link)</td><td>opsreveal.preventloss.org</td><td>Opens a separate website with its own privacy policy. Nothing from HeyTools tools is sent.</td></tr>
+      <tr><td>Update check (Android app)</td><td>GitHub</td><td>A normal request for the public release page. Turn it off in Settings → Privacy &amp; data. Updates are never installed without your tap.</td></tr>
+      <tr><td>Website hosting</td><td>GitHub Pages</td><td>When you open the HeyTools website, GitHub receives an ordinary page request, as for any website.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Everything not in this table works offline. Fonts and the code libraries of the offline tools are included in the app; they are not loaded from Google or any CDN.</p>
+
+  <h2 id="analytics">3. Optional analytics and telemetry</h2>
+  <p>HeyTools includes one optional counter, <b>off by default</b>. It starts only if you choose “Share anonymous download counts” (Settings or first run), and turning it off stops it immediately.</p>
+  <ul>
+    <li><b>Sent when on:</b> an event name (for example <code>download_click</code> or <code>app_open</code>), a device type such as “Android phone”, whether it came from the app or a browser, a random number made on your device, the page name, and a timestamp.</li>
+    <li><b>Never sent:</b> your name, email, files, notes, searches, location or contacts.</li>
+    <li><b>Where it goes:</b> a private script owned by the project maintainer (Google Apps Script), which keeps the counts. Google receives the request like any web host does, including your IP address.</li>
+    <li>There are no advertising SDKs, no cross-app tracking and no crash-reporting service.</li>
+  </ul>
 
   <h2>Permissions the Android app may ask for</h2>
   <p>Each permission is asked for only when a tool needs it, and you can refuse or withdraw it in your phone settings.</p>
@@ -65,49 +105,26 @@ small,.muted{color:var(--muted)}
       <tr><td>Microphone</td><td>Recorder only. Recordings stay on your phone.</td></tr>
       <tr><td>Location</td><td>Geo Camera (stamp on photos), Compass and Earth ZIP code, only when you tap the locate or camera buttons.</td></tr>
       <tr><td>Motion and orientation sensors</td><td>Compass and Spirit Level.</td></tr>
+      <tr><td>Device administrator (force-lock only), foreground service</td><td>Anti-Theft Guard locks the screen when it sounds the alarm. It cannot read or erase anything, and it is only active when you switch the guard on.</td></tr>
       <tr><td>Foreground service (media playback)</td><td>Keeps music and video playing with the screen off.</td></tr>
-      <tr><td>Internet and network state</td><td>For the tools listed below, and for update checks.</td></tr>
+      <tr><td>Internet and network state</td><td>Only for the online features in section 2, and for update checks.</td></tr>
     </tbody>
   </table></div>
-
-  <h2>Where the internet is used</h2>
-  <p>Most tools work fully offline. These are the ones that contact other services, and only while you use that feature. The services receive your device’s IP address and the request itself, as any website would.</p>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Tool</th><th>Contacts</th><th>What is sent</th></tr></thead>
-    <tbody>
-      <tr><td>Geo Camera</td><td>Open-Meteo, OpenStreetMap Nominatim, Esri ArcGIS, timeapi.io / worldtimeapi.org, flagcdn.com</td><td>Approximate coordinates, to look up weather, place name, map image, time zone and country flag.</td></tr>
-      <tr><td>Earth ZIP code</td><td>OpenStreetMap Nominatim, earthszipcode.com</td><td>The place or ZIP code you search for.</td></tr>
-      <tr><td>Internet Speed</td><td>Cloudflare speed test, ipify.org</td><td>Test data, and a request that shows your public IP address.</td></tr>
-      <tr><td>Music Player</td><td>Spotify (only if you connect), Audius, Deezer, Internet Archive, Apple iTunes search, YouTube, SoundCloud, Apple Music embeds, public Piped servers</td><td>Your search words, or the song you open. Spotify uses PKCE. Access and refresh tokens are held in tab-scoped session storage and are cleared when the browser session ends; you may need to reconnect after closing the app or tab.</td></tr>
-      <tr><td>Video Player</td><td>YouTube, Dailymotion, Vimeo, Twitch, Internet Archive, OpenSubtitles, public Piped servers, public live TV playlists</td><td>The link, search or channel you open.</td></tr>
-      <tr><td>Media Downloads</td><td>The website of the link you paste</td><td>A request straight from your device to that site. Nothing passes through HeyTools.</td></tr>
-      <tr><td>Background Removal</td><td>jsDelivr and IMG.LY (once)</td><td>Only the AI model files are downloaded. <strong>Your picture is never uploaded</strong>; it is processed on your device.</td></tr>
-      <tr><td>Image to PDF</td><td>cdnjs (only for Word, Excel, PowerPoint or video conversion)</td><td>Only helper code is downloaded. Your files stay on your device.</td></tr>
-      <tr><td>OpsReveal</td><td>opsreveal.preventloss.org</td><td>Opens a separate website with its own privacy policy.</td></tr>
-    </tbody>
-  </table></div>
-  <p><small>Fonts and the code libraries used by the offline tools are included in the app. They are not loaded from Google or any CDN.</small></p>
-
-  <h2>Local storage and device security</h2>
-  <p>HeyTools stores notes, trackers, preferences and other tool data in the app's private browser storage. This live app storage is not encrypted by HeyTools itself. Password-protected encryption currently applies to exported backup files, not the live data store. Android app-private storage is protected by Android's app sandbox, but a person with an unlocked or rooted device, or malicious code running in the same app origin, may be able to access it. Use a strong device screen lock and keep Android updated. The Android build blocks cleartext network traffic and trusts system certificate authorities. Spotify tokens are kept only for the current tab session; session storage is not hardware-backed encryption.</p>
-
-  <h2>Update checks</h2>
-  <p>The Android app can look at the project’s public GitHub release page to see whether a newer version exists. This sends a normal web request to GitHub (which can see your IP address). Turn it off in <em>Settings → Privacy &amp; data</em>. Updates are never installed without you tapping the download. Android only accepts an update that is signed with the same key as the app you already have.</p>
-
-  <h2>Anonymous download counts (optional)</h2>
-  <p>If the project owner has switched on counting and <strong>you</strong> choose “Share anonymous download counts”, the app sends: an event name (for example <em>download_click</em>), your device type (such as “Android phone”), whether it came from the app or a browser, a random number made on your device, and the page name. It never sends your name, email, files, notes, location or contacts. It is off until you turn it on, and turning it off stops it immediately.</p>
 
   <h2>Notifications</h2>
-  <p>Notifications are made locally by the app. In <em>Settings → Notifications</em> you can switch off everything, switch off one kind (alarms, reminders, timers, update alerts), set quiet hours for gentle reminders, send a test, and check that your phone lets alarms ring on time.</p>
+  <p>Notifications are made locally by the app, not through a server. In Settings → Notifications you can switch off everything or one kind, set quiet hours, send a test, and check that your phone lets alarms ring on time.</p>
 
   <h2>Delete everything</h2>
-  <p><em>Settings → Privacy &amp; data → Delete all my data</em> removes everything HeyTools holds on the device, cancels every reminder and alarm, and resets the app. Photos that Geo Camera already saved to your Gallery belong to your phone’s Gallery and are not removed. Uninstalling the app also removes its data.</p>
+  <p>Settings → Privacy &amp; data → Delete all my data removes everything HeyTools holds on the device, cancels every reminder and alarm, and resets the app. Photos that Geo Camera already saved to your Gallery belong to the Gallery and are not removed. Uninstalling the app also removes its data.</p>
+
+  <h2>What this page is not</h2>
+  <p>These are statements about how HeyTools is built, checked by automated tests in the open repository. They are not a security certification or an independent audit. See <a href="https://github.com/Mithunsg08/heytools/blob/main/SECURITY.md" rel="noopener">SECURITY.md</a> for the safeguards and their limits.</p>
 
   <h2>Children</h2>
   <p>HeyTools does not ask for personal information and has no accounts or chat, so there is nothing to collect from anyone, including children.</p>
 
   <h2>Licenses</h2>
-  <p>HeyTools is proprietary software and includes open-source libraries and fonts that keep their own licenses. See the <a href="../licenses/">open-source licenses</a> page.</p>
+  <p>HeyTools is proprietary software and includes open-source libraries and fonts that keep their own licenses. See the <a href="../licenses/">open-source licenses page</a>.</p>
 
   <h2>Changes and contact</h2>
   <p>If this page changes in a way that affects you, the date at the top changes too. Questions or security reports: please open an issue at <a href="https://github.com/Mithunsg08/heytools/issues" rel="noopener">github.com/Mithunsg08/heytools</a>. For a security problem, please read <a href="https://github.com/Mithunsg08/heytools/blob/main/SECURITY.md" rel="noopener">SECURITY.md</a> first.</p>
