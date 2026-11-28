@@ -139,7 +139,7 @@
         <input class="switch" type="checkbox" id="optResume">
       </div>
       <div class="set row" id="quickRow" hidden>
-        <div><label class="set-l" for="optQuick">Unlock private data with fingerprint or face</label><p class="set-s">Skip typing your data password. Your phone's lock confirms it is you. The password still works as a backup.</p></div>
+        <div><label class="set-l" for="optQuick">Unlock private data with fingerprint or face</label><p class="set-s">Open your private data with your phone's fingerprint or face instead of typing the password. Turning it on needs your password. If you type the password instead, no fingerprint prompt appears.</p></div>
         <input class="switch" type="checkbox" id="optQuick">
       </div>
       <div class="set row" id="lockRow" hidden>
@@ -175,11 +175,12 @@
           <button class="btn" id="checkUpdate" type="button" hidden>Check for updates</button>
         </div>
         <span class="set-l" style="margin-top:14px">Your data</span>
-        <p class="set-s">Create a password-protected encrypted backup of your notes, to-dos, habits, expenses, alarms and settings. Restore it on a new install or phone. Your private data is also encrypted on this device with your own password, asked each time the app opens. Keep both passwords safe; HeyTools cannot recover them. Not included: videos, music, recordings and Geo Camera photos (they are large, and Geo Camera photos are already in your Gallery), and your Spotify login.</p>
+        <p class="set-s">Create a password-protected encrypted backup of your notes, to-dos, habits, expenses, alarms and settings. Restore it on a new install or phone. Your private data is also always encrypted on this device. Choose how it opens: with your own password (optionally your fingerprint or face, which can only be turned on with the password), or with no password, where the key stays on this device and it opens automatically. Keep your passwords safe; HeyTools cannot recover them. Not included: videos, music, recordings and Geo Camera photos (they are large, and Geo Camera photos are already in your Gallery), and your Spotify login.</p>
         <div class="row-btns">
           <button class="btn" id="backupBtn" type="button">Back up my data</button>
           <button class="btn" id="restoreBtn" type="button">Restore from backup</button>
           <button class="btn" id="pwBtn" type="button">Change password</button>
+          <button class="btn" id="modeBtn" type="button">Use no password</button>
           <button class="btn" id="lockBtn" type="button">Lock now</button>
           <input id="restoreFile" type="file" accept="application/json,.json" hidden>
         </div>

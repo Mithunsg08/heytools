@@ -1414,6 +1414,27 @@
     if (n !== prompt('Enter the new password again.')) { toast('Passwords do not match. Nothing changed.'); return; }
     window.HeySecure.changePassword(o, n).then(function () { toast('Password changed'); }, function (e) { toast(e && e.message || 'Could not change the password'); });
   });
+  /* choose how the private data opens: password (+ optional fingerprint) or no password (still encrypted, key kept on this device) */
+  function modeUI() {
+    var HS = window.HeySecure, m = HS.mode(), pw = $('pwBtn'), mb = $('modeBtn'), qr = $('quickRow'), qb = $('optQuick');
+    if (pw) pw.hidden = m !== 'password';
+    if (mb) { mb.hidden = !m; mb.textContent = m === 'device' ? 'Set a password' : 'Use no password'; }
+    if (qr && HS.canQuick && HS.canQuick()) { qr.hidden = m !== 'password'; if (qb) qb.checked = HS.quickReady(); }
+  }
+  if ($('modeBtn')) $('modeBtn').addEventListener('click', function () {
+    var HS = window.HeySecure;
+    HS.ensureUnlocked().then(function () {
+      if (HS.mode() === 'device') {
+        var n = prompt('Choose a password (at least ' + HS.MIN_PASSWORD + ' characters). If you forget it, your data cannot be recovered.'); if (n === null) return;
+        if (n !== prompt('Enter the password again.')) { toast('Passwords do not match. Nothing changed.'); return; }
+        return HS.switchToPassword(n).then(function () { toast('Password set. Your data stays encrypted.'); modeUI(); }, function (e) { toast(e && e.message || 'Could not set the password'); });
+      }
+      if (!confirm('Use no password? Your data stays encrypted, but the key is kept on this device and opens automatically. Anyone using your unlocked phone and this app can see it. Fingerprint unlock for data will be turned off.')) return;
+      var o = prompt('Enter your current password to confirm.'); if (o === null) return;
+      return HS.switchToDevice(o).then(function () { toast('No password. Your data stays encrypted on this device.'); modeUI(); }, function (e) { toast(e && e.message || 'Could not switch'); });
+    });
+  });
+  window.HeySecure.ensureUnlocked().then(modeUI, function () {});
 
   /* ---------- app lock: the phone's own screen lock (fingerprint, face, PIN, pattern) ---------- */
   (function () {
@@ -1467,7 +1488,7 @@
   (function () {
     var HS = window.HeySecure, row = $('quickRow'), box = $('optQuick');
     if (!HS || !HS.canQuick || !HS.canQuick() || !row || !box) return;
-    row.hidden = false; box.checked = HS.quickReady();
+    row.hidden = HS.mode() !== 'password'; box.checked = HS.quickReady();
     box.addEventListener('change', function () {
       var want = box.checked;
       HS.ensureUnlocked().then(function () {

@@ -97,5 +97,35 @@ function mk(withPlugin, ls = new Map()) {
   await third.reset();
   assert.strictEqual([...ls.keys()].filter(k => k.startsWith('hs')).length, 0);
   const fresh = mk(true, ls).HS; assert.strictEqual(fresh.isSetUp(), false);
+  // no-password mode: still encrypted, opens by itself, switching keeps the data
+  const nm = mk(true, ls); const N = nm.HS;
+  assert.strictEqual(N.mode(), null);
+  await N.setupDevice();
+  assert.strictEqual(N.mode(), 'device'); assert.ok(N.isUnlocked() && N.isSetUp());
+  await N.setJSON('dev1', { secret: 'device-mode-secret' });
+  assert.ok(![...ls.values()].some(v => v.includes('device-mode-secret')), 'ciphertext only in device mode');
+  assert.ok(!ls.get('hs2dev').includes('"wrapped"') && !ls.has('hs2meta'));
+  await assert.rejects(N.unlock('anything long enough'), /Password mode is not on/);
+  await assert.rejects(N.enableQuick('x'), /needs a data password/);
+  const nr = mk(true, ls).HS; assert.strictEqual(nr.isUnlocked(), false);
+  await nr.unlockDevice(); assert.deepStrictEqual(await nr.getJSON('dev1', null), { secret: 'device-mode-secret' });
+  // copied storage without the device key cannot be opened
+  const other = new Map(ls); delete other.__key; const stolen = mk(true, other).HS;
+  await assert.rejects(stolen.unlockDevice());
+  // device -> password
+  await assert.rejects(nr.switchToPassword('short'));
+  await nr.switchToPassword('brand new password'); assert.strictEqual(nr.mode(), 'password'); assert.ok(!ls.has('hs2dev'));
+  const pr = mk(true, ls).HS; await pr.unlock('brand new password');
+  assert.deepStrictEqual(await pr.getJSON('dev1', null), { secret: 'device-mode-secret' });
+  // fingerprint needs the password to be turned on, and a typed password never needs the phone lock
+  await assert.rejects(pr.enableQuick('wrong wrong wrong'), /Wrong password/);
+  await pr.enableQuick('brand new password'); assert.ok(pr.quickReady());
+  // password -> device: needs the password, drops the fingerprint key
+  await assert.rejects(pr.switchToDevice('wrong wrong wrong'), /Wrong password/);
+  await pr.switchToDevice('brand new password');
+  assert.strictEqual(pr.mode(), 'device'); assert.ok(!ls.has('hs2meta') && !ls.has('hs2quick'));
+  const dr = mk(true, ls).HS; await dr.unlockDevice();
+  assert.deepStrictEqual(await dr.getJSON('dev1', null), { secret: 'device-mode-secret' });
+  await dr.reset(); assert.strictEqual(dr.mode(), null);
   console.log('heysecure tests passed'); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

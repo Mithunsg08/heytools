@@ -1,5 +1,9 @@
-/* HeySecure: password-protected encryption for private HeyTools data.
-   The person sets one password. A random 256-bit data key encrypts every record (AES-256-GCM); that key is itself
+/* HeySecure: encryption for private HeyTools data, with two unlock modes:
+   - Password (recommended): see below. Optional fingerprint/face quick unlock, which can only be turned on with the password.
+   - No password: the same AES-256-GCM encryption, but the data key is kept by the Android Keystore (app) or a non-extractable
+     WebCrypto key (browser) on this device only, and opens automatically. It protects copied files and backups, not a phone that is
+     unlocked in someone's hand. The person can switch between the modes in Settings; no data is re-encrypted because the data key stays the same.
+   Password mode: the person sets one password. A random 256-bit data key encrypts every record (AES-256-GCM); that key is itself
    encrypted ("wrapped") with a key derived from the password (PBKDF2-SHA-256, 600,000 rounds, random salt).
    The password and the unwrapped key live only in memory and are never stored, so a forgotten password cannot be recovered:
    the data stays unreadable and the only way forward is to erase it. Only ciphertext is written to localStorage ("hs1:<key>").
@@ -13,7 +17,7 @@
   var SECURE_KEYS = ['notes-and-todo:v1', 'heytools.expenses.v1', 'heytools.habits.v1', 'heytools.split.v1', 'heytools.water.v1',
     'heytools.focus.v1', 'heytools.breath.v1', 'heytools.tally.v1', 'heytools.timers.v1', 'heytools.wheel.v1', 'heytools.markdown.v1',
     'wc-text', 'md-history'];
-  var CHUNK = 4 * 1024 * 1024, QUICK = 'hs2quick';
+  var CHUNK = 4 * 1024 * 1024, QUICK = 'hs2quick', DEV = 'hs2dev', DEVCTX = 'hs-dev';
   var te = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
   var td = typeof TextDecoder !== 'undefined' ? new TextDecoder() : null;
   function subtle() { return root.crypto && root.crypto.subtle; }
@@ -128,6 +132,30 @@
     var s = store(); if (!s) return null;
     try { var m = JSON.parse(s.getItem(META)); return m && m.v === 2 && m.salt && m.iv && m.wrapped ? m : null; } catch (e) { return null; }
   }
+  function readDev() {
+    var s = store(); if (!s) return null;
+    try { var e = JSON.parse(s.getItem(DEV)); return e && e.v === 1 && e.iv && e.data ? e : null; } catch (x) { return null; }
+  }
+  function mode() { return readMeta() ? 'password' : readDev() ? 'device' : null; }
+  function unwrapWith(pw) {
+    var m = readMeta(); if (!m) return Promise.reject(new Error('Password mode is not on'));
+    return deriveKek(pw, unb64(m.salt), m.iter || ITER).then(function (kek) {
+      return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
+    }).then(function (raw) { return raw; }, function () { throw new Error('Wrong password'); });
+  }
+  function deviceSeal(raw) {
+    return waitLegacy().then(function (b) {
+      if (!b) throw new Error('This device cannot keep an encryption key');
+      return b.encrypt(DEVCTX, b64(raw));
+    });
+  }
+  function deviceOpen() {
+    var env = readDev(); if (!env) return Promise.reject(new Error('No device key'));
+    return waitLegacy().then(function (b) {
+      if (!b) throw new Error('This device cannot unlock the data');
+      return b.decrypt(DEVCTX, env);
+    }).then(function (t) { return unb64(t); });
+  }
   function wrap(raw, pw) {
     var salt = root.crypto.getRandomValues(new Uint8Array(16)), iv = root.crypto.getRandomValues(new Uint8Array(12));
     return deriveKek(pw, salt, ITER).then(function (kek) {
@@ -200,7 +228,18 @@
   function showLock(mode, done) {
     var d = root.document; if (!d || !d.body) { return false; }
     var el = d.createElement('div'); el.id = 'hs-lock'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
-    var setup = mode === 'setup';
+    var setup = mode === 'setup', broken = mode === 'devicefail';
+    if (broken) {
+      el.innerHTML = '<style>' + CSS + '</style><div id="hs-card"><div id="hs-ico">⚠️</div><h2>Can\u2019t open your data</h2><p>HeyTools could not get this device\u2019s encryption key. Try again. If the phone was reset or the key was lost, the data cannot be opened.</p><div id="hs-err" role="alert"></div><button id="hs-go" type="button">Try again</button><button id="hs-forgot" type="button">Erase data and start fresh</button></div>';
+      d.body.appendChild(el);
+      el.querySelector('#hs-go').onclick = function () { say(''); HS.unlockDevice().then(function () { el.remove(); done(); }, function (e) { say(e && e.message || 'Still not working'); }); };
+      function say(m) { el.querySelector('#hs-err').textContent = m || ''; }
+      el.querySelector('#hs-forgot').onclick = function () {
+        if (!root.confirm('This permanently deletes your encrypted data on this device. Erase it?')) return;
+        HS.reset().then(function () { el.remove(); unlockP = null; HS.ensureUnlocked().then(done); });
+      };
+      return true;
+    }
     el.innerHTML = '<style>' + CSS + '</style><div id="hs-card"><div id="hs-ico">🔐</div>' +
       '<h2>' + (setup ? 'Protect your data' : 'Unlock HeyTools') + '</h2>' +
       '<p>' + (setup ? 'Choose a password. Your notes, expenses and habits are encrypted with it on this device.' : 'Enter your password to open your private data.') + '</p>' +
@@ -208,6 +247,7 @@
       '<form id="hs-form" autocomplete="off"><div class="hs-f"><input id="hs-pw" type="password" placeholder="' + (setup ? 'New password (10+ characters)' : 'Password') + '" autocomplete="' + (setup ? 'new-password' : 'current-password') + '"><button type="button" id="hs-eye" aria-label="Show password">👁</button></div>' +
       (setup ? '<div class="hs-f"><input id="hs-pw2" type="password" placeholder="Repeat password" autocomplete="new-password"></div><div id="hs-warn">⚠ There is no password reset. If you forget it, your encrypted data cannot be opened by anyone, including us.</div>' : '') +
       '<div id="hs-err" role="alert"></div><button id="hs-go" type="submit">' + (setup ? 'Create password' : 'Unlock') + '</button></form>' +
+      (setup ? '<button id="hs-nopw" type="button" style="display:block;width:100%;margin:12px 0 0;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.22);background:transparent;color:#e7e3ff;font-size:14px;font-weight:600">Use no password</button><p style="margin:8px 0 0;font-size:12px;color:#aaa5cf">Still encrypted. The key stays on this device and opens automatically. Anyone who can use your unlocked phone can see the data. You can add a password later in Settings.</p>' : '') +
       (setup ? '' : '<button id="hs-forgot" type="button">Forgot password?</button>') + '</div>';
     d.body.appendChild(el);
     var pw = el.querySelector('#hs-pw'), pw2 = el.querySelector('#hs-pw2'), err = el.querySelector('#hs-err'), go = el.querySelector('#hs-go');
@@ -221,13 +261,21 @@
         pw.value = ''; if (pw2) pw2.value = ''; el.remove(); done();
       }, function (e) { say(e && e.message || 'Something went wrong'); go.disabled = false; go.textContent = label; if (!setup) { pw.select(); } });
     };
-    var qk = el.querySelector('#hs-quick');
+    var np = el.querySelector('#hs-nopw');
+    if (np) np.onclick = function () {
+      np.disabled = true; say('');
+      HS.setupDevice().then(function () { pw.value = ''; if (pw2) pw2.value = ''; el.remove(); done(); }, function (e) { np.disabled = false; say(e && e.message || 'Could not turn on encryption'); });
+    };
+    var qk = el.querySelector('#hs-quick'), typing = false, quickBusy = false;
+    /* typing a password means the person chose the password: never show the fingerprint prompt after that */
+    ['input', 'keydown', 'pointerdown'].forEach(function (ev) { pw.addEventListener(ev, function () { typing = true; }); });
     if (qk) {
-      var tryQuick = function () {
-        say('');
-        HS.unlockQuick().then(function () { pw.value = ''; el.remove(); done(); }, function (e) { if (e && e.message !== 'Not confirmed') say(e.message); });
+      var tryQuick = function (manual) {
+        if (quickBusy || (!manual && typing)) return;
+        quickBusy = true; say('');
+        HS.unlockQuick().then(function () { pw.value = ''; el.remove(); done(); }, function (e) { quickBusy = false; if (e && e.message !== 'Not confirmed') say(e.message); });
       };
-      qk.onclick = tryQuick; setTimeout(tryQuick, 350);
+      qk.onclick = function () { typing = false; tryQuick(true); }; setTimeout(function () { tryQuick(false); }, 350);
     }
     var fg = el.querySelector('#hs-forgot');
     if (fg) fg.onclick = function () {
@@ -235,13 +283,15 @@
       if (!root.confirm('This permanently deletes your encrypted data. You can restore it later only from a backup and its backup password. Erase everything?')) return;
       HS.reset().then(function () { el.remove(); unlockP = null; HS.ensureUnlocked().then(done); });
     };
-    setTimeout(function () { try { pw.focus(); } catch (e) {} }, 50);
+    if (!qk) setTimeout(function () { try { pw.focus(); } catch (e) {} }, 50);   // with fingerprint available, keep the keyboard closed until the person taps the field
     return true;
   }
 
   var HS = {
     __core: true, PREFIX: PREFIX, MIN_PASSWORD: MIN_PW,
-    isSetUp: function () { return !!readMeta(); },
+    isSetUp: function () { return !!mode(); },
+    /* 'password', 'device' (no password, still encrypted) or null before the first setup */
+    mode: mode,
     /* true inside the HeyTools app (native app, or a tool page shown inside the app shell). Public website pages return false and do not keep private text. */
     inApp: function () {
       try { if (root.top && root.top !== root && root.top.HeySecure && root.top.HeySecure.__core) return true; } catch (e) {}
@@ -259,11 +309,39 @@
         return importDek(raw).then(function (k) { dek = k; store().setItem(META, JSON.stringify(meta)); });
       }).then(function () { return upgradeAll(); }).then(function () { return true; });
     },
+    /* No-password mode: encrypted with a random key that this device keeps for you. */
+    setupDevice: function () {
+      if (!subtle() || !te) return Promise.reject(new Error('This browser cannot encrypt data'));
+      if (mode()) return Promise.reject(new Error('Encryption is already set up'));
+      var raw = root.crypto.getRandomValues(new Uint8Array(32));
+      return deviceSeal(raw).then(function (env) {
+        return importDek(raw).then(function (k) { store().setItem(DEV, JSON.stringify(env)); dek = k; });
+      }).then(function () { return upgradeAll(); }).then(function () { return true; });
+    },
+    unlockDevice: function () {
+      if (mode() !== 'device') return Promise.reject(new Error('Not in no-password mode'));
+      return deviceOpen().then(function (raw) { return importDek(raw); }).then(function (k) { dek = k; return upgradeAll().then(function () { return true; }); });
+    },
+    /* Password mode -> no password. Needs the current password. The data key does not change, so nothing is re-encrypted. */
+    switchToDevice: function (pw) {
+      if (mode() !== 'password' || !dek) return Promise.reject(new Error('Unlock first'));
+      return unwrapWith(pw).then(function (raw) { return deviceSeal(new Uint8Array(raw)); }).then(function (env) {
+        var s = store(); s.setItem(DEV, JSON.stringify(env)); s.removeItem(META); s.removeItem(QUICK); return true;
+      });
+    },
+    /* No password -> password mode. */
+    switchToPassword: function (newPw) {
+      var bad = checkPw(newPw); if (bad) return Promise.reject(bad);
+      if (mode() !== 'device' || !dek) return Promise.reject(new Error('Unlock first'));
+      return deviceOpen().then(function (raw) { return wrap(raw, newPw); }).then(function (meta) {
+        var s = store(); s.setItem(META, JSON.stringify(meta)); s.removeItem(DEV); return true;
+      });
+    },
     unlock: function (pw) {
       var wait = Math.min(30000, fails > 2 ? Math.pow(2, fails - 2) * 1000 : 0) - (Date.now() - lastFail);
       var delay = wait > 0 ? new Promise(function (r) { setTimeout(r, wait); }) : Promise.resolve();
       var m = readMeta();
-      if (!m) return Promise.reject(new Error('No password has been set yet'));
+      if (!m) return Promise.reject(new Error(mode() === 'device' ? 'Password mode is not on' : 'No password has been set yet'));
       if (typeof pw !== 'string' || !pw) return Promise.reject(new Error('Enter your password'));
       return delay.then(function () { return deriveKek(pw, unb64(m.salt), m.iter || ITER); }).then(function (kek) {
         return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
@@ -278,7 +356,13 @@
       if (unlockP) return unlockP;
       unlockP = new Promise(function (res, rej) {
         function open() {
-          if (!showLock(readMeta() ? 'unlock' : 'setup', function () { res(); })) { if (!root.document || root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', open, { once: true }); else rej(new Error('Cannot show the password screen')); }
+          if (mode() === 'device') {
+            HS.unlockDevice().then(function () { res(); }, function () {
+              if (!showLock('devicefail', function () { res(); })) rej(new Error('Cannot unlock'));
+            });
+            return;
+          }
+          if (!showLock(mode() ? 'unlock' : 'setup', function () { res(); })) { if (!root.document || root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', open, { once: true }); else rej(new Error('Cannot show the password screen')); }
         }
         open();
       });
@@ -286,7 +370,7 @@
     },
     changePassword: function (oldPw, newPw) {
       var bad = checkPw(newPw); if (bad) return Promise.reject(bad);
-      var m = readMeta(); if (!m || !dek) return Promise.reject(new Error('Unlock first'));
+      var m = readMeta(); if (!m || !dek) return Promise.reject(new Error(mode() === 'device' ? 'Password mode is not on' : 'Unlock first'));
       return deriveKek(oldPw, unb64(m.salt), m.iter || ITER).then(function (kek) {
         return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
       }).then(function (raw) { return wrap(raw, newPw); }, function () { throw new Error('Current password is wrong'); })
@@ -295,7 +379,7 @@
     /* Erase every encrypted record and the password. Used for "forgot password" and "delete all my data". */
     reset: function () {
       var s = store(); dek = null; unlockP = null; fails = 0;
-      if (s) { HS.keys().forEach(function (k) { s.removeItem(PREFIX + k); }); s.removeItem(META); s.removeItem(QUICK); SECURE_KEYS.forEach(function (k) { s.removeItem(k); }); }
+      if (s) { HS.keys().forEach(function (k) { s.removeItem(PREFIX + k); }); s.removeItem(META); s.removeItem(DEV); s.removeItem(QUICK); SECURE_KEYS.forEach(function (k) { s.removeItem(k); }); }
       return new Promise(function (r) { try { var q = root.indexedDB.deleteDatabase('heysecure'); q.onsuccess = q.onerror = q.onblocked = function () { r(); }; } catch (e) { r(); } });
     },
     getJSON: function (key, fallback, opts) {
@@ -351,7 +435,7 @@
     canQuick: function () { return !!(pluginNamed('SecureStorage') && pluginNamed('AppLock')); },
     quickReady: function () { var s = store(); return HS.canQuick() && !!(s && s.getItem(QUICK)); },
     enableQuick: function (pw) {
-      var m = readMeta(); if (!m || !dek) return Promise.reject(new Error('Unlock first'));
+      var m = readMeta(); if (!m || !dek) return Promise.reject(new Error('Fingerprint unlock needs a data password'));
       if (!HS.canQuick()) return Promise.reject(new Error('Not available on this device'));
       return deriveKek(pw, unb64(m.salt), m.iter || ITER).then(function (kek) {
         return subtle().decrypt({ name: 'AES-GCM', iv: unb64(m.iv), additionalData: te.encode(AADW) }, kek, unb64(m.wrapped));
