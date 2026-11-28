@@ -91,5 +91,9 @@ jobs:
           # Refuse to purge unless the secrets are really there, so the key cannot be lost.
           if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then
             echo "::error::The ANDROID_KEYSTORE_* secrets are not set. Not deleting the only copy of the key."; exit 1; fi
+          printf '%s' "$KS_B64" | tr -d '[:space:]' | base64 --decode > "$RUNNER_TEMP/chk.p12" || { echo "::error::ANDROID_KEYSTORE_BASE64 is not valid base64. Not deleting the cache."; exit 1; }
+          F="$(keytool -list -v -keystore "$RUNNER_TEMP/chk.p12" -storetype PKCS12 -alias heytools -storepass "$KS_PASS" 2>/dev/null | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test "$F" = "$EXPECTED_SIGNER_SHA256" || { echo "::error::The secrets do not contain the real HeyTools key. Not deleting the cache."; exit 1; }
+          rm -f "$RUNNER_TEMP/chk.p12"
           gh cache delete heytools-signing-v1 --all || gh api -X DELETE "repos/$GH_REPO/actions/caches?key=heytools-signing-v1"
           echo "Legacy cache deleted."

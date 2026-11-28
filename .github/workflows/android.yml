@@ -18,7 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HEY_KEY_ALIAS: heytools
-      HAS_SECRET_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
       EXPECTED_SIGNER_SHA256: 321beac46b1dbb353c1bd6cae9f6960301dd636d1141eed9a049cbfd6ff6f9e7
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -38,8 +37,7 @@ jobs:
       # TEMPORARY MIGRATION FALLBACK: until the secrets are set, the old Actions cache copy is
       # read (restore only, never saved again). Run "Signing key migration" -> set-secrets or
       # export, then purge. See SIGNING.md. Once purged this step does nothing.
-      - name: Restore legacy cached key (only when secrets are not set yet)
-        if: ${{ env.HAS_SECRET_KEY != 'true' }}
+      - name: Restore legacy cached key (fallback until the secrets are valid)
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/heytools-signing
@@ -54,17 +52,24 @@ jobs:
           DIR="$RUNNER_TEMP/heytools-signing"
           LEGACY="$HOME/heytools-signing"
           mkdir -p "$DIR"
+          fp() { keytool -list -v -keystore "$1" -storetype PKCS12 -alias "$HEY_KEY_ALIAS" -storepass "$2" 2>/dev/null | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]'; }
+          PASS=""
           if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
             # Normalize whitespace/newlines before decoding a secret pasted from a terminal.
-            printf '%s' "$KS_B64" | tr -d '[:space:]' | base64 --decode > "$DIR/heytools.p12"
-            PASS="$KS_PASS"
-            echo "Using the signing key from GitHub Secrets."
-          elif [ -s "$LEGACY/heytools.p12" ] && [ -s "$LEGACY/pass.txt" ]; then
+            if printf '%s' "$KS_B64" | tr -d '[:space:]' | base64 --decode > "$DIR/heytools.p12" 2>/dev/null && [ "$(fp "$DIR/heytools.p12" "$KS_PASS")" = "$EXPECTED_SIGNER_SHA256" ]; then
+              PASS="$KS_PASS"; echo "Using the signing key from GitHub Secrets."
+            else
+              echo "::warning::The ANDROID_KEYSTORE_* secrets are set but are not a valid HeyTools key (bad base64, wrong password or wrong certificate). Fix them (see SIGNING.md). Trying the legacy cache copy instead."
+              rm -f "$DIR/heytools.p12"
+            fi
+          fi
+          if [ -z "$PASS" ] && [ -s "$LEGACY/heytools.p12" ] && [ -s "$LEGACY/pass.txt" ]; then
             cp "$LEGACY/heytools.p12" "$DIR/heytools.p12"
             PASS="$(cat "$LEGACY/pass.txt")"
             echo "::warning::Signing key came from the legacy Actions cache. Move it to GitHub Secrets and purge the cache (see SIGNING.md)."
-          else
-            echo "::error::No signing key found. Set the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets (see SIGNING.md). Do not generate a replacement key."
+          fi
+          if [ -z "$PASS" ]; then
+            echo "::error::No valid signing key found. Set the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets (see SIGNING.md). Do not generate a replacement key."
             exit 1
           fi
           echo "::add-mask::$PASS"
