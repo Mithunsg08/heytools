@@ -1,0 +1,249 @@
+{
+ "video-player": [
+  "Plays videos from your device: import files or whole folders, remembers where you stopped",
+  "Live TV from 100+ countries with an offline channel list",
+  "Search YouTube, Twitch, Dailymotion and more, or paste a link",
+  "Queue, mini bar, picture-in-picture, screenshots, subtitles, sleep timer, gestures and keyboard shortcuts"
+ ],
+ "music-player": [
+  "3D spinning vinyl with a live visualizer and full-screen mode",
+  "Plays local audio files, with a queue and history",
+  "Connect Spotify, or paste YouTube, SoundCloud, Apple Music and Deezer links",
+  "Sound and playback settings, themes, and a demo track"
+ ],
+ "recorder": [
+  "Record voice, video or your screen, with pause and markers",
+  "Fullscreen recording view and live level display",
+  "Recordings are saved on your device and encrypted in the app",
+  "Works in the browser with no upload"
+ ],
+ "geo-camera": [
+  "Photos stamped with place, date and time, weather and coordinates",
+  "Choose card colours, details, language and output",
+  "Timer, grid and front/back camera",
+  "Address and weather need internet; the camera itself works offline"
+ ],
+ "emulsion": [
+  "Layer-based image editor with text, shapes, stickers, gradients and a freehand brush",
+  "Starter templates, colour looks and photo adjustments",
+  "Video timeline with rendering",
+  "Drag and drop your own photos; everything runs on your device"
+ ],
+ "video-loop": [
+  "Turn a short clip into a seamless long loop",
+  "Drop in a clip and let it weave the loop",
+  "Runs entirely in your browser"
+ ],
+ "media-downloads": [
+  "Download public media from a link",
+  "Batch queue with live progress",
+  "Image converter and smart file naming",
+  "Light and dark themes; requests go straight from your device to the source site"
+ ],
+ "image-compress": [
+  "Shrink images or videos to a target size you type",
+  "Add your files, type the size, download",
+  "Files are processed on your device"
+ ],
+ "image-to-pdf-converter": [
+  "Images to PDF, plus image, PDF, document, Excel/CSV, video and audio converters",
+  "Offline for images, PDF and ZIP",
+  "Word, Excel, PowerPoint and video conversions download a helper once",
+  "Your files stay on your device"
+ ],
+ "background-removal": [
+  "Remove a photo background with an on-device AI model",
+  "Pick a method and a new background colour",
+  "Add, cut, download in three steps",
+  "The model downloads once; pictures are never uploaded"
+ ],
+ "barcode-generate": [
+  "Make QR codes and many barcode formats",
+  "Download as PNG or SVG",
+  "Enter your data, pick a type, done",
+  "Nothing leaves your device"
+ ],
+ "expense-tracker": [
+  "Log spending with categories",
+  "See totals by category and track a monthly budget",
+  "Optional daily reminder",
+  "Encrypted on your device in the app"
+ ],
+ "habit-tracker": [
+  "One-tap daily check-ins with streaks",
+  "Add your own habits",
+  "Optional daily reminder",
+  "Encrypted on your device in the app"
+ ],
+ "focus-timer": [
+  "Pomodoro focus timer with lengths you choose",
+  "Break and focus cycles",
+  "Notifications when a session ends",
+  "Session data encrypted in the app"
+ ],
+ "alarm-clock": [
+  "Alarms with 14 tones",
+  "Rings on time in the app, even with the screen off",
+  "Repeat days and labels",
+  "Alarms stay on your device"
+ ],
+ "notes-to-do-list": [
+  "Notes and a to-do list in one place",
+  "Fast to write, easy to find",
+  "Encrypted on your device in the app",
+  "Works offline"
+ ],
+ "world-clock": [
+  "World clock with your own list of cities",
+  "Stopwatch with laps",
+  "US time zones at a glance",
+  "Works offline"
+ ],
+ "calculator": [
+  "Scientific, tip and bill split, fuel and trip cost",
+  "Percentage, discount, EMI loan, GST/VAT, BMI and age calculators",
+  "Currency choice for money tools",
+  "Runs offline"
+ ],
+ "scientific-calculator": [
+  "Complex numbers, trigonometry, logarithms and factorials",
+  "Calculation history",
+  "Function reference built in",
+  "Runs offline"
+ ],
+ "unit-converter": [
+  "Convert between a wide range of units",
+  "All units on one screen",
+  "Instant results as you type",
+  "Runs offline"
+ ],
+ "word-counter": [
+  "Words, characters, sentences, paragraphs and reading time",
+  "Keyword density",
+  "Character limit tracker for social posts",
+  "Text is never uploaded"
+ ],
+ "password-generator": [
+  "Random passwords, passphrases and PINs",
+  "Choose length and character types",
+  "Uses your device's secure random numbers",
+  "Nothing is sent anywhere"
+ ],
+ "qr-scanner": [
+  "Scan QR codes and barcodes with the camera",
+  "Recent scans list",
+  "Scans are processed on your device"
+ ],
+ "compass": [
+  "Live heading with a ship's compass theme",
+  "Bearing and distance",
+  "Uses your phone's motion sensors",
+  "Works offline"
+ ],
+ "spirit-level": [
+  "Bubble level using your phone's motion sensors",
+  "Live tilt reading",
+  "Works offline"
+ ],
+ "internet-speed": [
+  "Multi-stream download and real upload test",
+  "Ping, jitter, packet loss and bufferbloat grade",
+  "Use-case scoring (streaming, calls, gaming)",
+  "History, export and share; light and dark themes"
+ ],
+ "json-formatter": [
+  "Format, validate and minify JSON",
+  "Clear error messages",
+  "Copy or download the result",
+  "Runs offline"
+ ],
+ "color-picker": [
+  "Pick colours and build palettes",
+  "Contrast checker",
+  "Copy as HEX, RGB or HSL",
+  "Runs offline"
+ ],
+ "flashlight": [
+  "Turn your phone's flashlight on from the browser or app",
+  "Simple big button",
+  "Uses the camera torch"
+ ],
+ "countdown-timers": [
+  "Several named countdown timers at once",
+  "Rings when time is up",
+  "Timers encrypted on your device in the app"
+ ],
+ "water-tracker": [
+  "Log water with one tap",
+  "Last 7 days chart and a daily goal",
+  "Optional reminders",
+  "Encrypted on your device in the app"
+ ],
+ "sleep-calculator": [
+  "Sleep cycle calculator for bedtime and wake-up time",
+  "Suggests times that fit 90-minute cycles",
+  "Runs offline"
+ ],
+ "breathing": [
+  "Guided breathing exercise with an animated circle",
+  "Choose a pattern",
+  "Session data kept on your device"
+ ],
+ "tally-counter": [
+  "Tap to count, with several counters",
+  "Add more counters and reset them",
+  "Encrypted on your device in the app"
+ ],
+ "split-bills": [
+  "Add people and expenses",
+  "See balances and who pays whom to settle up",
+  "Encrypted on your device in the app"
+ ],
+ "date-calculator": [
+  "Days between two dates",
+  "Add or subtract time from a date",
+  "Age calculator and date facts"
+ ],
+ "encoder-hash": [
+  "Base64 and URL encode/decode",
+  "Hashes",
+  "UUIDs and random tokens",
+  "All in your browser"
+ ],
+ "markdown-editor": [
+  "Markdown with live preview",
+  "History of your drafts",
+  "Drafts encrypted on your device in the app"
+ ],
+ "image-resizer": [
+  "Resize images to a size you choose",
+  "Pick an output format",
+  "Processed on your device"
+ ],
+ "spin-wheel": [
+  "Spin a wheel of your own options",
+  "Keeps a list of recent results",
+  "Options encrypted on your device in the app"
+ ],
+ "typing-test": [
+  "Typing speed and accuracy test",
+  "Result summary",
+  "Runs offline"
+ ],
+ "cyber-rush": [
+  "Free 3D cyberpunk endless runner",
+  "Meteors, jets, drones, walls and laser gates to dodge",
+  "Earn credits and upgrade ships and paint in the 4D hangar",
+  "Contracts and levels"
+ ],
+ "dice-roller": [
+  "3D dice with five game modes",
+  "Classic, tabletop D4 to D20, five dice, higher or lower, lucky seven",
+  "Runs offline"
+ ],
+ "earth-zipcode": [
+  "3D globe for finding postal and PIN codes",
+  "Search a place or ZIP code (OpenStreetMap search, needs internet)",
+  "Location only if you ask for it"
+ ]
+}
