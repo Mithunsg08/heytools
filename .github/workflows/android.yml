@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HEY_KEY_ALIAS: heytools
+      HAS_SECRET_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
       EXPECTED_SIGNER_SHA256: 321beac46b1dbb353c1bd6cae9f6960301dd636d1141eed9a049cbfd6ff6f9e7
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -29,37 +30,44 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # The existing public APK is signed by this certificate. Never silently generate a
-      # replacement key: that would make updates fail for everyone with the installed app.
-      - name: Restore the existing signing key
-        id: signing-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      # The release signing key lives ONLY in GitHub Secrets (ANDROID_KEYSTORE_BASE64 and
+      # ANDROID_KEYSTORE_PASSWORD). Secrets are encrypted and never visible in this public
+      # repository. Never generate a replacement key: it would break updates for everyone
+      # who already has the app installed (the certificate is pinned below).
+      #
+      # TEMPORARY MIGRATION FALLBACK: until the secrets are set, the old Actions cache copy is
+      # read (restore only, never saved again). Run "Signing key migration" -> set-secrets or
+      # export, then purge. See SIGNING.md. Once purged this step does nothing.
+      - name: Restore legacy cached key (only when secrets are not set yet)
+        if: ${{ env.HAS_SECRET_KEY != 'true' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/heytools-signing
           key: heytools-signing-v1
 
-      - name: Prepare and verify the existing signing key
+      - name: Prepare and verify the signing key
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          CACHE_HIT: ${{ steps.signing-cache.outputs.cache-hit }}
         run: |
           set -euo pipefail
-          DIR="$HOME/heytools-signing"
+          DIR="$RUNNER_TEMP/heytools-signing"
+          LEGACY="$HOME/heytools-signing"
           mkdir -p "$DIR"
-          # Prefer the previously verified cached keystore. This prevents a malformed
-          # or stale repository secret from overwriting the working release identity.
-          if [ -s "$DIR/heytools.p12" ] && [ -s "$DIR/pass.txt" ]; then
-            PASS="$(cat "$DIR/pass.txt")"
-            echo "Using the restored HeyTools signing key."
-          elif [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
             # Normalize whitespace/newlines before decoding a secret pasted from a terminal.
             printf '%s' "$KS_B64" | tr -d '[:space:]' | base64 --decode > "$DIR/heytools.p12"
             PASS="$KS_PASS"
+            echo "Using the signing key from GitHub Secrets."
+          elif [ -s "$LEGACY/heytools.p12" ] && [ -s "$LEGACY/pass.txt" ]; then
+            cp "$LEGACY/heytools.p12" "$DIR/heytools.p12"
+            PASS="$(cat "$LEGACY/pass.txt")"
+            echo "::warning::Signing key came from the legacy Actions cache. Move it to GitHub Secrets and purge the cache (see SIGNING.md)."
           else
-            echo "::error::No usable existing HeyTools signing key was restored. Configure the original ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets. Do not generate a replacement key."
+            echo "::error::No signing key found. Set the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets (see SIGNING.md). Do not generate a replacement key."
             exit 1
           fi
+          echo "::add-mask::$PASS"
           chmod 600 "$DIR/heytools.p12"
           keytool -list -keystore "$DIR/heytools.p12" -storetype PKCS12 -alias "$HEY_KEY_ALIAS" -storepass "$PASS" >/dev/null
           FINGERPRINT="$(keytool -list -v -keystore "$DIR/heytools.p12" -storetype PKCS12 -alias "$HEY_KEY_ALIAS" -storepass "$PASS" | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
@@ -67,10 +75,9 @@ jobs:
             echo "::error::Signing certificate mismatch. Refusing to publish an incompatible Android update."
             exit 1
           fi
-          echo "::add-mask::$PASS"
           echo "HEY_KEYSTORE=$DIR/heytools.p12" >> "$GITHUB_ENV"
           echo "HEY_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
-          echo "Verified existing HeyTools signing certificate: $FINGERPRINT"
+          echo "Verified HeyTools signing certificate: $FINGERPRINT"
 
       - name: Install Capacitor
         working-directory: native

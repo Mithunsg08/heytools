@@ -1,0 +1,95 @@
+name: Signing key migration
+
+# One-time helper to move the Android signing key out of the GitHub Actions cache
+# (visible to anyone with read access to a public repo's workflows) into GitHub Secrets.
+# Step-by-step instructions: SIGNING.md. The key and password are never printed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "set-secrets = copy the cached key into repository secrets (needs the GH_ADMIN_TOKEN secret) | export = encrypted download (needs KEY_EXPORT_PASSPHRASE secret) | purge = delete the old cache copy (do this last)"
+        type: choice
+        required: true
+        options: [set-secrets, export, purge]
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      HEY_KEY_ALIAS: heytools
+      EXPECTED_SIGNER_SHA256: 321beac46b1dbb353c1bd6cae9f6960301dd636d1141eed9a049cbfd6ff6f9e7
+    steps:
+      - name: Restore the cached key
+        if: ${{ inputs.action != 'purge' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/heytools-signing
+          key: heytools-signing-v1
+          fail-on-cache-miss: true
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        if: ${{ inputs.action != 'purge' }}
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Verify it is the real HeyTools signing key
+        if: ${{ inputs.action != 'purge' }}
+        run: |
+          set -euo pipefail
+          DIR="$HOME/heytools-signing"
+          PASS="$(cat "$DIR/pass.txt")"
+          echo "::add-mask::$PASS"
+          F="$(keytool -list -v -keystore "$DIR/heytools.p12" -storetype PKCS12 -alias "$HEY_KEY_ALIAS" -storepass "$PASS" | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test "$F" = "$EXPECTED_SIGNER_SHA256"
+          echo "Certificate verified: $F"
+
+      - name: Copy into repository secrets
+        if: ${{ inputs.action == 'set-secrets' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then echo "::error::Add the GH_ADMIN_TOKEN secret first (fine-grained token, this repo only, 'Secrets: read and write'). See SIGNING.md, or use the export action instead."; exit 1; fi
+          DIR="$HOME/heytools-signing"
+          base64 -w0 "$DIR/heytools.p12" | gh secret set ANDROID_KEYSTORE_BASE64
+          tr -d '\n' < "$DIR/pass.txt" | gh secret set ANDROID_KEYSTORE_PASSWORD
+          echo "Secrets ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD are set. Now delete GH_ADMIN_TOKEN, then run this workflow with 'purge'."
+
+      - name: Encrypt for a one-time download
+        if: ${{ inputs.action == 'export' }}
+        env:
+          PASSPHRASE: ${{ secrets.KEY_EXPORT_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ "${#PASSPHRASE}" -lt 20 ]; then echo "::error::KEY_EXPORT_PASSPHRASE must be a secret of at least 20 random characters (openssl rand -base64 24)."; exit 1; fi
+          mkdir -p "$RUNNER_TEMP/out"
+          tar -C "$HOME/heytools-signing" -cf - heytools.p12 pass.txt \
+            | openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass env:PASSPHRASE -out "$RUNNER_TEMP/out/heytools-signing.tar.enc"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ inputs.action == 'export' }}
+        with:
+          name: heytools-signing-encrypted
+          path: ${{ runner.temp }}/out/heytools-signing.tar.enc
+          retention-days: 1
+
+      - name: Delete the old cache copy
+        if: ${{ inputs.action == 'purge' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Refuse to purge unless the secrets are really there, so the key cannot be lost.
+          if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then
+            echo "::error::The ANDROID_KEYSTORE_* secrets are not set. Not deleting the only copy of the key."; exit 1; fi
+          gh cache delete heytools-signing-v1 --all || gh api -X DELETE "repos/$GH_REPO/actions/caches?key=heytools-signing-v1"
+          echo "Legacy cache deleted."
