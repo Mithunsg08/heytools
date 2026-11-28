@@ -23,8 +23,7 @@ const N = local.length;
 
 const FONT = '';
 const CSS = `
-:root{--bg:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--panel:#f5f5f7;--blue:#0071e3;--blue2:#0058b0;--tint:#f5f5f7;--ok:#248a3d;--warn:#b25000;--net:#c4321c;--r:22px;--sf:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue','Segoe UI',Roboto,Arial,sans-serif}
-@media(prefers-color-scheme:dark){:root{--bg:#000;--ink:#f5f5f7;--muted:#a1a1a6;--line:#2d2d30;--panel:#161617;--blue:#2997ff;--blue2:#64b5ff;--tint:#1d1d1f;--ok:#30d158;--warn:#ffb340;--net:#ff6b57}}
+:root{--bg:#fff;--ink:#000;--muted:#515154;--line:#d2d2d7;--panel:#f5f5f7;--blue:#0071e3;--blue2:#0058b0;--tint:#f5f5f7;--ok:#1d7a34;--warn:#9a4a00;--net:#b02a14;--r:22px;--sf:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue','Segoe UI',Roboto,Arial,sans-serif}
 *{box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.47 var(--sf);letter-spacing:-.011em;-webkit-font-smoothing:antialiased}
 h1,h2,h3{font-family:var(--sf);line-height:1.07;margin:0;letter-spacing:-.03em;font-weight:700}
@@ -42,7 +41,7 @@ nav.m a.btn{opacity:1;background:var(--blue);color:#fff;min-height:32px;padding:
 .hero{padding:clamp(48px,9vw,110px) 0 clamp(20px,4vw,40px);text-align:center}
 .hero-g{display:block}.hero .lead{margin-left:auto;margin-right:auto}.hero .btns{justify-content:center}
 .pill{display:inline-block;font-weight:600;font-size:.95rem;color:var(--ink);margin:0 0 14px;letter-spacing:-.01em}
-h1{font-size:clamp(2.6rem,8vw,5.2rem);font-weight:700;letter-spacing:-.045em}h1 em{font-style:normal;color:var(--muted)}
+h1{font-size:clamp(2.6rem,8vw,5.2rem);font-weight:700;letter-spacing:-.045em}h1 em{font-style:normal;color:var(--ink)}
 .lead{font-size:clamp(1.1rem,2.2vw,1.5rem);color:var(--muted);max-width:44ch;margin:20px 0 28px;line-height:1.35;letter-spacing:-.02em}
 .btns{display:flex;flex-wrap:wrap;gap:12px}.fine{font-size:.85rem;color:var(--muted);margin:16px 0 0}
 .shots{display:flex;gap:18px;justify-content:center;align-items:flex-end;margin-top:clamp(28px,5vw,56px)}
@@ -51,10 +50,10 @@ h1{font-size:clamp(2.6rem,8vw,5.2rem);font-weight:700;letter-spacing:-.045em}h1 
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:clamp(28px,5vw,48px) 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .stat{padding:26px 14px;text-align:center}.stat+.stat{border-left:1px solid var(--line)}.stat b{display:block;font-size:clamp(1.8rem,4vw,2.8rem);letter-spacing:-.04em;font-weight:700}.stat span{color:var(--muted);font-size:.9rem}
 section{padding:clamp(56px,9vw,110px) 0}
-.alt{background:var(--panel)}.dk{background:#000;color:#f5f5f7;--bg:#000;--ink:#f5f5f7;--muted:#a1a1a6;--line:#2d2d30;--panel:#161617;--blue:#2997ff;--blue2:#64b5ff}
+.alt{background:var(--panel)}
 .sh{max-width:760px;margin:0 auto 44px;text-align:center}.sh h2{font-size:clamp(2rem,5.4vw,3.6rem);font-weight:700;letter-spacing:-.04em}.sh p{color:var(--muted);margin:16px auto 0;font-size:clamp(1.05rem,2vw,1.35rem);line-height:1.38;max-width:52ch}
 .cols{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.card{background:var(--panel);border-radius:var(--r);padding:28px}.alt .card{background:var(--bg)}.dk .card{background:#161617}
+.card{background:var(--panel);border-radius:var(--r);padding:28px}.alt .card{background:#fff}
 .card h3{font-size:1.4rem;margin-bottom:8px;letter-spacing:-.025em}.card p{margin:0;color:var(--muted)}.card ul{margin:10px 0 0;padding-left:1.1em;color:var(--muted)}
 .ico{font-size:2rem;display:block;margin-bottom:14px}
 .tools-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px;align-items:center;justify-content:center}
@@ -67,7 +66,7 @@ section{padding:clamp(56px,9vw,110px) 0}
 .tool .im{aspect-ratio:16/11;background:#000;overflow:hidden}.tool img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
 .tool .tx{padding:16px 18px 20px;display:flex;flex-direction:column;gap:6px;flex:1}.tool h3{font-size:1.15rem}.tool p{margin:0;color:var(--muted);font-size:.92rem}
 .bd{display:inline-block;align-self:flex-start;font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:99px;background:var(--panel);margin-top:2px}.bd.ok{color:var(--ok)}.bd.mid{color:var(--warn)}.bd.net{color:var(--net)}
-.alt .bd{background:var(--bg)}.tool .bd{background:var(--panel)}
+.alt .bd{background:var(--bg)}.tool .bd{background:var(--panel)}.tool{border:1px solid var(--line)}
 .three{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}.three .card b.n{display:block;font-size:.85rem;color:var(--blue);margin-bottom:10px;font-weight:600}
 .faq{max-width:760px}.faq details{border-bottom:1px solid var(--line);padding:2px 0}.faq summary{cursor:pointer;font-weight:600;font-size:1.1rem;padding:18px 0;min-height:44px;list-style:none;display:flex;justify-content:space-between;gap:12px}.faq summary::after{content:'+';font-size:1.5rem;line-height:1;color:var(--muted)}.faq details[open] summary::after{content:'–'}.faq summary::-webkit-details-marker{display:none}.faq p{margin:0 0 18px;color:var(--muted)}
 .getg{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.getg .card.is-you{box-shadow:0 0 0 2px var(--blue)}
@@ -87,8 +86,8 @@ const HEAD = ({ title, desc, url, up, ld, og = 'og/heytools.jpg' }) => `<!doctyp
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="canonical" href="${url}"><meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="theme-color" content="#000000"><meta name="color-scheme" content="light dark">
+<link rel="canonical" href="${url}"><link rel="alternate" hreflang="en" href="${url}"><link rel="sitemap" type="application/xml" href="${BASE}/sitemap.xml"><meta name="author" content="HeyTools"><meta name="application-name" content="HeyTools"><meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#ffffff"><meta name="color-scheme" content="light">
 <meta property="og:type" content="website"><meta property="og:site_name" content="HeyTools"><meta property="og:locale" content="en">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${url}">
 <meta property="og:image" content="${BASE}/${og}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
@@ -116,8 +115,10 @@ const FAQ = [
 function home() {
   const ldTools = local.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${BASE}/${t.id}/`, name: t.name }));
   const ld = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'Organization', '@id': BASE + '/#org', name: 'HeyTools', url: BASE + '/', logo: BASE + '/og/heytools.jpg' },
-    { '@type': 'WebSite', '@id': BASE + '/#site', name: 'HeyTools', url: BASE + '/', description: 'Free, private, local-first tools for your phone and browser.', publisher: { '@id': BASE + '/#org' } },
+    { '@type': 'Organization', '@id': BASE + '/#org', name: 'HeyTools', url: BASE + '/', logo: BASE + '/og/heytools.jpg', sameAs: ['https://github.com/Mithunsg08/heytools'] },
+    { '@type': 'WebSite', '@id': BASE + '/#site', name: 'HeyTools', url: BASE + '/', description: 'Free, private, local-first tools for your phone and browser.', publisher: { '@id': BASE + '/#org' }, inLanguage: 'en', potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: BASE + '/?q={search_term_string}' }, 'query-input': 'required name=search_term_string' } },
+    { '@type': 'WebPage', '@id': BASE + '/#page', url: BASE + '/', name: `HeyTools: ${N} free private tools`, dateModified: '2026-11-28', isPartOf: { '@id': BASE + '/#site' }, about: { '@id': BASE + '/#org' }, breadcrumb: { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'HeyTools', item: BASE + '/' }] } },
+    { '@type': 'HowTo', name: 'How to install HeyTools', description: 'Install HeyTools on Android, iPhone or a computer.', totalTime: 'PT2M', step: [{ '@type': 'HowToStep', name: 'Download', text: 'On Android, download HeyTools.apk from the Get the app section. On iPhone or a computer, open the web app.', url: BASE + '/#get-app' }, { '@type': 'HowToStep', name: 'Install', text: 'Allow installs from your browser once and tap Install on Android, or choose Add to Home Screen (iPhone) or your browser install button (computer).' }, { '@type': 'HowToStep', name: 'Open a tool', text: 'Pick any tool. Most work offline. Private data in the Android app is encrypted on your device.' }] },
     { '@type': 'SoftwareApplication', name: 'HeyTools', softwareVersion: '1.0', operatingSystem: 'Android', applicationCategory: 'UtilitiesApplication', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, downloadUrl: APK, image: BASE + '/og/heytools.jpg', description: `One free app with ${N} private tools: video and music player, recorder, alarm clock, notes, geo camera, converters, calculators and an Anti-Theft Guard.` },
     { '@type': 'ItemList', name: 'HeyTools tools', numberOfItems: N, itemListElement: ldTools },
     { '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }
@@ -137,7 +138,7 @@ function home() {
 
 <div class="wrap"><div class="stats"><div class="stat"><b>${N}</b><span>tools you can open today</span></div><div class="stat"><b>0</b><span>accounts, ads or trackers by default</span></div><div class="stat"><b>${local.filter((t) => t.net === 'offline').length}</b><span>tools that work fully offline</span></div><div class="stat"><b>AES-256</b><span>encryption for private data in the app</span></div></div></div>
 
-<section id="solve"><div class="wrap"><div class="sh"><h2>What HeyTools solves</h2><p>Most phones are full of single-purpose apps that ask for an account, show ads, or upload what you give them. HeyTools replaces that pile with one app that does the job and stays out of your way.</p></div>
+<section id="solve" class="alt"><div class="wrap"><div class="sh"><h2>What HeyTools solves</h2><p>Most phones are full of single-purpose apps that ask for an account, show ads, or upload what you give them. HeyTools replaces that pile with one app that does the job and stays out of your way.</p></div>
 <div class="cols">
 <div class="card"><span class="ico">🧰</span><h3>Too many apps</h3><p>Video and music players, a recorder, notes, timers, alarms, converters and calculators in one install, with one consistent design.</p></div>
 <div class="card"><span class="ico">🔒</span><h3>Privacy you can check</h3><p>No sign-up and no ad networks. Files you pick are processed on your device. Private data in the app is encrypted, and the privacy page lists every online service a tool can contact.</p></div>
@@ -145,13 +146,17 @@ function home() {
 <div class="card"><span class="ico">⚡</span><h3>Fast and light</h3><p>Each tool is a small page that opens instantly. No bloated suite to wait for, and no account to create first.</p></div>
 </div></div></section>
 
-<section id="tools" class="alt"><div class="wrap"><div class="sh"><h2>All ${N} tools</h2><p>Tap a tool to open it. The label shows whether it works offline. <a href="features/">Read what each one can do →</a></p></div>
+<section id="tools"><div class="wrap"><div class="sh"><h2>All ${N} tools</h2><p>Tap a tool to open it. The label shows whether it works offline. <a href="features/">Read what each one can do →</a></p></div>
 <div class="tools-bar" role="group" aria-label="Filter tools">${chips}<input class="search" id="q" type="search" placeholder="Search tools" aria-label="Search tools"></div>
 <div class="grid" id="grid">${grid}</div><p id="none" class="fine" hidden>No tool matches that search.</p>
 ${ext.map((t) => `<p class="fine">Also from the maker: <a href="${t.external}" target="_blank" rel="noopener">${esc(t.name)}</a>, ${esc(t.desc.replace(/\.$/, ''))}. It has its own privacy policy.</p>`).join('')}
 </div></section>
 
-<section id="highlights" class="dk"><div class="wrap"><div class="sh"><h2>Highlights</h2><p>A few things people use HeyTools for most.</p></div>
+<section id="categories"><div class="wrap prose" style="max-width:860px"><div class="sh" style="text-align:left;margin-left:0"><h2>Free online tools for every day</h2><p>HeyTools groups its ${N} tools into the jobs people do most. Each one opens instantly, with no sign-up.</p></div>
+${CATS.filter((c) => local.some((t) => t.cat === c.id)).map((c) => `<h3 style="margin:28px 0 6px;font-size:1.4rem">${esc(c.label)}</h3><p>${local.filter((t) => t.cat === c.id).map((t) => `<a href="${t.id}/"><strong>${esc(t.name)}</strong></a> (${esc(t.desc.replace(/\.$/, '').toLowerCase())})`).join(', ')}.</p>`).join('')}
+</div></section>
+
+<section id="highlights" class="alt"><div class="wrap"><div class="sh"><h2>Highlights</h2><p>A few things people use HeyTools for most.</p></div>
 <div class="cols">
 <div class="card"><span class="ico">▶️</span><h3>Video Player</h3><p>Import videos or folders, resume where you stopped, watch live TV from 100+ countries, search streaming sites, with a queue, picture-in-picture and subtitles.</p></div>
 <div class="card"><span class="ico">🎵</span><h3>Music Player</h3><p>A 3D vinyl player for your own audio files, plus Spotify, YouTube, SoundCloud, Apple Music and Deezer links.</p></div>
@@ -180,7 +185,7 @@ ${ext.map((t) => `<p class="fine">Also from the maker: <a href="${t.external}" t
 <script src="track-config.js"></script><script src="heytrack.js"></script><script src="install-prompt.js" defer></script>
 <script>(function(){var g=document.getElementById('grid'),cs=[].slice.call(g.children),q=document.getElementById('q'),bs=[].slice.call(document.querySelectorAll('.chip')),f='all',n=document.getElementById('none');
 function run(){var t=q.value.trim().toLowerCase(),c=0;cs.forEach(function(e){var ok=(f==='all'||e.dataset.cat===f)&&(!t||e.dataset.q.indexOf(t)>=0);e.hidden=!ok;if(ok)c++});n.hidden=c>0}
-bs.forEach(function(b){b.onclick=function(){f=b.dataset.f;bs.forEach(function(x){x.setAttribute('aria-pressed',x===b)});run()}});q.oninput=run;
+bs.forEach(function(b){b.onclick=function(){f=b.dataset.f;bs.forEach(function(x){x.setAttribute('aria-pressed',x===b)});run()}});q.oninput=run;try{var pq=new URLSearchParams(location.search).get('q');if(pq){q.value=pq;run()}}catch(e){}
 var ua=navigator.userAgent||'',k=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1)?'ios':/Android/i.test(ua)?'android':'desktop',c=document.querySelector('[data-for="'+k+'"]');if(c){c.classList.add('is-you');c.parentNode.insertBefore(c,c.parentNode.firstChild)}})();</script>
 </body></html>
 `;
@@ -189,7 +194,8 @@ var ua=navigator.userAgent||'',k=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.tes
 /* ---------------- features page ---------------- */
 function features() {
   const ld = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'CollectionPage', name: 'HeyTools features', url: BASE + '/features/', description: `Screenshots and features of all ${N} HeyTools tools.`, isPartOf: { '@id': BASE + '/#site' } },
+    { '@type': 'ItemList', name: 'HeyTools tools and their features', numberOfItems: N, itemListElement: local.map((t, i) => ({ '@type': 'ListItem', position: i + 1, item: { '@type': 'SoftwareApplication', name: t.name, url: BASE + '/' + t.id + '/', description: t.desc, applicationCategory: 'UtilitiesApplication', operatingSystem: 'Android, iOS, Web', image: BASE + '/screenshots/' + t.id + '.webp', featureList: FD[t.id], offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } } })) },
+    { '@type': 'CollectionPage', name: 'HeyTools features', dateModified: '2026-11-28', url: BASE + '/features/', description: `Screenshots and features of all ${N} HeyTools tools.`, isPartOf: { '@id': BASE + '/#site' } },
     { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'HeyTools', item: BASE + '/' }, { '@type': 'ListItem', position: 2, name: 'Features', item: BASE + '/features/' }] }
   ] };
   let body = '';
