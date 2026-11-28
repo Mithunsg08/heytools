@@ -121,7 +121,7 @@ Copyright (c) 2026 Mithunsg08 (HeyTools). **All rights reserved.** You may use t
 
 Open-source libraries and fonts included in or used by HeyTools keep their own licenses: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), [fonts/LICENSES.md](fonts/LICENSES.md) and the [licenses page](https://mithunsg08.github.io/heytools/licenses/).
 
-> **Note on Background Removal:** that tool loads IMG.LY's `@imgly/background-removal`, which is licensed **AGPL-3.0** (a commercial license is available from IMG.LY). Get IMG.LY's commercial license, replace the library, or take legal advice before distributing that tool commercially. Details in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+> **Background Removal** uses the Apache-2.0 U-2-Net model and the MIT ONNX Runtime Web, both shipped inside the tool, so it needs no commercial licence and works offline.
 
 ## Security and privacy
 

@@ -52,10 +52,10 @@
   "Your files stay on your device"
  ],
  "background-removal": [
-  "Remove a photo background with an on-device AI model",
-  "Pick a method and a new background colour",
-  "Add, cut, download in three steps",
-  "The model downloads once; pictures are never uploaded"
+  "Remove a photo background with an on-device AI model (U-2-Net)",
+  "Smart AI mode or a solid-background mode for plain backdrops",
+  "Pick a transparent or coloured background, then download a PNG",
+  "The model ships with the app, so it works offline and pictures are never uploaded"
  ],
  "barcode-generate": [
   "Make QR codes and many barcode formats",

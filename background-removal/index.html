@@ -109,7 +109,7 @@ footer{padding:2rem 0 2.6rem;color:var(--mute);font-size:.95rem;border-top:1px s
 </div>
 
 <div class="tool" id="tool">
-  <p class="pre" style="text-align:center;margin:0 0 12px"><select id="mq" aria-label="AI model size" style="margin-right:8px"><option value="fast">Fast model (about 40 MB)</option><option value="best">Best quality (about 80 MB)</option></select><button class="btn" type="button" id="prep">Download the AI model now (for offline use)</button></p>
+  <p class="pre" style="text-align:center;margin:0 0 12px">Works offline. The AI model is included with the app and your picture never leaves your device.</p>
   <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an image to remove its background">
     <div>
       <h2>Drop an image here</h2>
@@ -198,15 +198,46 @@ function keepAwake(on){try{if(on&&navigator.wakeLock&&!wl){navigator.wakeLock.re
 function working(on){document.body.dataset.busy=on?'true':'false';keepAwake(on)}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&document.body.dataset.busy==='true')keepAwake(true)});
 function busy(on,m,p){working(on);$('busy').classList.toggle('on',on);if(m)$('msg').textContent=m;$('prog').style.width=(p||0)+'%'}
-/* Fast model (about 40 MB) is the default, so the first download is half the size. Best quality is about 80 MB. */
-function modelName(){try{return localStorage.getItem('heytools.bg.model')==='best'?'isnet_fp16':'isnet_quint8'}catch(e){return 'isnet_quint8'}}
-function removeBg(blob,onProgress,tries){
-  tries=tries||3;
-  return import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm').then(function(m){
-    return m.removeBackground(blob,{model:modelName(),output:{format:'image/png'},progress:onProgress});
-  }).catch(function(e){
-    if(tries<=1)throw e;                                   // a dropped connection resumes from the files already saved
-    return new Promise(function(r){setTimeout(r,1500)}).then(function(){return removeBg(blob,onProgress,tries-1)});
+/* Open-source U-2-Net (small) model, run locally with ONNX Runtime Web. Both are Apache-2.0 / MIT licensed and ship inside this tool's lib/ folder,
+   so nothing is downloaded from a CDN and the tool works offline. */
+var SZ=320,sess=null,sessP=null;
+function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('load '+src))};document.head.appendChild(s)})}
+function getSession(onProgress){
+  if(sess)return Promise.resolve(sess);
+  if(sessP)return sessP;
+  var base=new URL('lib/',location.href).href;
+  sessP=(window.ort?Promise.resolve():loadScript(base+'ort.wasm.min.js')).then(function(){
+    if(onProgress)onProgress('model',20,100);
+    ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;ort.env.wasm.proxy=false;
+    return fetch(base+'u2netp.onnx').then(function(r){if(!r.ok)throw new Error('model');return r.arrayBuffer()});
+  }).then(function(buf){
+    if(onProgress)onProgress('model',60,100);
+    return ort.InferenceSession.create(new Uint8Array(buf),{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+  }).then(function(x){sess=x;return x},function(e){sessP=null;throw e});
+  return sessP;
+}
+/* canvas -> transparent cut-out canvas */
+function removeBg(canvas,onProgress){
+  return getSession(onProgress).then(function(se){
+    var w=canvas.width,h=canvas.height,t=document.createElement('canvas');t.width=t.height=SZ;
+    var tc=t.getContext('2d');tc.drawImage(canvas,0,0,SZ,SZ);
+    var px=tc.getImageData(0,0,SZ,SZ).data,n=SZ*SZ,mx=1;
+    for(var i=0;i<n;i++){mx=Math.max(mx,px[i*4],px[i*4+1],px[i*4+2])}
+    var f=new Float32Array(3*n),m=[0.485,0.456,0.406],sd=[0.229,0.224,0.225];
+    for(i=0;i<n;i++){for(var c=0;c<3;c++){f[c*n+i]=((px[i*4+c]/mx)-m[c])/sd[c]}}
+    if(onProgress)onProgress('run',80,100);
+    var inName=se.inputNames[0];var feeds={};feeds[inName]=new ort.Tensor('float32',f,[1,3,SZ,SZ]);
+    return se.run(feeds).then(function(out){
+      var d=out[se.outputNames[0]].data,lo=Infinity,hi=-Infinity;
+      for(var i=0;i<n;i++){if(d[i]<lo)lo=d[i];if(d[i]>hi)hi=d[i]}
+      var mk=document.createElement('canvas');mk.width=mk.height=SZ;var mc=mk.getContext('2d'),id=mc.createImageData(SZ,SZ);
+      for(i=0;i<n;i++){var v=(d[i]-lo)/((hi-lo)||1);v=v<.04?0:v>.96?1:v;id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=255;id.data[i*4+3]=Math.round(v*255)}
+      mc.putImageData(id,0,0);
+      var big=document.createElement('canvas');big.width=w;big.height=h;var bc=big.getContext('2d');
+      bc.imageSmoothingEnabled=true;bc.imageSmoothingQuality='high';bc.drawImage(mk,0,0,w,h);   // smooth up-scaled alpha mask
+      bc.globalCompositeOperation='source-in';bc.drawImage(canvas,0,0,w,h);                      // keep the original pixels where the mask is opaque
+      return big;
+    });
   });
 }
 function pressed(btns,el){btns.forEach(function(b){b.setAttribute('aria-pressed',b===el)})}
@@ -229,32 +260,16 @@ function run(){
   var t=++token;cut=null;$('dl').disabled=true;draw();
   if(mode==='ai'&&!aiFail){
     busy(true,'Loading the AI model…',5);
-    orig.toBlob(function(b){
-      removeBg(b,function(k,c,tot){if(t===token)busy(true,k.indexOf('fetch')===0?'Downloading model (first time only)…':'Removing background…',tot?Math.round(c/tot*100):30)}).then(function(out){return createImageBitmap(out)}).then(function(bm){
-        if(t!==token)return;
-        cut=document.createElement('canvas');cut.width=bm.width;cut.height=bm.height;cut.getContext('2d').drawImage(bm,0,0);
-        done();
-      }).catch(function(){
-        aiFail=true;$('note').textContent='The AI model could not load here, so Solid background mode was used instead.';
-        setMode('col');
-      });
-    },'image/png');
+    removeBg(orig,function(k,c,tot){if(t===token)busy(true,k==='model'?'Loading the AI model…':'Removing background…',tot?Math.round(c/tot*100):30)}).then(function(big){
+      if(t!==token)return;
+      cut=big;done();
+    }).catch(function(){
+      aiFail=true;$('note').textContent='The AI model could not run on this device, so Solid background mode was used instead.';
+      setMode('col');
+    });
   }else{colorCut();done()}
 }
 
-(function(){var s=$('mq');try{s.value=localStorage.getItem('heytools.bg.model')==='best'?'best':'fast'}catch(e){}s.onchange=function(){try{localStorage.setItem('heytools.bg.model',s.value)}catch(e){}$('prep').disabled=false;$('prep').textContent='Download the AI model now (for offline use)'}})();
-/* Optional: fetch the AI model ahead of time on Wi-Fi, so later cut-outs work offline. Uses a tiny blank image. */
-$('prep').onclick=function(){
-  var b=$('prep');b.disabled=true;b.textContent='Downloading… 0%';
-  var c=document.createElement('canvas');c.width=c.height=64;c.getContext('2d').fillRect(0,0,64,64);
-  c.toBlob(function(bl){
-    working(true);
-    removeBg(bl,function(k,cur,tot){if(tot)b.textContent='Downloading… '+Math.round(cur/tot*100)+'%'}).then(function(){
-      working(false);b.textContent='AI model saved. Works offline now';
-      if(document.hidden&&window.HeyNotify)HeyNotify.schedule([{id:930001,title:'AI model ready',body:'Background Removal now works offline.',at:Date.now()+1200,group:'bgmodel'}]);
-    }).catch(function(){working(false);b.disabled=false;b.textContent='Download failed. Check your connection and tap to try again'});
-  },'image/png');
-};
 
 function colorCut(){
   var w=orig.width,h=orig.height,d=orig.getContext('2d').getImageData(0,0,w,h),px=d.data,tol=+$('tol').value;

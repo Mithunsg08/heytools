@@ -811,11 +811,9 @@ All fonts come from the [Fontsource](https://fontsource.org) packages (latin sub
 | hls.js 1.7.3 | Apache-2.0 | Video Player (live TV) | Loaded from jsDelivr. https://github.com/video-dev/hls.js |
 | Tailwind CSS play CDN 3.4.17 | MIT | Earth ZIP code | Loaded from cdn.tailwindcss.com. https://tailwindcss.com |
 | pdf.js, mammoth, xlsx, ffmpeg.wasm and similar helpers | See each project | Image to PDF (Word, Excel, PowerPoint and video conversions) | Loaded from cdnjs only when you use those conversions. |
-| **@imgly/background-removal 1.5.5** | **AGPL-3.0** (commercial license available from IMG.LY) | Background Removal | Loaded from jsDelivr, with its AI model from IMG.LY. See the AGPL note below. https://github.com/imgly/background-removal-js |
+| ONNX Runtime Web 1.22.0 | MIT | Background Removal | Shipped inside the tool (`background-removal/lib/`). https://github.com/microsoft/onnxruntime |
+| U-2-Net (small, `u2netp.onnx`) | Apache-2.0 | Background Removal | Model weights by Xuebin Qin et al., shipped inside the tool, runs on the device. https://github.com/xuebinqin/U-2-Net |
 
-### AGPL-3.0 note (Background Removal)
-
-The Background Removal tool uses IMG.LY's `@imgly/background-removal` library, which is licensed under the **GNU Affero General Public License v3.0** (https://www.gnu.org/licenses/agpl-3.0.html), with a separate commercial license sold by IMG.LY. HeyTools does not copy or modify that library; the person's browser downloads it directly from the CDN when the tool is used. The AGPL applies to that library, and its source is available at the link above. Using it inside a proprietary product can create obligations or risks that depend on how it is combined and distributed. **The project owner should either obtain IMG.LY's commercial license, replace the library with a permissively licensed one, or take legal advice before distributing this tool commercially.**
 
 ## 4. Android app build
 

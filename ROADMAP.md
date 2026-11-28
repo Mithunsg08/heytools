@@ -18,7 +18,7 @@ Legend: **Done** = present in code today (still needs on-device confirmation whe
 | Encryption and storage audit | Mostly done | Password / no-password modes, backup encryption, `scripts/test-heysecure.js`. Remaining: audit every `localStorage`/IndexedDB key not routed through HeySecure (music/video libraries and alarms are intentionally plain, documented in SECURITY.md). |
 | External request review | Done | Inventory is on the privacy page; keep it in sync when a tool adds a host. Add a CI check that fails when a new host appears in a tool without a privacy-page entry. |
 | Signing key out of the Actions cache | **Needs owner action** | Secrets are set but invalid; follow SIGNING.md, then run `purge`. |
-| Dependency and licence audit | Partly | `licenses/index.html`, `npm audit`. **AGPL-3.0:** `@imgly/background-removal` (Background Removal). Before any paid or commercial distribution: buy IMG.LY's commercial licence, replace the library, or get legal advice (already noted on the licences page). |
+| Dependency and licence audit | Done | The AGPL library was replaced on 28 Nov 2026 by Apache-2.0 U-2-Net + MIT ONNX Runtime Web, shipped inside the tool. |
 | Test every tool | **Gap** | `scripts/smoke-browser.mjs` exists; extend it to open all 44 tools and fail on console errors. |
 
 ## Phase 2: make it premium
